@@ -1,0 +1,12 @@
+{
+  "name": "@trgames/shared",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "eslint": "eslint .",
+    "eslint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "lint": "yarn typecheck && yarn eslint"
+  }
+}

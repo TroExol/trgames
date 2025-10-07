@@ -1,0 +1,13 @@
+<svg width="40" height="40" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Основная форма буквы T -->
+    <path d="M50 40 Q100 10 150 40 Q140 60 120 60 Q105 60 100 80 Q95 60 80 60 Q60 60 50 40 Z"
+          fill="#FFD700" stroke="#FF6347" stroke-width="4" />
+
+    <!-- Центральная вертикальная линия -->
+    <path d="M100 80 L100 150"
+          fill="none" stroke="#FF6347" stroke-width="4" stroke-linecap="round" />
+
+    <!-- Декоративные элементы по краям -->
+    <circle cx="60" cy="40" r="3" fill="#FFD700" />
+    <circle cx="140" cy="40" r="3" fill="#FFD700" />
+</svg>

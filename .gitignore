@@ -1,0 +1,14 @@
+node_modules/
+.idea/
+.vscode/*
+.husky/_
+!.vscode/settings.json
+dist/
+.DS_Store
+nohup.out
+*.log
+.cursor/**/*.secret.*
+.env
+
+*storybook.log
+storybook-static

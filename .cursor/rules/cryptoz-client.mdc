@@ -1,0 +1,36 @@
+---
+description: 
+globs: client/src/routes/games/cryptoz/**/*,client/src/assets/games/cryptoz/**/*
+alwaysApply: false
+---
+Структура клиента для игры Cryptoz:
+
+**client/src/routes/games/cryptoz/**
+   - `client/src/routes/games/cryptoz/index.tsx` — точка входа для маршрута Cryptoz.
+   - `client/src/routes/games/cryptoz/UpdatesPage/index.tsx` — страница обновлений.
+   - `client/src/routes/games/cryptoz/RulesPage/index.tsx` — страница с правилами.
+   - `client/src/routes/games/cryptoz/RootLayout/index.tsx` — корневой layout.
+   - `client/src/routes/games/cryptoz/RoomsPage/index.tsx` — страница списка комнат.
+     - `client/src/routes/games/cryptoz/RoomsPage/components/` — UI-компоненты для RoomsPage.
+     - `client/src/routes/games/cryptoz/RoomsPage/services/SocketService.ts` — сервис работы с сокетами для комнат.
+     - `client/src/routes/games/cryptoz/RoomsPage/stores/RoomsStore.ts` — стор состояния комнат.
+   - `client/src/routes/games/cryptoz/RoomPage/index.tsx` — страница игровой комнаты.
+     - `client/src/routes/games/cryptoz/RoomPage/components/` — UI-компоненты для RoomPage.
+     - `client/src/routes/games/cryptoz/RoomPage/services/SocketService/SocketService.ts` — сервис работы с сокетами для игровой комнаты.
+     - `client/src/routes/games/cryptoz/RoomPage/stores/RoomStore.ts` — стор состояния игровой комнаты.
+     - `client/src/routes/games/cryptoz/RoomPage/stores/LogsStore.ts` — стор логов.
+     - `client/src/routes/games/cryptoz/RoomPage/stores/MessagesStore.ts` — стор сообщений.
+
+
+
+**client/src/assets/games/cryptoz/**
+  - **cards/** — изображения карт, каждая карта представлена отдельным файлом в формате `.webp`. Названия файлов соответствуют игровым картам (например, `flesh-chimera.webp`, `rat-marauders.webp` и т.д.).
+  - `bg.jpg` — фоновое изображение для игрового интерфейса.
+  - `card-shirt.jpg` — рубашка (оборотная сторона) обычной карты.
+  - `game-card.jpg` — изображение для оформления игровой карты.
+  - `ability-shirt.jpg` — рубашка карты способности.
+  - `stone-shard-shirt.jpg` — рубашка карты осколка.
+**Назначение:**  
+Папка содержит все графические ассеты, необходимые для визуализации карт, фонов и рубашек в клиенте игры Cryptoz.  
+Структура позволяет быстро находить нужные изображения для отрисовки в интерфейсе.
+

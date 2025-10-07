@@ -1,0 +1,22 @@
+---
+description:
+globs: server/src/games/cryptoz/**/*
+alwaysApply: false
+---
+Структура сервера для игры Cryptoz:
+- server/src/games/cryptoz/entities/ — игровые сущности, сгруппированные по типу (карты, участники, комнаты и т.д.).
+Пример:
+server/src/games/cryptoz/entities/Cards/ — классы и утилиты для карт, генерация стартовых стопок, основных стопок, вспомогательные функции.
+server/src/games/cryptoz/entities/Rooms/, server/src/games/cryptoz/entities/Players/, server/src/games/cryptoz/entities/StoneShards/ и др. — аналогично, для других сущностей.
+- server/src/games/cryptoz/services/ — сервисы, реализующие бизнес-логику и взаимодействие между сущностями.
+Пример:
+server/src/games/cryptoz/entities/SocketsService/ — сервис для работы с сокетами, отправки событий участникам, подтверждений, выборов и т.д.
+- server/src/games/cryptoz/helpers/ — вспомогательные функции и утилиты, используемые внутри модуля Cryptoz.
+- server/src/games/cryptoz/customTriggers/ — пользовательские триггеры, реализующие особые игровые события (например, начало хода, взятие карты и т.д.).
+Каждый триггер — отдельный класс, наследующийся от абстрактного триггера.
+- server/src/games/cryptoz/customModifiers/ — пользовательские модификаторы, влияющие на параметры сущностей (например, изменение цены карты).
+Каждый модификатор — отдельный класс, наследующийся от абстрактного модификатора.
+- server/src/games/cryptoz/vitest/ — тестовые утилиты и настройки для запуска тестов игры Cryptoz.
+- server/src/games/cryptoz/init.ts — основной файл инициализации, где происходит настройка и запуск компонентов игры.
+- server/src/games/cryptoz/index.ts — точка входа для экспорта основных сущностей или функций модуля Cryptoz.
+- Старайся использовать компоненты, которые уже есть в проекте: CardGroup, PlayerGroup, AbilityGroup, StoneShardGroup, Player, Room, AbstractCard

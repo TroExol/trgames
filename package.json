@@ -1,0 +1,40 @@
+{
+  "name": "trgames",
+  "version": "1.0.0",
+  "description": "Настольные игры в онлайн формате",
+  "repository": "https://github.com/TroExol/trgames.git",
+  "author": "TroExol <zeidxol@gmail.com>",
+  "private": true,
+  "engines": {
+    "yarn": ">=1.21.1",
+    "node": ">=22.15.0 <23.0.0"
+  },
+  "scripts": {
+    "postinstall": "husky",
+    "start:dev": "concurrently \"yarn workspace @trgames/client dev\" \"yarn workspace @trgames/server start:dev\"",
+    "lint": "concurrently \"yarn workspace @trgames/client lint\" \"yarn workspace @trgames/server lint\" \"yarn workspace @trgames/shared lint\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@stylistic/eslint-plugin": "^2.10.1",
+    "concurrently": "^8.2.2",
+    "eslint": "9.14.0",
+    "eslint-plugin-import-newlines": "^1.4.0",
+    "eslint-plugin-mobx": "^0.0.13",
+    "eslint-plugin-perfectionist": "^3.9.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "eslint-plugin-tailwindcss": "^3.17.5",
+    "husky": "^9.0.11",
+    "stylelint": "^16.10.0",
+    "stylelint-config-standard": "^36.0.1",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.12.2"
+  },
+  "workspaces": [
+    "client",
+    "server",
+    "tools/*"
+  ]
+}

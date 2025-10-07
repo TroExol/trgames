@@ -1,0 +1,34 @@
+{
+  "name": "@trgames/server",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "start:dev": "nodemon -r tsconfig-paths/register src/index.ts --local true --debug true",
+    "start": "ts-node -r tsconfig-paths/register src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "eslint": "eslint .",
+    "eslint:fix": "eslint . --fix",
+    "test": "vitest --config vitest.config.mts -w=false --silent",
+    "test:watch": "vitest --config vitest.config.mts",
+    "lint": "yarn typecheck && yarn eslint && yarn test"
+  },
+  "dependencies": {
+    "@trgames/shared": "1.0.0",
+    "i18n-js": "^4.5.1",
+    "lodash": "^4.17.21",
+    "make-plural": "^7.4.0",
+    "socket.io": "^4.8.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.13",
+    "@types/node": "^20.11.10",
+    "@types/uuid": "^9.0.8",
+    "memfs": "^4.14.0",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "vitest": "^3.2.4"
+  }
+}
