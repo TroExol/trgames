@@ -60,7 +60,7 @@ export class PrisonerOfDarkness extends AbstractCard {
 
     const target = concreteTarget ?? await this.room.socketService.selectTarget({
       player,
-      targetsToSelect: this.room.players,
+      targetsToSelect: this.room.players.getPlayersExceptPlayer(player),
     });
 
     if (!target) {
