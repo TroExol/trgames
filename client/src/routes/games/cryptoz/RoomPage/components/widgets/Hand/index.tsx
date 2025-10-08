@@ -3,7 +3,7 @@ import type { CryptozShared } from '@trgames/shared';
 
 import { useMediaQuery } from 'usehooks-ts';
 import {
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
@@ -22,31 +22,35 @@ export const Hand = observer(function Hand() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isSmHeight = useMediaQuery('(max-height: 640px)');
   const isMeActive = roomStore.me && roomStore.isActivePlayer(roomStore.me);
+  const cards = roomStore.me?.hand ? [...roomStore.me.hand] : [];
+  const showFullHandCards = settingsStore.cryptoz.showFullHandCards;
   const isInteractionLocked = dialogStore.isInteractionLocked;
   const canDragCards = isMeActive && !isInteractionLocked;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
         const width = containerRef.current.offsetWidth;
         setContainerWidth(width);
 
-        const cardClientWidth = containerRef.current.firstElementChild?.clientWidth;
-        if (cardClientWidth) {
-          setCardWidth(cardClientWidth);
+        const cardElement = containerRef.current.querySelector<HTMLDivElement>('[data-hand-card]');
+        if (cardElement?.clientWidth) {
+          setCardWidth(cardElement.clientWidth);
         }
       }
     };
-    updateWidth();
+    const frameId = requestAnimationFrame(updateWidth);
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, []);
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, [cards.length, showFullHandCards]);
 
   if (!roomStore.me?.hand) {
     return null;
   }
 
-  const cards = [...roomStore.me.hand];
   const cardsWidth = cards.length * cardWidth;
   let overlap = 0;
 
@@ -107,6 +111,7 @@ export const Hand = observer(function Hand() {
                   scale: 1,
                 }}
                 className="absolute bottom-0 cursor-grab"
+                data-hand-card
                 drag={canDragCards}
                 dragSnapToOrigin
                 exit={{
