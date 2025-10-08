@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
+import { dialogStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { StoneShard } from '@/routes/games/cryptoz/RoomPage/components/entites/StoneShard';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,7 @@ export const StoneShards = observer(function StoneShards({
   onSubmit,
 }: TStoneShardsProps) {
   const [selectedStoneShards, setSelectedStoneShards] = useState<Set<string>>(new Set());
+  const isReadOnly = dialogStore.isDialogActionsDisabled;
 
   // Если количество способностей <= countAbilitiesToSelect, выбираем все способности по умолчанию
   useEffect(() => {
@@ -29,7 +31,7 @@ export const StoneShards = observer(function StoneShards({
     : false;
 
   const handleStoneShardClick = (stoneShardUuid: string) => {
-    if (!canSelect) {
+    if (!canSelect || isReadOnly) {
       return;
     }
 
@@ -48,7 +50,7 @@ export const StoneShards = observer(function StoneShards({
   };
 
   const handleVariantClick = (variantId: string | number) => {
-    if (!onSubmit) return;
+    if (!onSubmit || isReadOnly) return;
 
     const selectedStoneShardsArray = stoneShards.filter(stoneShard => selectedStoneShards.has(stoneShard.uuid));
     onSubmit(variantId, selectedStoneShardsArray);
@@ -65,7 +67,7 @@ export const StoneShards = observer(function StoneShards({
                 'rounded-lg ring-4 ring-primary': selectedStoneShards.has(stoneShard.uuid),
               })}
               isShowPlaying={false}
-              onClick={canSelect ? () => handleStoneShardClick(stoneShard.uuid) : undefined}
+              onClick={!isReadOnly && canSelect ? () => handleStoneShardClick(stoneShard.uuid) : undefined}
               variant="lg"
             />
           </div>
@@ -77,7 +79,7 @@ export const StoneShards = observer(function StoneShards({
           {variants.map(variant => (
             <Button
               className="whitespace-normal text-center"
-              disabled={!isAllStoneShardsSelected}
+              disabled={isReadOnly || !isAllStoneShardsSelected}
               key={variant.id}
               onClick={() => handleVariantClick(variant.id)}
               variant="outline"

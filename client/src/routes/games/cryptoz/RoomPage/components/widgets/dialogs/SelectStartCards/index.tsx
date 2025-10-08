@@ -3,6 +3,7 @@ import type { CryptozShared } from '@trgames/shared';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
+import { dialogStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { Card } from '@/routes/games/cryptoz/RoomPage/components/entites/Card';
 import { Ability } from '@/routes/games/cryptoz/RoomPage/components/entites/Ability';
 import { cn } from '@/lib/utils';
@@ -17,9 +18,10 @@ export const SelectStartCards = observer(function SelectStartCards({
 }: TSelectStartCardsProps) {
   const [selectedCompanion, setSelectedCompanion] = useState<CryptozShared.TCard | null>(null);
   const [selectedAbility, setSelectedAbility] = useState<CryptozShared.TAbility | null>(null);
+  const isReadOnly = dialogStore.isDialogActionsDisabled;
 
   const handleSubmit = () => {
-    if (selectedCompanion && selectedAbility) {
+    if (selectedCompanion && selectedAbility && !isReadOnly) {
       onSubmit(selectedCompanion, selectedAbility);
     }
   };
@@ -34,7 +36,7 @@ export const SelectStartCards = observer(function SelectStartCards({
             className={cn({
               'rounded-lg ring-4 ring-primary': selectedAbility === ability,
             })}
-            onClick={() => setSelectedAbility(ability)}
+            onClick={!isReadOnly ? () => setSelectedAbility(ability) : undefined}
             variant="lg"
           />
         ))}
@@ -47,13 +49,13 @@ export const SelectStartCards = observer(function SelectStartCards({
             className={cn({
               'rounded-lg ring-4 ring-primary': selectedCompanion === companion,
             })}
-            onClick={() => setSelectedCompanion(companion)}
+            onClick={!isReadOnly ? () => setSelectedCompanion(companion) : undefined}
             variant="lg"
           />
         ))}
       </div>
       <Button
-        disabled={!selectedCompanion || !selectedAbility}
+        disabled={isReadOnly || !selectedCompanion || !selectedAbility}
         onClick={handleSubmit}
       >
         Выбрать

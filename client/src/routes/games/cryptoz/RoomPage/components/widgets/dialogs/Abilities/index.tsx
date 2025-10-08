@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
+import { dialogStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { Ability } from '@/routes/games/cryptoz/RoomPage/components/entites/Ability';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,7 @@ export const Abilities = observer(function Abilities({
   onSubmit,
 }: TAbilitiesProps) {
   const [selectedAbilities, setSelectedAbilities] = useState<Set<string>>(new Set());
+  const isReadOnly = dialogStore.isDialogActionsDisabled;
 
   // Если количество способностей <= countAbilitiesToSelect, выбираем все способности по умолчанию
   useEffect(() => {
@@ -29,7 +31,7 @@ export const Abilities = observer(function Abilities({
     : false;
 
   const handleAbilityClick = (abilityUuid: string) => {
-    if (!canSelect) {
+    if (!canSelect || isReadOnly) {
       return;
     }
 
@@ -48,7 +50,7 @@ export const Abilities = observer(function Abilities({
   };
 
   const handleVariantClick = (variantId: string | number) => {
-    if (!onSubmit) return;
+    if (!onSubmit || isReadOnly) return;
 
     const selectedAbilitiesArray = abilities.filter(ability => selectedAbilities.has(ability.uuid));
     onSubmit(variantId, selectedAbilitiesArray);
@@ -65,7 +67,7 @@ export const Abilities = observer(function Abilities({
                 'rounded-lg ring-4 ring-primary': selectedAbilities.has(ability.uuid),
               })}
               isShowPlaying={false}
-              onClick={canSelect ? () => handleAbilityClick(ability.uuid) : undefined}
+              onClick={!isReadOnly && canSelect ? () => handleAbilityClick(ability.uuid) : undefined}
               variant="lg"
             />
           </div>
@@ -77,7 +79,7 @@ export const Abilities = observer(function Abilities({
           {variants.map(variant => (
             <Button
               className="whitespace-normal text-center"
-              disabled={!isAllAbilitiesSelected}
+              disabled={isReadOnly || !isAllAbilitiesSelected}
               key={variant.id}
               onClick={() => handleVariantClick(variant.id)}
               variant="outline"

@@ -6,12 +6,18 @@ import { Ability } from '@/routes/games/cryptoz/RoomPage/components/entites/Abil
 
 import type { TPlayAbilityProps } from './types';
 
-import { roomStore } from '../../../../stores';
+import { dialogStore, roomStore } from '../../../../stores';
 
 export const PlayAbility = observer(function PlayAbility({
   onSubmit,
 }: TPlayAbilityProps) {
+  const isReadOnly = dialogStore.isDialogActionsDisabled;
+
   const isDisabled = (ability: CryptozShared.TAbility) => {
+    if (isReadOnly) {
+      return true;
+    }
+
     return !ability.canPlayHandler || ability.isPlayed || ability.isPlaying;
   };
 

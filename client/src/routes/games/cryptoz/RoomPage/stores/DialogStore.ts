@@ -12,6 +12,7 @@ export interface TDialog {
 }
 
 export interface TCollapsedDialog {
+  id: string;
   title: string;
   onExpand: () => void;
   canClose?: boolean;
@@ -33,12 +34,16 @@ export class DialogStore {
 
   // Удаление модалки по ID
   removeDialog = (id: string) => {
+    if (this.collapsedDialog?.id === id) {
+      this.collapsedDialog = null;
+    }
     this.dialogs = this.dialogs.filter(d => d.id !== id);
   };
 
   // Очистка всех модалок
   clearDialogs = () => {
     this.dialogs = [];
+    this.collapsedDialog = null;
   };
 
   // Установка свернутой модалки
@@ -55,17 +60,24 @@ export class DialogStore {
 
   // Получение активной модалки
   get activeDialog(): TDialog | null {
-    return this.dialogs[0] || null;
+    const collapsedDialogId = this.collapsedDialog?.id;
+
+    return this.dialogs.find(dialog => dialog.id !== collapsedDialogId) || null;
   }
 
   // Проверка наличия активных модалок
   get hasActiveDialogs() {
-    return this.dialogs.length > 0;
+    return this.dialogs.some(dialog => dialog.id !== this.collapsedDialog?.id);
   }
 
   // Проверка наличия свернутой модалки
   get hasCollapsedDialog() {
     return this.collapsedDialog !== null;
+  }
+
+  // Признак, что действия внутри активных модалок должны быть отключены
+  get isDialogActionsDisabled() {
+    return this.hasCollapsedDialog;
   }
 
   // Признак блокировки игровых взаимодействий

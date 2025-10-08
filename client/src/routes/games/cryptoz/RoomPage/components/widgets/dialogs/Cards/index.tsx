@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
+import { dialogStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { Card } from '@/routes/games/cryptoz/RoomPage/components/entites/Card';
 import { cn } from '@/lib/utils';
 import { Typography } from '@/components/ui/Typography';
@@ -16,6 +17,7 @@ export const Cards = observer(function Cards({
   onSubmit,
 }: TCardsProps) {
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
+  const isReadOnly = dialogStore.isDialogActionsDisabled;
 
   const normalizedCountCardsToSelect = countCardsToSelect == null
     ? countCardsToSelect
@@ -46,7 +48,7 @@ export const Cards = observer(function Cards({
     || selectedCards.size === normalizedCountCardsToSelect;
 
   const handleCardClick = (cardUuid: string) => {
-    if (!canSelect) return;
+    if (!canSelect || isReadOnly) return;
 
     setSelectedCards(prev => {
       const newSet = new Set(prev);
@@ -67,7 +69,7 @@ export const Cards = observer(function Cards({
   };
 
   const handleVariantClick = (variantId: string | number) => {
-    if (!onSubmit) return;
+    if (!onSubmit || isReadOnly) return;
 
     const selectedCardsArray = cards.filter(card => selectedCards.has(card.uuid));
     onSubmit(variantId, selectedCardsArray);
@@ -84,7 +86,7 @@ export const Cards = observer(function Cards({
                 'ring-4 ring-primary': selectedCards.has(card.uuid),
               })}
               isShowPlaying={false}
-              onClick={canSelect ? () => handleCardClick(card.uuid) : undefined}
+              onClick={!isReadOnly && canSelect ? () => handleCardClick(card.uuid) : undefined}
               variant="lg"
             />
             {cardsSubtitle?.[card.readableId] && (
@@ -101,7 +103,7 @@ export const Cards = observer(function Cards({
           {variants.map(variant => (
             <Button
               className="whitespace-normal text-center"
-              disabled={!isAllCardsSelected}
+              disabled={isReadOnly || !isAllCardsSelected}
               key={variant.id}
               onClick={() => handleVariantClick(variant.id)}
               variant="outline"

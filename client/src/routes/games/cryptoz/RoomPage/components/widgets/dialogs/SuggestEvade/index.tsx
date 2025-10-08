@@ -3,6 +3,7 @@ import type { CryptozShared } from '@trgames/shared';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
+import { dialogStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { cn } from '@/lib/utils';
 import { Typography } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
@@ -19,9 +20,10 @@ export const SuggestEvade = observer(({
   onSubmit,
 }: TSuggestEvadeProps) => {
   const [selectedCard, setSelectedCard] = useState<CryptozShared.TCard>();
+  const isReadOnly = dialogStore.isDialogActionsDisabled;
 
   const handleSubmit = (id: number) => {
-    if (selectedCard) {
+    if (selectedCard && !isReadOnly) {
       onSubmit(id, selectedCard);
     }
   };
@@ -64,7 +66,7 @@ export const SuggestEvade = observer(({
                   'ring-4 ring-primary': selectedCard?.uuid === card.uuid,
                 })}
                 isShowPlaying={false}
-                onClick={() => setSelectedCard(card)}
+                onClick={!isReadOnly ? () => setSelectedCard(card) : undefined}
                 variant="lg"
               />
             </div>
@@ -77,7 +79,7 @@ export const SuggestEvade = observer(({
           {variants.map(variant => (
             <Button
               className="whitespace-normal text-center"
-              disabled={!selectedCard}
+              disabled={isReadOnly || !selectedCard}
               key={variant.id}
               onClick={() => handleSubmit(variant.id)}
               variant="outline"

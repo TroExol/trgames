@@ -25,6 +25,7 @@ const DialogPreview = observer(({ collapsed = false }: { collapsed?: boolean }) 
   useEffect(() => {
     if (collapsed) {
       dialogStore.setCollapsedDialog({
+        id: 'storybook-collapsed',
         title: 'Свернутое событие',
         canClose: true,
         onExpand: () => {
