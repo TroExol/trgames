@@ -9,11 +9,12 @@ export interface TDialog {
   canClose?: boolean;
   canCollapse?: boolean;
   onClose?: () => void;
+  isCollapsed?: boolean;
 }
 
 export interface TCollapsedDialog {
+  id: string;
   title: string;
-  onExpand: () => void;
   canClose?: boolean;
   position?: { x: number; y: number };
 }
@@ -39,11 +40,20 @@ export class DialogStore {
   // Очистка всех модалок
   clearDialogs = () => {
     this.dialogs = [];
+    this.collapsedDialog = null;
   };
 
   // Установка свернутой модалки
   setCollapsedDialog = (dialog: TCollapsedDialog | null) => {
     this.collapsedDialog = dialog;
+  };
+
+  // Обновление признака сворачивания модалки
+  setDialogCollapsed = (id: string, isCollapsed: boolean) => {
+    const dialog = this.getDialogById(id);
+    if (dialog) {
+      dialog.isCollapsed = isCollapsed;
+    }
   };
 
   // Обновление позиции свернутой модалки
@@ -55,12 +65,12 @@ export class DialogStore {
 
   // Получение активной модалки
   get activeDialog(): TDialog | null {
-    return this.dialogs[0] || null;
+    return this.dialogs.find(dialog => !dialog.isCollapsed) || null;
   }
 
   // Проверка наличия активных модалок
   get hasActiveDialogs() {
-    return this.dialogs.length > 0;
+    return this.activeDialog !== null;
   }
 
   // Проверка наличия свернутой модалки

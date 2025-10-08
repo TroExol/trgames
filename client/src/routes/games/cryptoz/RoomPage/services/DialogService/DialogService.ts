@@ -11,8 +11,12 @@ export class DialogService {
 
   // Открытие модалки
   openDialog = (dialog: Omit<TDialog, 'id'>) => {
+    if (this.dialogStore.hasCollapsedDialog && this.dialogStore.activeDialog) {
+      this.closeDialog(this.dialogStore.activeDialog.id);
+    }
+
     const id = Math.random().toString(36).substr(2, 9);
-    this.dialogStore.addDialog({ ...dialog, id });
+    this.dialogStore.addDialog({ ...dialog, id, isCollapsed: false });
     return id;
   };
 
@@ -23,6 +27,9 @@ export class DialogService {
       dialog.onClose();
     }
     this.dialogStore.removeDialog(id);
+    if (this.dialogStore.collapsedDialog?.id === id) {
+      this.dialogStore.setCollapsedDialog(null);
+    }
   };
 
   // Закрытие всех модалок
@@ -36,28 +43,48 @@ export class DialogService {
   };
 
   // Сворачивание модалки
-  collapseDialog = (dialog: TCollapsedDialog) => {
-    // Если уже есть свернутая модалка, закрываем её
+  collapseDialog = (dialogId: string, dialog: Omit<TCollapsedDialog, 'id'>) => {
+    const currentDialog = this.dialogStore.getDialogById(dialogId);
+    if (!currentDialog) {
+      return;
+    }
+
     if (this.dialogStore.hasCollapsedDialog) {
       this.closeCollapsedDialog();
     }
 
-    // Добавляем новую свернутую модалку
+    this.dialogStore.setDialogCollapsed(dialogId, true);
     this.dialogStore.setCollapsedDialog({
-      ...dialog,
+      id: dialogId,
+      title: dialog.title || currentDialog.title || '',
+      canClose: dialog.canClose ?? currentDialog.canClose,
       position: dialog.position || { x: 20, y: 20 },
     });
   };
 
   // Разворачивание модалки
   expandDialog = () => {
-    this.dialogStore.collapsedDialog?.onExpand();
+    const collapsedDialog = this.dialogStore.collapsedDialog;
+    if (!collapsedDialog) {
+      return;
+    }
+
+    if (this.dialogStore.activeDialog) {
+      this.closeDialog(this.dialogStore.activeDialog.id);
+    }
+
+    this.dialogStore.setDialogCollapsed(collapsedDialog.id, false);
     this.dialogStore.setCollapsedDialog(null);
   };
 
   // Закрытие свернутой модалки
   closeCollapsedDialog = () => {
-    this.dialogStore.removeDialog(this.dialogStore.activeDialog?.id || '');
+    const collapsedDialog = this.dialogStore.collapsedDialog;
+    if (!collapsedDialog) {
+      return;
+    }
+
+    this.closeDialog(collapsedDialog.id);
     this.dialogStore.setCollapsedDialog(null);
   };
 

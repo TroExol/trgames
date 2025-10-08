@@ -12,6 +12,7 @@ import {
 import type { TCollapsibleDialogProps } from './types';
 
 export const CollapsibleDialog = observer(function CollapsibleDialog({
+  dialogId,
   title,
   canClose = true,
   canCollapse = true,
@@ -31,9 +32,8 @@ export const CollapsibleDialog = observer(function CollapsibleDialog({
   };
 
   const handleCollapse = () => {
-    dialogService.collapseDialog({
+    dialogService.collapseDialog(dialogId, {
       title,
-      onExpand: () => setIsOpen(true),
       canClose,
     });
     setIsOpen(false);
