@@ -148,7 +148,19 @@ export class Room {
 
     if (this.activePlayer?.boughtCards.getCardByType(CryptozShared.ECardType.HARBINGER)) {
       const topHarbinger = this.harbingers.top;
-      await topHarbinger?.playTotalDarknessStrike();
+
+      if (topHarbinger) {
+        this.socketService.emitToPlayers(
+          this.playersAndViewers,
+          CryptozShared.EEventTypes.showModalCards,
+          {
+            title: t('cryptoz.modals.title.totalDarknessStrike', 'ru'),
+            cards: [topHarbinger.format()],
+          },
+        );
+
+        await topHarbinger.playTotalDarknessStrike();
+      }
     }
 
     // Начало хода

@@ -132,6 +132,7 @@ export const ru = {
   modals: {
     title: {
       playChaos: 'Хаос!',
+      totalDarknessStrike: 'Разыгрывается тотальный мракобой',
       mayPutCardFromDiscardToSelfTopDeck: 'Можешь положить 1 карту из сброса наверх своей стопки',
       mayDiscardCardFromSelfTopDeck: 'Можешь сбросить верхнюю карту из своей стопки',
 
