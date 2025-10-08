@@ -16,6 +16,7 @@ import {
   addCardToPlayerSeals,
   addStoneShardToPlayer,
   createMockRoomWithPlayers,
+  MockCard,
 } from '@/games/cryptoz/vitest/utils';
 import { StoneShardGroup } from '@/games/cryptoz/entities/StoneShards/StoneShardGroup';
 import { StoneShard1 } from '@/games/cryptoz/entities/StoneShards/customStoneShards/StoneShard1';
@@ -248,6 +249,34 @@ describe('Player', () => {
     expect(onCardTookTrigger).toHaveBeenNthCalledWith(1, 'deck', card3, player.deck, player.nickname);
     expect(onCardTookTrigger).toHaveBeenNthCalledWith(2, 'deck', card4, player.deck, player.nickname);
     expect(onCardTookTrigger).toHaveBeenNthCalledWith(3, 'deck', card5, player.deck, player.nickname);
+  });
+
+  it('Не добавляет хаос при взятии карт по количеству', () => {
+    const chaosCard = new MockCard({ room, type: CryptozShared.ECardType.CHAOS });
+    room.deck.addCardToTop(chaosCard);
+
+    const initialHandCount = activePlayer.hand.count;
+    const initialRemovedChaosCount = room.removed.chaos.count;
+
+    activePlayer.takeCardsToHand(1, room.deck);
+
+    expect(activePlayer.hand.count).toBe(initialHandCount + 1);
+    expect(activePlayer.hand.getCard(chaosCard)).toBeNull();
+    expect(room.removed.chaos.count).toBe(initialRemovedChaosCount + 1);
+    expect(room.removed.chaos.top).toBe(chaosCard);
+  });
+
+  it('Не добавляет выбранный хаос участнику', () => {
+    const chaosCard = new MockCard({ room, type: CryptozShared.ECardType.CHAOS });
+    room.deck.addCardToTop(chaosCard);
+
+    const initialRemovedChaosCount = room.removed.chaos.count;
+
+    activePlayer.takeCardsToHand(new CardGroup(ECardGroupType.ANY, [chaosCard]), room.deck);
+
+    expect(activePlayer.hand.getCard(chaosCard)).toBeNull();
+    expect(room.removed.chaos.count).toBe(initialRemovedChaosCount + 1);
+    expect(room.removed.chaos.top).toBe(chaosCard);
   });
 
   it('Сбрасывает карты из руки', () => {

@@ -74,6 +74,10 @@ export class SpectralGrasp extends AbstractCard {
         this.logger.warn('Не удалось найти карту после покупки или получения');
         return;
       }
+      if (card.theSameType(CryptozShared.ECardType.CHAOS)) {
+        this.room.removed.chaos.addCardToTop(card);
+        return;
+      }
       player?.deck.addCardToTop(card);
     };
 
