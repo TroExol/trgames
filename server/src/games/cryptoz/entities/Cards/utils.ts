@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { CryptozShared } from '@trgames/shared';
 
 import type { Room } from '@/games/cryptoz/entities/Rooms/Room';
 
@@ -116,6 +117,8 @@ import { ArtOfTheDead } from './customCards/ArtOfTheDead';
 import { ArchitectOfIllusoryNets } from './customCards/ArchitectOfIllusoryNets';
 import { AbyssalConsciousness } from './customCards/AbyssalConsciousness';
 // Chaos cards
+import type { AbstractCard } from './AbstractCard';
+
 import { ChaosA } from './customCards/ChaosA';
 import { CardGroup, ECardGroupType } from './CardGroup';
 
@@ -136,6 +139,41 @@ export const getInitialPlayerDeck = (room?: Room, nickname?: string): CardGroup<
   cards.addCardToBottom(discharge);
   cards.shuffle();
   return cards;
+};
+
+const CHAOS_SEQUENCE_LIMIT = 2;
+
+const shuffleMasterDeckWithChaosLimit = (cardGroup: CardGroup<ECardGroupType.MASTER_DECK>): void => {
+  const chaosCards = _.shuffle(cardGroup.array.filter(card => card.type === CryptozShared.ECardType.CHAOS));
+  const otherCards = _.shuffle(cardGroup.array.filter(card => card.type !== CryptozShared.ECardType.CHAOS));
+
+  const slots = Array.from({ length: otherCards.length + 1 }, () => [] as AbstractCard[]);
+  const availableSlots = slots.map((_, index) => index);
+
+  chaosCards.forEach(chaosCard => {
+    const slotIndex = availableSlots.length
+      ? _.sample(availableSlots)!
+      : _.random(0, slots.length - 1);
+    slots[slotIndex].push(chaosCard);
+
+    if (slots[slotIndex].length >= CHAOS_SEQUENCE_LIMIT) {
+      const indexToRemove = availableSlots.indexOf(slotIndex);
+      if (indexToRemove !== -1) {
+        availableSlots.splice(indexToRemove, 1);
+      }
+    }
+  });
+
+  const shuffled: AbstractCard[] = [];
+
+  otherCards.forEach((card, index) => {
+    shuffled.push(...slots[index]);
+    shuffled.push(card);
+  });
+
+  shuffled.push(...slots[slots.length - 1]);
+
+  cardGroup.array = shuffled;
 };
 
 export const getInitialCardMasterDeck = (room?: Room): CardGroup<ECardGroupType.MASTER_DECK> => {
@@ -237,7 +275,7 @@ export const getInitialCardMasterDeck = (room?: Room): CardGroup<ECardGroupType.
   cards.addCardToBottom(new ChaosY(room));
   cards.addCardToBottom(new ChaosZ(room));
 
-  cards.shuffle();
+  shuffleMasterDeckWithChaosLimit(cards);
   return cards;
 };
 
