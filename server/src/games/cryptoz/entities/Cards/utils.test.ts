@@ -108,6 +108,16 @@ describe('Cards утилиты', () => {
     expect(cards.count)
       .toBe(countCreatures + countWickedness + countRitual + countArtifact + countUniqueCrypt + countUniqueChaos);
     cards.array.forEach(card => expect(card.room).toBe(room));
+
+    let consecutiveChaos = 0;
+    cards.array.forEach(card => {
+      if (card.type === CryptozShared.ECardType.CHAOS) {
+        consecutiveChaos += 1;
+        expect(consecutiveChaos).toBeLessThanOrEqual(2);
+      } else {
+        consecutiveChaos = 0;
+      }
+    });
   });
 
   it('Создает начальную стопку предвестников', () => {
