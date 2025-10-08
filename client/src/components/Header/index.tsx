@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { Button, buttonVariants } from '@/components/ui/Button';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import { ModeToggle } from '@/components/ModeToggle';
 
 import Logo from '/icon.svg';
@@ -119,6 +120,7 @@ export const Header = observer(function Header() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <SettingsDialog />
         {!gameTheme && (<ModeToggle />)}
       </div>
     </header>
