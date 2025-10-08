@@ -50,6 +50,17 @@ export interface TShowCardsParams {
   cardsSubtitle?: { [cardReadableId: string]: string };
 }
 
+export interface TShowEntitiesParams {
+  players: PlayerGroup;
+  title?: string;
+  cards?: CardGroup<ECardGroupType.ANY>;
+  cardsSubtitle?: { [cardReadableId: string]: string };
+  stoneShards?: StoneShardGroup<EStoneShardGroupType.ANY>;
+  abilities?: AbilityGroup<EAbilityGroupType.ANY>;
+  canClose?: boolean;
+  canCollapse?: boolean;
+}
+
 export interface TSelectStoneShardsParams {
   player: Player;
   stoneShards: StoneShardGroup<EStoneShardGroupType.ANY>;

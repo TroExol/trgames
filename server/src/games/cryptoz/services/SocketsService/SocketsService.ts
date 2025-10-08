@@ -27,6 +27,7 @@ import type {
   TSelectVariantParams,
   TSelectVariantResult,
   TShowCardsParams,
+  TShowEntitiesParams,
   TSocket,
   TSocketsServiceConstructorParams,
 } from './types';
@@ -133,6 +134,35 @@ export class SocketsService {
       });
     } catch (error) {
       this.room.logger.error(`Ошибка показа карт: ${error instanceof Error ? error.message : error as string}`);
+    }
+  };
+
+  public showEntities = ({
+    players,
+    title,
+    cards,
+    cardsSubtitle,
+    stoneShards,
+    abilities,
+    canClose,
+    canCollapse,
+  }: TShowEntitiesParams): void => {
+    if (!cards?.count && !stoneShards?.count && !abilities?.count) {
+      return;
+    }
+
+    try {
+      void this.emitToPlayers(players, CryptozShared.EEventTypes.showModalEntities, {
+        title,
+        cards: cards?.array.map(card => card.format()),
+        cardsSubtitle,
+        stoneShards: stoneShards?.array.map(stoneShard => stoneShard.format()),
+        abilities: abilities?.array.map(ability => ability.format()),
+        canClose,
+        canCollapse,
+      });
+    } catch (error) {
+      this.room.logger.error(`Ошибка показа сущностей: ${error instanceof Error ? error.message : error as string}`);
     }
   };
 

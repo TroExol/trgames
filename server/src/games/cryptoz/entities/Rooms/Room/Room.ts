@@ -2,7 +2,6 @@ import _ from 'lodash';
 import { CryptozShared } from '@trgames/shared';
 
 import type { EStoneShardGroupType, StoneShardGroup } from '@/games/cryptoz/entities/StoneShards/StoneShardGroup';
-import type { AbilityGroup, EAbilityGroupType } from '@/games/cryptoz/entities/Abilities/AbilityGroup';
 
 import { t } from '@/i18n';
 import { Logger } from '@/helpers/Logger';
@@ -26,6 +25,7 @@ import {
 import { CardGroup, ECardGroupType } from '@/games/cryptoz/entities/Cards/CardGroup';
 import { type AbstractCard } from '@/games/cryptoz/entities/Cards/AbstractCard';
 import { getInitialAbilityMasterDeck } from '@/games/cryptoz/entities/Abilities/utils';
+import { AbilityGroup, EAbilityGroupType } from '@/games/cryptoz/entities/Abilities/AbilityGroup';
 
 import type { TPlayChaosAdditionalParams, TRoomConstructorParams } from './types';
 
@@ -234,6 +234,13 @@ export class Room {
         player.logger.warn('Не удалось подобрать способность и помощника');
         return;
       }
+
+      this.socketService.showEntities({
+        players: this.playersAndViewers,
+        cards: new CardGroup(ECardGroupType.ANY, [randomCompanion]),
+        abilities: new AbilityGroup(EAbilityGroupType.ANY, [randomAbility]),
+        title: t('cryptoz.modals.title.randomStartSet', 'ru', { nickname }),
+      });
 
       this.companions.removeCard(randomCompanion);
       this.abilities.removeAbility(randomAbility);

@@ -529,6 +529,13 @@ export class Player {
     if (giveStoneShard) {
       const stoneShard = this.room.stoneShards.randomStoneShard;
       if (stoneShard) {
+        this.room.socketService.showEntities({
+          players: this.room.playersAndViewers,
+          stoneShards: new StoneShardGroup(EStoneShardGroupType.ANY, [stoneShard]),
+          title: t('cryptoz.modals.title.randomStoneShardTaken', 'ru', {
+            nickname: this.nickname,
+          }),
+        });
         void this.takeStoneShard(stoneShard, this.room.stoneShards, attacker ?? null);
       }
     }

@@ -6,6 +6,7 @@ import { t } from '@/i18n';
 
 import type { TCardPlayGeneralHandlerParams } from '../AbstractCard';
 
+import { CardGroup, ECardGroupType } from '../CardGroup';
 import { AbstractCard } from '../AbstractCard';
 
 export class ChaosL extends AbstractCard {
@@ -47,6 +48,14 @@ export class ChaosL extends AbstractCard {
         selectedChaos.push(randomChaos);
         chaosToSelect.removeCard(randomChaos);
       }
+    }
+
+    if (selectedChaos.length) {
+      this.room.socketService.showEntities({
+        players: this.room.playersAndViewers,
+        cards: new CardGroup(ECardGroupType.ANY, selectedChaos),
+        title: t('cryptoz.modals.title.randomChaosCards', 'ru'),
+      });
     }
 
     for (const chaos of selectedChaos) {

@@ -106,6 +106,15 @@ export class SmolderingPlague extends AbstractCard {
 
         const cardToKeep = selectedCards.top || cardGroup.randomCard;
         if (cardToKeep) {
+          if (!selectedCards.top) {
+            this.room.socketService.showEntities({
+              players: this.room.playersAndViewers,
+              cards: new CardGroup(ECardGroupType.ANY, [cardToKeep]),
+              title: t('cryptoz.modals.title.randomCardKept', 'ru', {
+                nickname: targetPlayer.nickname,
+              }),
+            });
+          }
           targetPlayer.removeCards(cardGroup.getCardsExceptCard(cardToKeep), 'hand');
         }
       }

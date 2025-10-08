@@ -7,6 +7,7 @@ import type { TAbility } from './ability';
 export enum EModalTypes {
   cards = 'cards',
   endGame = 'end-game',
+  entities = 'entities',
   selectCards = 'select-cards',
   selectStartCards = 'select-start-cards',
   selectStoneShards = 'select-stone-shards',
@@ -16,7 +17,7 @@ export enum EModalTypes {
 }
 
 export type TModalParams<T extends EModalTypes> =
-{ canClose?: boolean; canCollapse?: boolean } & (
+  { canClose?: boolean; canCollapse?: boolean } & (
     T extends EModalTypes.selectStartCards ? { companions: TCard[]; abilities: TAbility[] }
       : T extends EModalTypes.selectCards
         ? {
@@ -26,24 +27,41 @@ export type TModalParams<T extends EModalTypes> =
             count: number | null;
             variants: TVariant<string | number>[];
           }
-        : T extends EModalTypes.cards ? {
-          cards: TCard[];
-          title?: string;
-          cardsSubtitle?: { [cardReadableId: string]: string };
-        }
-          : T extends EModalTypes.suggestEvade
+        : T extends EModalTypes.entities
+          ? {
+              title?: string;
+              cards?: TCard[];
+              cardsSubtitle?: { [cardReadableId: string]: string };
+              stoneShards?: TStoneShard[];
+              abilities?: TAbility[];
+            }
+          : T extends EModalTypes.cards
             ? {
                 cards: TCard[];
-                cardAttack: TCard;
-                cardsToShow?: TCard[];
                 title?: string;
-                variants: TVariant<number>[];
+                cardsSubtitle?: { [cardReadableId: string]: string };
               }
-            : T extends EModalTypes.selectStoneShards
-              ? { stoneShards: TStoneShard[]; count: number; title?: string; variants: TVariant<string | number>[] }
-              : T extends EModalTypes.selectVariant ? { title?: string; variants: TVariant<string | number>[] }
-                : T extends EModalTypes.endGame ? { players: TPlayer[] }
-                  : never);
+            : T extends EModalTypes.suggestEvade
+              ? {
+                  cards: TCard[];
+                  cardAttack: TCard;
+                  cardsToShow?: TCard[];
+                  title?: string;
+                  variants: TVariant<number>[];
+                }
+              : T extends EModalTypes.selectStoneShards
+                ? {
+                    stoneShards: TStoneShard[];
+                    count: number;
+                    title?: string;
+                    variants: TVariant<string | number>[];
+                  }
+                : T extends EModalTypes.selectVariant
+                  ? { title?: string; variants: TVariant<string | number>[] }
+                  : T extends EModalTypes.endGame
+                    ? { players: TPlayer[] }
+                    : never
+  );
 
 export type TModalResponse<T extends EModalTypes> =
   T extends EModalTypes.selectStartCards

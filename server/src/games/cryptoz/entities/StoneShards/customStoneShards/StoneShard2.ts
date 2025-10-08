@@ -16,6 +16,13 @@ export class StoneShard2 extends AbstractStoneShard {
   protected playHandler = () => {
     const randomCards = this.owner?.hand.toShuffle().getCardsFromTop(2);
     if (randomCards && this.owner) {
+      this.room.socketService.showEntities({
+        players: this.room.playersAndViewers,
+        cards: randomCards,
+        title: t('cryptoz.modals.title.randomDiscardedCardsFromHand', 'ru', {
+          nickname: this.owner.nickname,
+        }),
+      });
       this.owner.discardHand(randomCards);
     }
     return Promise.resolve(true);

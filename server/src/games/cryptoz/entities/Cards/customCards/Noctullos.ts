@@ -46,11 +46,18 @@ export class Noctullos extends AbstractCard {
       ? this.room.players.getPlayersExceptPlayer(player)
       : this.room.players;
 
+    const randomCards = new CardGroup(ECardGroupType.ANY);
+    const cardsSubtitle: Record<string, string> = {};
+
     targets.array.forEach(target => {
       const randomCard = target.hand.randomCard;
       if (!randomCard) {
         return;
       }
+      randomCards.addCardToBottom(randomCard);
+      cardsSubtitle[randomCard.readableId] = t('cryptoz.modals.subtitle.cardOwner', 'ru', {
+        nickname: target.nickname,
+      });
       target.discardHand(new CardGroup(ECardGroupType.ANY, [randomCard]));
       let damage = target.modifiersDamageToSelf.apply(randomCard.basePrice, randomCard);
       if (player && !isForChaos) {
@@ -62,6 +69,15 @@ export class Noctullos extends AbstractCard {
         player?.attack(target, damage);
       }
     });
+
+    if (randomCards.count) {
+      this.room.socketService.showEntities({
+        players: this.room.playersAndViewers,
+        cards: randomCards,
+        cardsSubtitle,
+        title: t('cryptoz.modals.title.randomCardsEffect', 'ru', { cardName: this.name }),
+      });
+    }
 
     return Promise.resolve(true);
   };

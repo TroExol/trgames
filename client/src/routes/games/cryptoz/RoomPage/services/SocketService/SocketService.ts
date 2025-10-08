@@ -16,6 +16,7 @@ import { getApiUrl } from '@/lib/constants';
 import {
   openCardsDialog,
   openEndGameDialog,
+  openEntitiesDialog,
   openSelectStartCardsDialog,
   openSelectVariantDialog,
   openStoneShardsDialog,
@@ -94,6 +95,26 @@ export class SocketService {
           cardsSubtitle,
           canCollapse,
           canClose,
+        });
+      });
+
+      this.socket.on(CryptozShared.EEventTypes.showModalEntities, ({
+        title,
+        cards,
+        cardsSubtitle,
+        abilities,
+        stoneShards,
+        canClose,
+        canCollapse,
+      }: CryptozShared.TModalParams<CryptozShared.EModalTypes.entities>) => {
+        openEntitiesDialog({
+          title: title || '',
+          cards,
+          cardsSubtitle,
+          abilities,
+          stoneShards,
+          canClose,
+          canCollapse,
         });
       });
 

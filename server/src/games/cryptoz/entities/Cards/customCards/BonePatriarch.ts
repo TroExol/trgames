@@ -56,6 +56,15 @@ export class BonePatriarch extends AbstractCard {
       this.tempAbilities[player.nickname] = new AbilityGroup(EAbilityGroupType.ANY);
     }
     this.tempAbilities[player.nickname].addAbilityToBottom(ability);
+
+    this.room.socketService.showEntities({
+      players: this.room.playersAndViewers,
+      abilities: new AbilityGroup(EAbilityGroupType.ANY, [ability]),
+      title: t('cryptoz.modals.title.randomAbilityTaken', 'ru', {
+        nickname: player.nickname,
+      }),
+    });
+
     player.takeAbility(ability, this.room.abilities);
 
     this.room.players.array.forEach(p => {

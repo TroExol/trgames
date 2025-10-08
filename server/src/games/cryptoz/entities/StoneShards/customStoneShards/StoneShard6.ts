@@ -24,6 +24,14 @@ export class StoneShard6 extends AbstractStoneShard {
       return Promise.resolve(false);
     }
 
+    this.room.socketService.showEntities({
+      players: this.room.playersAndViewers,
+      cards: new CardGroup(ECardGroupType.ANY, [randomCard]),
+      title: t('cryptoz.modals.title.randomDestroyedCardFromDiscard', 'ru', {
+        nickname: this.owner.nickname,
+      }),
+    });
+
     this.owner.removeCards(new CardGroup(ECardGroupType.ANY, [randomCard]), 'discard');
     return Promise.resolve(true);
   };

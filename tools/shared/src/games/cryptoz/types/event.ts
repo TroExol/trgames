@@ -25,6 +25,7 @@ export enum EEventTypes {
   sendMessages = 'send-messages',
   showModalCards = 'show-cards',
   showModalEndGame = 'show-end-game',
+  showModalEntities = 'show-entities',
 
   showModalLeftUniqueCardTypes = 'show-left-unique-card-types',
   showModalSelectCards = 'show-select-cards',
@@ -67,6 +68,7 @@ export interface TServerToClientWithoutAckEvents {
   [EEventTypes.sendMessages]: (messages: TMessage[]) => void;
   [EEventTypes.showModalEndGame]: (params: TModalParams<EModalTypes.endGame>) => void;
   [EEventTypes.showModalCards]: (params: TModalParams<EModalTypes.cards>) => void;
+  [EEventTypes.showModalEntities]: (params: TModalParams<EModalTypes.entities>) => void;
   [EEventTypes.showToast]: (params: { message: string }) => void;
 }
 

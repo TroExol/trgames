@@ -34,6 +34,9 @@ export class ChaosK extends AbstractCard {
   protected playGeneralHandler = async ({ concreteTargets }: TCardPlayGeneralHandlerParams): Promise<boolean> => {
     const targets = concreteTargets ?? this.room.players;
 
+    const destroyedCards: AbstractCard[] = [];
+    const cardsSubtitle: Record<string, string> = {};
+
     await Promise.allSettled(targets.array.map(async player => {
       if (!player.hand.count) {
         return;
@@ -63,9 +66,23 @@ export class ChaosK extends AbstractCard {
         return;
       }
 
+      destroyedCards.push(cardToDestroy);
+      cardsSubtitle[cardToDestroy.readableId] = t('cryptoz.modals.subtitle.cardOwner', 'ru', {
+        nickname: player.nickname,
+      });
+
       player.removeCards(new CardGroup(ECardGroupType.ANY, [cardToDestroy]), 'hand');
       player.heal(13);
     }));
+
+    if (destroyedCards.length) {
+      this.room.socketService.showEntities({
+        players: this.room.playersAndViewers,
+        cards: new CardGroup(ECardGroupType.ANY, destroyedCards),
+        cardsSubtitle,
+        title: t('cryptoz.modals.title.randomDestroyedCards', 'ru'),
+      });
+    }
 
     return Promise.resolve(true);
   };

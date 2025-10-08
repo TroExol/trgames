@@ -89,10 +89,23 @@ export class ChaosC extends AbstractCard {
       return Promise.resolve(true);
     }
 
-    expensiveCards.array.forEach(card => {
-      const newOwner = cheapCards.randomCard?.owner;
+    const rewardCard = cheapCards.randomCard;
+    const newOwner = rewardCard?.owner;
 
-      if (newOwner && card.owner) {
+    if (!rewardCard || !newOwner) {
+      return Promise.resolve(true);
+    }
+
+    this.room.socketService.showEntities({
+      players: this.room.playersAndViewers,
+      cards: new CardGroup(ECardGroupType.ANY, [rewardCard]),
+      title: t('cryptoz.modals.title.randomRewardReceiver', 'ru', {
+        nickname: newOwner.nickname,
+      }),
+    });
+
+    expensiveCards.array.forEach(card => {
+      if (card.owner) {
         newOwner.takeCardsToDiscard(new CardGroup(ECardGroupType.ANY, [card]), card.owner.deck);
       }
     });

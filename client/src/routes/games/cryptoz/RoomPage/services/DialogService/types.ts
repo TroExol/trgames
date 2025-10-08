@@ -23,6 +23,16 @@ export interface TAbilitiesDialog {
   canCollapse?: boolean;
 }
 
+export interface TEntitiesDialog {
+  title: string;
+  cards?: CryptozShared.TCard[];
+  cardsSubtitle?: { [cardReadableId: string]: string };
+  abilities?: CryptozShared.TAbility[];
+  stoneShards?: CryptozShared.TStoneShard[];
+  canClose?: boolean;
+  canCollapse?: boolean;
+}
+
 export interface TPlayAbilityDialog {
   title: string;
   onSubmit: (ability: CryptozShared.TAbility) => void;

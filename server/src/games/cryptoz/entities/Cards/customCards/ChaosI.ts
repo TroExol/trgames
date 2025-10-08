@@ -37,6 +37,9 @@ export class ChaosI extends AbstractCard {
   }: TCardPlayStrikeHandlerParams): Promise<boolean> => {
     const targets = concreteTargets ?? this.room.players;
 
+    const randomCards = new CardGroup(ECardGroupType.ANY);
+    const cardsSubtitle: Record<string, string> = {};
+
     await Promise.allSettled(targets.array.map(async target => {
       if (canEvade) {
         const isEvaded = await target.tryEvade({
@@ -51,11 +54,24 @@ export class ChaosI extends AbstractCard {
 
       const randomCard = target.hand.randomCard;
       if (randomCard) {
+        randomCards.addCardToBottom(randomCard);
+        cardsSubtitle[randomCard.readableId] = t('cryptoz.modals.subtitle.cardOwner', 'ru', {
+          nickname: target.nickname,
+        });
         target.removeCards(new CardGroup(ECardGroupType.ANY, [randomCard]), 'hand');
       }
 
       target.takeCardsToHand(1, this.room.darknessMadness);
     }));
+
+    if (randomCards.count) {
+      this.room.socketService.showEntities({
+        players: this.room.playersAndViewers,
+        cards: randomCards,
+        cardsSubtitle,
+        title: t('cryptoz.modals.title.randomDestroyedCards', 'ru'),
+      });
+    }
 
     return Promise.resolve(true);
   };

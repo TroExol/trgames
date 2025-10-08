@@ -110,10 +110,22 @@ export class SmolderingEnd extends AbstractCard {
         }),
       });
 
-      const card = cards.top || targetPlayer.hand.randomCard;
+      const selectedCard = cards.top;
+      const card = selectedCard || targetPlayer.hand.randomCard;
 
       if (variant !== 1 || !card) {
         return;
+      }
+
+      if (!selectedCard) {
+        this.room.socketService.showEntities({
+          players: this.room.playersAndViewers,
+          cards: new CardGroup(ECardGroupType.ANY, [card]),
+          title: t('cryptoz.modals.title.randomTransferredCardBetweenPlayers', 'ru', {
+            fromNickname: targetPlayer.nickname,
+            toNickname: leftPlayer.nickname,
+          }),
+        });
       }
 
       const cardPrice = card.getPrice(null);

@@ -4,6 +4,7 @@ import { dialogService } from '@/routes/games/cryptoz/RoomPage/services';
 import { StoneShards } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/StoneShards';
 import { SelectStartCards } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/SelectStartCards';
 import { PlayAbility } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/PlayAbility';
+import { Entities } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/Entities';
 import { EndGame } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/EndGame';
 import { Cards } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/Cards';
 import { Abilities } from '@/routes/games/cryptoz/RoomPage/components/widgets/dialogs/Abilities';
@@ -12,6 +13,7 @@ import type {
   TAbilitiesDialog,
   TCardsDialog,
   TEndGameDialog,
+  TEntitiesDialog,
   TPlayAbilityDialog,
   TSelectStartCardsDialog,
   TSelectVariantDialog,
@@ -151,6 +153,30 @@ export const openEndGameDialog = ({
     content: <EndGame players={players} />,
     canCollapse: false,
     title: 'Игра окончена',
+  });
+};
+
+export const openEntitiesDialog = ({
+  title,
+  cards,
+  cardsSubtitle,
+  abilities,
+  stoneShards,
+  canClose = true,
+  canCollapse = true,
+}: TEntitiesDialog) => {
+  dialogService.openDialog({
+    content: (
+      <Entities
+        abilities={abilities}
+        cards={cards}
+        cardsSubtitle={cardsSubtitle}
+        stoneShards={stoneShards}
+      />
+    ),
+    canClose,
+    canCollapse,
+    title: title || '',
   });
 };
 
