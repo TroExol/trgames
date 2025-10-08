@@ -213,6 +213,7 @@ describe('Room', () => {
     it('Играет тотальный мракобой, если активный участник купил предвестника', async () => {
       const harbinger = new DreadOneEyedWarrior(mockedRoom);
       activePlayer.boughtCards.addCardToBottom(harbinger);
+      const emitSpy = vi.spyOn(mockedRoom.socketService, 'emitToPlayers');
       const topHarbinger = mockedRoom.harbingers.top;
       if (topHarbinger) {
         topHarbinger.playTotalDarknessStrike = vi.fn().mockResolvedValue(undefined);
@@ -222,6 +223,14 @@ describe('Room', () => {
 
       if (topHarbinger) {
         expect(topHarbinger.playTotalDarknessStrike).toHaveBeenCalledTimes(1);
+        const modalCall = emitSpy.mock.calls.find(([, event]) => event === CryptozShared.EEventTypes.showModalCards);
+        expect(modalCall).toBeDefined();
+        if (modalCall) {
+          expect(modalCall[2]).toMatchObject({
+            title: 'Разыгрывается тотальный мракобой',
+            cards: [expect.objectContaining({ uuid: topHarbinger.uuid })],
+          });
+        }
       }
     });
 
