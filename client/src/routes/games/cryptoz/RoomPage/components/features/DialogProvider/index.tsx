@@ -15,6 +15,7 @@ export const DialogProvider = observer(function DialogProvider() {
         <CollapsibleDialog
           canClose={activeDialog.canClose}
           canCollapse={activeDialog.canCollapse}
+          dialogId={activeDialog.id}
           key={activeDialog.id}
           onClose={() => dialogService.closeDialog(activeDialog.id)}
           title={activeDialog.title || ''}

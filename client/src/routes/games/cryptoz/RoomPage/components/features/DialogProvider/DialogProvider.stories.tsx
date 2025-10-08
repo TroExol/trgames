@@ -24,22 +24,21 @@ type Story = StoryObj<typeof DialogProvider>;
 const DialogPreview = observer(({ collapsed = false }: { collapsed?: boolean }) => {
   useEffect(() => {
     if (collapsed) {
-      dialogStore.setCollapsedDialog({
+      const dialogId = dialogService.openDialog({
+        title: 'Свернутое событие',
+        canCollapse: true,
+        canClose: true,
+        content: (
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>Разворачиваем модалку после нажатия по свернутому блоку.</p>
+            <p>Используйте этот механизм, чтобы не мешать игровому процессу.</p>
+          </div>
+        ),
+      });
+
+      dialogService.collapseDialog(dialogId, {
         title: 'Свернутое событие',
         canClose: true,
-        onExpand: () => {
-          dialogService.openDialog({
-            title: 'Важное событие',
-            canCollapse: true,
-            canClose: true,
-            content: (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>Разворачиваем модалку после нажатия по свернутому блоку.</p>
-                <p>Используйте этот механизм, чтобы не мешать игровому процессу.</p>
-              </div>
-            ),
-          });
-        },
       });
     } else {
       dialogService.openDialog({
@@ -57,7 +56,6 @@ const DialogPreview = observer(({ collapsed = false }: { collapsed?: boolean }) 
 
     return () => {
       dialogStore.clearDialogs();
-      dialogStore.setCollapsedDialog(null);
     };
   }, [collapsed]);
 
