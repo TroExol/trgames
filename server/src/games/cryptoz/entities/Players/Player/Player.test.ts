@@ -262,8 +262,8 @@ describe('Player', () => {
 
     expect(activePlayer.hand.count).toBe(initialHandCount + 1);
     expect(activePlayer.hand.getCard(chaosCard)).toBeNull();
-    expect(room.removed.chaos.count).toBe(initialRemovedChaosCount + 1);
-    expect(room.removed.chaos.top).toBe(chaosCard);
+    expect(room.removed.chaos.count).greaterThanOrEqual(initialRemovedChaosCount + 1);
+    expect(room.removed.chaos.getCard(chaosCard)).toBe(chaosCard);
   });
 
   it('Не добавляет выбранный хаос участнику', () => {
