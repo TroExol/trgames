@@ -147,10 +147,6 @@ export class Player {
         continue;
       }
       this.deck.removeCard(card);
-      if (card.theSameType(CryptozShared.ECardType.CHAOS)) {
-        this.room.removed.chaos.addCardToTop(card);
-        continue;
-      }
       this.hand.addCardToTop(card);
     }
   };
@@ -166,12 +162,8 @@ export class Player {
         this.fillDeck();
         continue;
       }
-      this.deck.removeCard(card);
-      if (card.theSameType(CryptozShared.ECardType.CHAOS)) {
-        this.room.removed.chaos.addCardToTop(card);
-        continue;
-      }
       countTook++;
+      this.deck.removeCard(card);
       this.hand.addCardToTop(card);
       this.triggersOnCardTook.apply('hand', card, this.deck, card.ownerNickname);
     }
