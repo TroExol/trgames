@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-import { roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
+import { dialogStore, roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import {
   openAbilitiesDialog,
   openCardsDialog,
@@ -66,8 +66,12 @@ export const Player = observer(function Player({
   const isActive = roomStore.isActivePlayer(nickname);
   const hpControls = useHeartBeatAnimation(health);
   const gloryShardsControls = useHeartBeatAnimation(gloryShards);
+  const isInteractionLocked = dialogStore.isInteractionLocked;
 
   const onRemovePlayer = () => {
+    if (isInteractionLocked) {
+      return;
+    }
     socketService.removePlayer(nickname);
   };
 
@@ -128,7 +132,7 @@ export const Player = observer(function Player({
       return;
     }
 
-    if (isMe && isActive) {
+    if (isMe && isActive && !isInteractionLocked) {
       openPlayAbilityDialog({
         title: `Разыграть способность`,
         onSubmit: ability => {
@@ -164,7 +168,12 @@ export const Player = observer(function Player({
         {isMeAndAdmin && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button className="size-7 [&_svg]:size-6" size="icon" variant="ghost">
+              <Button
+                className="size-7 [&_svg]:size-6"
+                disabled={isInteractionLocked}
+                size="icon"
+                variant="ghost"
+              >
                 <XCircle />
               </Button>
             </AlertDialogTrigger>
@@ -180,7 +189,13 @@ export const Player = observer(function Player({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Отменить</AlertDialogCancel>
-                <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={onRemovePlayer}>Удалить</AlertDialogAction>
+                <AlertDialogAction
+                  className={buttonVariants({ variant: 'destructive' })}
+                  disabled={isInteractionLocked}
+                  onClick={onRemovePlayer}
+                >
+                  Удалить
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -302,8 +317,13 @@ export const Player = observer(function Player({
             className={cn('h-auto py-1', {
               'bg-accent': isReady,
             })}
-            disabled={!isMe}
-            onClick={() => socketService.toggleReady()}
+            disabled={!isMe || isInteractionLocked}
+            onClick={() => {
+              if (isInteractionLocked) {
+                return;
+              }
+              socketService.toggleReady();
+            }}
             size="sm"
           >
             {isReady ? 'Готов' : 'Не готов'}

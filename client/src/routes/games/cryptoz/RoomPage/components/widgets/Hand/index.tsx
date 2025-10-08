@@ -11,7 +11,7 @@ import { observer } from 'mobx-react-lite';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { settingsStore } from '@/stores';
-import { roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
+import { dialogStore, roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { socketService } from '@/routes/games/cryptoz/RoomPage/services';
 import { Card } from '@/routes/games/cryptoz/RoomPage/components/entites/Card';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,8 @@ export const Hand = observer(function Hand() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isSmHeight = useMediaQuery('(max-height: 640px)');
   const isMeActive = roomStore.me && roomStore.isActivePlayer(roomStore.me);
+  const isInteractionLocked = dialogStore.isInteractionLocked;
+  const canDragCards = isMeActive && !isInteractionLocked;
 
   useEffect(() => {
     const updateWidth = () => {
@@ -55,6 +57,11 @@ export const Hand = observer(function Hand() {
 
   const onDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const { point } = info;
+
+    if (isInteractionLocked) {
+      roomStore.setDraggedHandCard(null);
+      return;
+    }
     const draggedElement = event.target;
 
     if (!draggedElement) {
@@ -72,6 +79,9 @@ export const Hand = observer(function Hand() {
   };
 
   const onDragStart = (card: CryptozShared.TCard) => {
+    if (isInteractionLocked) {
+      return;
+    }
     roomStore.setDraggedHandCard(card);
   };
 
@@ -97,7 +107,7 @@ export const Hand = observer(function Hand() {
                   scale: 1,
                 }}
                 className="absolute bottom-0 cursor-grab"
-                drag={isMeActive}
+                drag={canDragCards}
                 dragSnapToOrigin
                 exit={{
                   opacity: 0,

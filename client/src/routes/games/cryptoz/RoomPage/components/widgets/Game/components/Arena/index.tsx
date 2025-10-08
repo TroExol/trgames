@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
+import { dialogStore, roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { socketService } from '@/routes/games/cryptoz/RoomPage/services';
 import { Card } from '@/routes/games/cryptoz/RoomPage/components/entites/Card';
 import { Typography } from '@/components/ui/Typography';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 export const Arena = observer(function Arena() {
   const arenaCards = roomStore.activePlayer?.arena || [];
   const isMeActive = !!roomStore.activePlayer && roomStore.isMe(roomStore.activePlayer);
+  const isInteractionLocked = dialogStore.isInteractionLocked;
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
@@ -20,8 +21,13 @@ export const Arena = observer(function Arena() {
         {isMeActive && roomStore.room.isGameStarted && !roomStore.room.isGameEnded && (
           <Button
             className="mt-2"
-            disabled={!!roomStore.room.pendingAckNicknames.length}
-            onClick={() => socketService.endTurn()}
+            disabled={isInteractionLocked || !!roomStore.room.pendingAckNicknames.length}
+            onClick={() => {
+              if (isInteractionLocked) {
+                return;
+              }
+              socketService.endTurn();
+            }}
             title={roomStore.room.pendingAckNicknames.length ? 'Ожидаем ответа от участников' : undefined}
             variant="secondary"
           >
