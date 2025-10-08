@@ -10,6 +10,7 @@ import {
 import { observer } from 'mobx-react-lite';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { settingsStore } from '@/stores';
 import { roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { socketService } from '@/routes/games/cryptoz/RoomPage/services';
 import { Card } from '@/routes/games/cryptoz/RoomPage/components/entites/Card';
@@ -74,6 +75,8 @@ export const Hand = observer(function Hand() {
     roomStore.setDraggedHandCard(card);
   };
 
+  const baseCardBottom = settingsStore.cryptoz.showFullHandCards ? 0 : -100;
+
   return (
     <>
       <div style={{ height: isSmHeight ? '80px' : '170px' }} />
@@ -87,7 +90,7 @@ export const Hand = observer(function Hand() {
             return (
               <motion.div
                 animate={{
-                  bottom: -100,
+                  bottom: baseCardBottom,
                   left: `${left}px`,
                   zIndex: 21 + index,
                   opacity: 1,
@@ -105,7 +108,7 @@ export const Hand = observer(function Hand() {
                   zIndex: -10,
                 }}
                 initial={{
-                  bottom: -100,
+                  bottom: baseCardBottom,
                   left: `${left}px`,
                   zIndex: 21 + index,
                   opacity: 0,

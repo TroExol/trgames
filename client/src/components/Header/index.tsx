@@ -25,6 +25,8 @@ import {
 import { Button, buttonVariants } from '@/components/ui/Button';
 import { ModeToggle } from '@/components/ModeToggle';
 
+import { SettingsDialog } from './SettingsDialog';
+
 import Logo from '/icon.svg';
 
 export const Header = observer(function Header() {
@@ -119,6 +121,7 @@ export const Header = observer(function Header() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <SettingsDialog gameName={gameName} />
         {!gameTheme && (<ModeToggle />)}
       </div>
     </header>
