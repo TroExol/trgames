@@ -68,6 +68,11 @@ export class DialogStore {
     return this.collapsedDialog !== null;
   }
 
+  // Признак блокировки игровых взаимодействий
+  get isInteractionLocked() {
+    return this.hasActiveDialogs || this.hasCollapsedDialog;
+  }
+
   // Получение модалки по ID
   getDialogById = (id: string): TDialog | null => {
     return this.dialogs.find(d => d.id === id) || null;

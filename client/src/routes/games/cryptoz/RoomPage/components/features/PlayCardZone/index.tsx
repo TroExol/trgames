@@ -2,10 +2,13 @@ import { observer } from 'mobx-react-lite';
 import { Play } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
+import { dialogStore, roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
 
 export const PlayCardZone = observer(function PlayCardZone() {
-  const canPlay = !!roomStore.me && roomStore.isActivePlayer(roomStore.me) && roomStore.draggedHandCard;
+  const canPlay = !!roomStore.me
+    && roomStore.isActivePlayer(roomStore.me)
+    && roomStore.draggedHandCard
+    && !dialogStore.isInteractionLocked;
 
   return (
     <AnimatePresence>
