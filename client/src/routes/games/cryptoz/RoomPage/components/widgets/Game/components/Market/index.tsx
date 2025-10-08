@@ -4,7 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { Zap } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-import { roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
+import { dialogStore, roomStore } from '@/routes/games/cryptoz/RoomPage/stores';
 import { socketService } from '@/routes/games/cryptoz/RoomPage/services';
 import { Card } from '@/routes/games/cryptoz/RoomPage/components/entites/Card';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/Badge';
 export const Market = observer(function Market() {
   const market = roomStore.room.market || [];
   const essenceToSpend = roomStore.activePlayer?.essenceToSpend || 0;
+  const isInteractionLocked = dialogStore.isInteractionLocked;
 
   const getCardHighlight = (price?: number) => (
     price !== undefined && price <= essenceToSpend
@@ -22,7 +23,31 @@ export const Market = observer(function Market() {
   );
 
   const buyMarketCard = (card: CryptozShared.TCard) => {
+    if (isInteractionLocked) {
+      return;
+    }
     socketService.buyMarketCard(card);
+  };
+
+  const buyCompanion = () => {
+    if (isInteractionLocked) {
+      return;
+    }
+    socketService.buyCompanion();
+  };
+
+  const buyHarbinger = () => {
+    if (isInteractionLocked) {
+      return;
+    }
+    socketService.buyHarbinger();
+  };
+
+  const buyDarknessMadness = () => {
+    if (isInteractionLocked) {
+      return;
+    }
+    socketService.buyDarknessMadness();
   };
 
   return (
@@ -54,8 +79,11 @@ export const Market = observer(function Market() {
                     'transition-all duration-200 hover:scale-150',
                     getCardHighlight(roomStore.activePlayer.companion.price),
                   )}
-                  isDisabled={roomStore.activePlayer.companion.price > (roomStore.activePlayer?.essenceToSpend || 0)}
-                  onClick={() => socketService.buyCompanion()}
+                  isDisabled={
+                    roomStore.activePlayer.companion.price > (roomStore.activePlayer?.essenceToSpend || 0)
+                    || isInteractionLocked
+                  }
+                  onClick={buyCompanion}
                   variant="md"
                 />
               </motion.div>
@@ -80,8 +108,11 @@ export const Market = observer(function Market() {
                   >
                     <Card
                       {...roomStore.room.harbinger}
-                      isDisabled={roomStore.room.harbinger.price > (roomStore.activePlayer?.essenceToSpend || 0)}
-                      onClick={() => socketService.buyHarbinger()}
+                      isDisabled={
+                        roomStore.room.harbinger.price > (roomStore.activePlayer?.essenceToSpend || 0)
+                        || isInteractionLocked
+                      }
+                      onClick={buyHarbinger}
                       variant="md"
                     />
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
@@ -110,8 +141,9 @@ export const Market = observer(function Market() {
                       {...roomStore.room.darknessMadness[0]}
                       isDisabled={
                         roomStore.room.darknessMadness[0].price > (roomStore.activePlayer?.essenceToSpend || 0)
+                        || isInteractionLocked
                       }
-                      onClick={() => socketService.buyDarknessMadness()}
+                      onClick={buyDarknessMadness}
                       variant="md"
                     />
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
@@ -140,7 +172,10 @@ export const Market = observer(function Market() {
                     'transition-all duration-200 hover:scale-150',
                     getCardHighlight(card.price),
                   )}
-                  isDisabled={card.price > (roomStore.activePlayer?.essenceToSpend || 0)}
+                  isDisabled={
+                    card.price > (roomStore.activePlayer?.essenceToSpend || 0)
+                    || isInteractionLocked
+                  }
                   onClick={() => buyMarketCard(card)}
                   variant="md"
                 />
