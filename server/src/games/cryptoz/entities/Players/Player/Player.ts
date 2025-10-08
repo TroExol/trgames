@@ -193,12 +193,15 @@ export class Player {
         if (!card) {
           break;
         }
-        from.removeCard(card);
-        if (card.theSameType(CryptozShared.ECardType.CHAOS)) {
-          this.room.removed.chaos.addCardToTop(card);
+        const removedCard = from.removeCard(card);
+        if (!removedCard) {
+          break;
+        }
+        if (removedCard.theSameType(CryptozShared.ECardType.CHAOS)) {
+          this.room.removed.chaos.addCardToTop(removedCard);
           continue;
         }
-        cardsToTake.push(card);
+        cardsToTake.push(removedCard);
       }
     };
 
@@ -212,9 +215,15 @@ export class Player {
       }
 
       _.eachRight(cards.array, card => {
-        if (from.removeCard(card)) {
-          cardsToTake.push(card);
+        const removedCard = from.removeCard(card);
+        if (!removedCard) {
+          return;
         }
+        if (removedCard.theSameType(CryptozShared.ECardType.CHAOS)) {
+          this.room.removed.chaos.addCardToTop(removedCard);
+          return;
+        }
+        cardsToTake.push(removedCard);
       });
     }
 
