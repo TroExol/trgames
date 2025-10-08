@@ -1,1 +1,3 @@
-export { SettingsStore, settingsStore } from './settings';
+import { SettingsStore } from './SettingsStore';
+
+export const settingsStore = new SettingsStore();
