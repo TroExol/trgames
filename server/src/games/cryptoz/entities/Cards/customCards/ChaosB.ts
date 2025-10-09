@@ -54,8 +54,8 @@ export class ChaosB extends AbstractCard {
         const isEvaded = await target.tryEvade({
           cardAttack: this,
           damage,
-          title: t('cryptoz.modals.title.willYouEvade', 'ru', {
-            damage,
+          title: t('cryptoz.modals.title.willYouEvadeWithDamage', 'ru', {
+            count: damage,
           }),
         });
 

@@ -40,7 +40,11 @@ export const t = <
 ): string => {
   i18n.locale = locale;
 
-  const translation = i18n.t(key, params);
+  const translation: { one: string } | string = i18n.t(key, params);
+
+  if (typeof translation === 'object' && 'one' in translation) {
+    return translation.one;
+  }
 
   return translation;
 };

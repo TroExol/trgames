@@ -6,6 +6,7 @@ import { t } from '@/i18n';
 
 import type { TCardPlayGeneralHandlerParams, TCardPlayStrikeHandlerParams } from '../AbstractCard';
 
+import { CardGroup, ECardGroupType } from '../CardGroup';
 import { AbstractCard } from '../AbstractCard';
 
 export class PrisonerOfDarkness extends AbstractCard {
@@ -78,9 +79,6 @@ export class PrisonerOfDarkness extends AbstractCard {
     }
 
     const damage = this.getDamage(topCard.basePrice, player, target);
-    if (damage <= 0) {
-      return true;
-    }
 
     if (canEvade) {
       const isEvaded = await target.tryEvade({
@@ -88,18 +86,24 @@ export class PrisonerOfDarkness extends AbstractCard {
         cardAttack: this,
         damage,
         title: isForChaos
-          ? t('cryptoz.modals.title.willYouEvadeWithDamage', 'ru', {
-              damage,
-            })
-          : t('cryptoz.modals.title.willYouEvadeWithDamageFromPlayer', 'ru', {
+          ? t('cryptoz.modals.title.willYouEvade', 'ru')
+          : t('cryptoz.modals.title.willYouEvadeFromPlayer', 'ru', {
               nickname: player.nickname,
-              damage,
             }),
       });
       if (isEvaded) {
         return true;
       }
     }
+
+    this.room.socketService.showCards({
+      players: this.room.playersAndViewers,
+      cards: new CardGroup(ECardGroupType.ANY, [topCard]),
+      title: t('cryptoz.modals.title.showCardsFromPlayerTopDeck', 'ru', {
+        nickname: player.nickname,
+        count: 1,
+      }),
+    });
 
     player.attack(target, damage);
 

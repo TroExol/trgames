@@ -93,11 +93,11 @@ export class Rootshade extends AbstractCard {
         damage,
         title: isForChaos
           ? t('cryptoz.modals.title.willYouEvadeWithDamage', 'ru', {
-              damage,
+              count: damage,
             })
           : t('cryptoz.modals.title.willYouEvadeWithDamageFromPlayer', 'ru', {
               nickname: player.nickname,
-              damage,
+              count: damage,
             }),
       });
       this.logger.debug(`Попытка укрытия: ${isEvaded}`);

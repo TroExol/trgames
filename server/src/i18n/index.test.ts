@@ -35,13 +35,7 @@ describe('i18n-js configuration', () => {
 
   it('Должен обрабатывать отсутствующие параметры с хорошим форматом', () => {
     expect(t('cryptoz.logs.playerRemoved', 'ru')).toBe('Участник [missing "%{nickname}" value] удален из игры');
-    expect(t('cryptoz.logs.tookDamage', 'ru', { nickname: 'Участник1' }))
-      .toEqual({
-        few: 'Участнику %{nickname} нанесли %{count} урона',
-        many: 'Участнику %{nickname} нанесли %{count} урона',
-        one: 'Участнику %{nickname} нанесли %{count} урон',
-        other: 'Участнику %{nickname} нанесли %{count} урона',
-      });
+    expect(t('cryptoz.logs.tookDamage', 'ru', { nickname: 'Участник1' })).toBe('Участнику %{nickname} нанесли %{count} урон');
   });
 
   it('Должен работать с экземпляром i18n напрямую', () => {

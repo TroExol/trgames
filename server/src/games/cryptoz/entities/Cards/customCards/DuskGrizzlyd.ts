@@ -98,9 +98,9 @@ export class DuskGrizzlyd extends AbstractCard {
           attacker: player,
           cardAttack: this,
           damage,
-          title: t('cryptoz.modals.title.willYouEvadeFromPlayer', 'ru', {
+          title: t('cryptoz.modals.title.willYouEvadeWithDamageFromPlayer', 'ru', {
             nickname: player.nickname,
-            damage,
+            count: damage,
           }),
         });
         this.logger.debug(`Попытка укрытия: ${isEvaded}`);

@@ -111,7 +111,7 @@ export class PoisonousComet extends AbstractCard {
         damage: concreteDamage,
         title: t('cryptoz.modals.title.willYouEvadeWithDamageFromPlayer', 'ru', {
           nickname: tempPlayer.nickname,
-          damage: concreteDamage,
+          count: concreteDamage,
         }),
       });
       this.logger.debug(`Попытка укрытия: ${isEvaded}`);

@@ -100,7 +100,7 @@ export class FlamingKeeperOfTheGlens extends AbstractCard {
           damage,
           title: t('cryptoz.modals.title.willYouEvadeWithDamageFromPlayer', 'ru', {
             nickname: player.nickname,
-            damage,
+            count: damage,
           }),
         });
         this.logger.debug(`Попытка укрытия: ${isEvaded}`);

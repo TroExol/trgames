@@ -86,10 +86,12 @@ export class Discharge extends AbstractCard {
         cardAttack: this,
         damage,
         title: isForChaos
-          ? t('cryptoz.modals.title.willYouEvade', 'ru')
-          : t('cryptoz.modals.title.willYouEvadeFromPlayer', 'ru', {
+          ? t('cryptoz.modals.title.willYouEvadeWithDamage', 'ru', {
+              count: damage,
+            })
+          : t('cryptoz.modals.title.willYouEvadeWithDamageFromPlayer', 'ru', {
               nickname: player.nickname,
-              damage,
+              count: damage,
             }),
       });
       this.logger.debug(`Попытка укрытия: ${isEvaded}`);
