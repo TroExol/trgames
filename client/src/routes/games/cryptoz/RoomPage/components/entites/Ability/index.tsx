@@ -24,7 +24,8 @@ export const Ability = observer(function Ability(params: TProps) {
     <div
       className={cn(
         'aspect-[2/1] w-[230px] select-none rounded-[6px] border-2',
-        params.className, {
+        params.className,
+        {
           'w-[50px] rounded-[2px] border-[1px]': params.variant === 'sm',
           'w-[300px]': params.variant === 'lg',
           'cursor-pointer': !params.isDisabled && params.onClick,

@@ -21,6 +21,7 @@ export const StoneShard = observer(function StoneShard(params: TProps) {
     <div
       className={cn(
         'aspect-square w-[140px] select-none rounded-lg border-2 border-purple-500/30 bg-gradient-to-br from-purple-900/80 to-blue-900/80 shadow-lg',
+        params.className,
         {
           'w-[35px] border-[1px] rounded-md': params.variant === 'sm',
           'w-[220px] rounded-xl': params.variant === 'lg',

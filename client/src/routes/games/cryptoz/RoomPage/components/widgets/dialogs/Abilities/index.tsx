@@ -15,17 +15,46 @@ export const Abilities = observer(function Abilities({
 }: TAbilitiesProps) {
   const [selectedAbilities, setSelectedAbilities] = useState<Set<string>>(new Set());
 
-  // Если количество способностей <= countAbilitiesToSelect, выбираем все способности по умолчанию
+  const normalizedCountAbilitiesToSelect = typeof countAbilitiesToSelect === 'number'
+    ? Number(countAbilitiesToSelect)
+    : countAbilitiesToSelect;
+
+  const hasValidCountAbilitiesToSelect = typeof normalizedCountAbilitiesToSelect === 'number'
+    && !Number.isNaN(normalizedCountAbilitiesToSelect);
+
+  const hasPositiveCountAbilitiesToSelect = hasValidCountAbilitiesToSelect
+    && normalizedCountAbilitiesToSelect > 0;
+
+  const positiveCountAbilitiesToSelect = hasPositiveCountAbilitiesToSelect
+    ? normalizedCountAbilitiesToSelect
+    : undefined;
+
+  // Если количество способностей <= лимита, выбираем все способности по умолчанию.
   useEffect(() => {
-    if (countAbilitiesToSelect && abilities.length <= countAbilitiesToSelect) {
-      setSelectedAbilities(new Set(abilities.map(ability => ability.uuid)));
+    if (positiveCountAbilitiesToSelect === undefined) {
+      setSelectedAbilities(new Set());
+      return;
     }
-  }, [abilities, countAbilitiesToSelect]);
 
-  const canSelect = countAbilitiesToSelect !== undefined ? abilities.length > countAbilitiesToSelect : false;
+    setSelectedAbilities(prev => {
+      const normalizedSelection = new Set(
+        Array.from(prev).filter(uuid => abilities.some(ability => ability.uuid === uuid)),
+      );
 
-  const isAllAbilitiesSelected = countAbilitiesToSelect !== undefined
-    ? selectedAbilities.size === countAbilitiesToSelect
+      if (abilities.length <= positiveCountAbilitiesToSelect) {
+        return new Set(abilities.map(ability => ability.uuid));
+      }
+
+      return normalizedSelection;
+    });
+  }, [abilities, positiveCountAbilitiesToSelect]);
+
+  const canSelect = positiveCountAbilitiesToSelect !== undefined
+    ? abilities.length > positiveCountAbilitiesToSelect
+    : false;
+
+  const isAllAbilitiesSelected = hasValidCountAbilitiesToSelect
+    ? selectedAbilities.size === normalizedCountAbilitiesToSelect
     : false;
 
   const handleAbilityClick = (abilityUuid: string) => {
@@ -39,7 +68,10 @@ export const Abilities = observer(function Abilities({
         newSet.delete(abilityUuid);
       } else {
         // Проверяем лимит выбора
-        if (!countAbilitiesToSelect || newSet.size < countAbilitiesToSelect) {
+        if (
+          positiveCountAbilitiesToSelect !== undefined
+          && newSet.size < positiveCountAbilitiesToSelect
+        ) {
           newSet.add(abilityUuid);
         }
       }

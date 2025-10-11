@@ -15,17 +15,46 @@ export const StoneShards = observer(function StoneShards({
 }: TStoneShardsProps) {
   const [selectedStoneShards, setSelectedStoneShards] = useState<Set<string>>(new Set());
 
-  // Если количество способностей <= countAbilitiesToSelect, выбираем все способности по умолчанию
+  const normalizedCountStoneShardsToSelect = typeof countStoneShardsToSelect === 'number'
+    ? Number(countStoneShardsToSelect)
+    : countStoneShardsToSelect;
+
+  const hasValidCountStoneShardsToSelect = typeof normalizedCountStoneShardsToSelect === 'number'
+    && !Number.isNaN(normalizedCountStoneShardsToSelect);
+
+  const hasPositiveCountStoneShardsToSelect = hasValidCountStoneShardsToSelect
+    && normalizedCountStoneShardsToSelect > 0;
+
+  const positiveCountStoneShardsToSelect = hasPositiveCountStoneShardsToSelect
+    ? normalizedCountStoneShardsToSelect
+    : undefined;
+
+  // Если количество осколков <= лимита, выбираем все осколки по умолчанию.
   useEffect(() => {
-    if (countStoneShardsToSelect && stoneShards.length <= countStoneShardsToSelect) {
-      setSelectedStoneShards(new Set(stoneShards.map(stoneShard => stoneShard.uuid)));
+    if (positiveCountStoneShardsToSelect === undefined) {
+      setSelectedStoneShards(new Set());
+      return;
     }
-  }, [stoneShards, countStoneShardsToSelect]);
 
-  const canSelect = countStoneShardsToSelect !== undefined ? stoneShards.length > countStoneShardsToSelect : false;
+    setSelectedStoneShards(prev => {
+      const normalizedSelection = new Set(
+        Array.from(prev).filter(uuid => stoneShards.some(stoneShard => stoneShard.uuid === uuid)),
+      );
 
-  const isAllStoneShardsSelected = countStoneShardsToSelect !== undefined
-    ? selectedStoneShards.size === countStoneShardsToSelect
+      if (stoneShards.length <= positiveCountStoneShardsToSelect) {
+        return new Set(stoneShards.map(stoneShard => stoneShard.uuid));
+      }
+
+      return normalizedSelection;
+    });
+  }, [stoneShards, positiveCountStoneShardsToSelect]);
+
+  const canSelect = positiveCountStoneShardsToSelect !== undefined
+    ? stoneShards.length > positiveCountStoneShardsToSelect
+    : false;
+
+  const isAllStoneShardsSelected = hasValidCountStoneShardsToSelect
+    ? selectedStoneShards.size === normalizedCountStoneShardsToSelect
     : false;
 
   const handleStoneShardClick = (stoneShardUuid: string) => {
@@ -39,7 +68,10 @@ export const StoneShards = observer(function StoneShards({
         newSet.delete(stoneShardUuid);
       } else {
         // Проверяем лимит выбора
-        if (!countStoneShardsToSelect || newSet.size < countStoneShardsToSelect) {
+        if (
+          positiveCountStoneShardsToSelect !== undefined
+          && newSet.size < positiveCountStoneShardsToSelect
+        ) {
           newSet.add(stoneShardUuid);
         }
       }

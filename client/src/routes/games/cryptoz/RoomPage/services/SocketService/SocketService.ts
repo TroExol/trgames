@@ -155,6 +155,7 @@ export class SocketService {
           stoneShards,
           title,
           variants,
+          count,
           canClose,
           canCollapse,
         }: CryptozShared.TModalParams<CryptozShared.EModalTypes.selectStoneShards>,
@@ -163,6 +164,7 @@ export class SocketService {
         openStoneShardsDialog({
           stoneShards,
           title: title || '',
+          countStoneShardsToSelect: count,
           variants,
           canCollapse,
           canClose,
