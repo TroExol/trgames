@@ -45,7 +45,7 @@ export const Hand = observer(function Hand() {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', updateWidth);
     };
-  }, [cards.length, showFullHandCards]);
+  }, [cards.length, showFullHandCards, isSmHeight]);
 
   if (!roomStore.me?.hand) {
     return null;
@@ -108,6 +108,7 @@ export const Hand = observer(function Hand() {
                   left: `${left}px`,
                   zIndex: 21 + index,
                   opacity: 1,
+                  x: 0,
                   scale: 1,
                 }}
                 className="absolute bottom-0 cursor-grab"
@@ -115,21 +116,22 @@ export const Hand = observer(function Hand() {
                 drag={canDragCards}
                 dragSnapToOrigin
                 exit={{
-                  opacity: 0,
-                  scale: 0.8,
                   bottom: -100,
-                  x: 100,
-                  rotate: 15,
+                  left: `${left}px`,
                   zIndex: -10,
+                  opacity: 0,
+                  x: 100,
+                  scale: 0.8,
                 }}
                 initial={{
                   bottom: baseCardBottom,
                   left: `${left}px`,
                   zIndex: 21 + index,
                   opacity: 0,
+                  x: 0,
                   scale: 0.8,
                 }}
-                key={card.uuid}
+                key={card.uuid + roomStore.activePlayer?.nickname}
                 onDragEnd={onDragEnd}
                 onDragStart={() => onDragStart(card)}
                 transition={{

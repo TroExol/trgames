@@ -95,30 +95,27 @@ export const Market = observer(function Market() {
               {roomStore.room.harbinger && (
                 <motion.div
                   animate={{ y: 0, opacity: 1 }}
-                  className="hover:z-10"
+                  className="relative hover:z-10"
                   exit={{ y: -100, opacity: 0 }}
                   initial={{ y: 100, opacity: 0 }}
                   key={roomStore.room.harbinger.uuid}
                 >
-                  <div
+                  <Card
+                    {...roomStore.room.harbinger}
                     className={cn(
                       'relative transition-all duration-200 hover:scale-150',
                       getCardHighlight(roomStore.room.harbinger.price),
                     )}
-                  >
-                    <Card
-                      {...roomStore.room.harbinger}
-                      isDisabled={
-                        roomStore.room.harbinger.price > (roomStore.activePlayer?.essenceToSpend || 0)
+                    isDisabled={
+                      roomStore.room.harbinger.price > (roomStore.activePlayer?.essenceToSpend || 0)
                         || isInteractionLocked
-                      }
-                      onClick={buyHarbinger}
-                      variant="md"
-                    />
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
-                      {roomStore.room.countHarbingers}
-                    </span>
-                  </div>
+                    }
+                    onClick={buyHarbinger}
+                    variant="md"
+                  />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                    {roomStore.room.countHarbingers}
+                  </span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -131,25 +128,22 @@ export const Market = observer(function Market() {
                   initial={{ y: 100, opacity: 0 }}
                   key={roomStore.room.darknessMadness[0].uuid}
                 >
-                  <div
+                  <Card
+                    {...roomStore.room.darknessMadness[0]}
                     className={cn(
                       'relative transition-all duration-200 hover:scale-150',
                       getCardHighlight(roomStore.room.darknessMadness[0].price),
                     )}
-                  >
-                    <Card
-                      {...roomStore.room.darknessMadness[0]}
-                      isDisabled={
-                        roomStore.room.darknessMadness[0].price > (roomStore.activePlayer?.essenceToSpend || 0)
+                    isDisabled={
+                      roomStore.room.darknessMadness[0].price > (roomStore.activePlayer?.essenceToSpend || 0)
                         || isInteractionLocked
-                      }
-                      onClick={buyDarknessMadness}
-                      variant="md"
-                    />
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
-                      {roomStore.room.darknessMadness.length}
-                    </span>
-                  </div>
+                    }
+                    onClick={buyDarknessMadness}
+                    variant="md"
+                  />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                    {roomStore.room.darknessMadness.length}
+                  </span>
                 </motion.div>
               )}
             </AnimatePresence>
