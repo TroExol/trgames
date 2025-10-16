@@ -21,14 +21,13 @@ export const Arena = observer(function Arena() {
         {isMeActive && roomStore.room.isGameStarted && !roomStore.room.isGameEnded && (
           <Button
             className="mt-2"
-            disabled={isInteractionLocked || !!roomStore.room.pendingAckNicknames.length}
+            disabled={isInteractionLocked}
             onClick={() => {
               if (isInteractionLocked) {
                 return;
               }
               socketService.endTurn();
             }}
-            title={roomStore.room.pendingAckNicknames.length ? 'Ожидаем ответа от участников' : undefined}
             variant="secondary"
           >
             Закончить ход

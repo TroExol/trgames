@@ -108,10 +108,20 @@ export class Room {
     if (
       (this.isGameEnded
       || !this.isGameStarted
-      || newActivePlayer.isActive
-      || this.socketService.pendingAck.size)
+      || newActivePlayer.isActive)
       && !force
     ) {
+      return;
+    }
+
+    if (this.socketService.pendingAck.size && !force) {
+      const nicknames = this.socketService.pendingAckNicknames.join(', ');
+      this.logger.warn(`Нельзя завершить ход: есть ожидающие действия других участников ${nicknames}`);
+      if (this.activePlayer) {
+        this.socketService.emitToPlayers(new PlayerGroup([this.activePlayer]), CryptozShared.EEventTypes.showToast, {
+          message: t('cryptoz.errors.waitOtherPlayers', 'ru', { nicknames }),
+        });
+      }
       return;
     }
 

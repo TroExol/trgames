@@ -8,6 +8,8 @@ import { FunctionResultObserver } from '@/helpers/FunctionResultObserver';
 import { RoomGroup } from '@/games/cryptoz/entities/Rooms/RoomGroup';
 import { Room } from '@/games/cryptoz/entities/Rooms/Room';
 
+import { PlayerGroup } from './entities/Players/PlayerGroup';
+
 const createRoomNamespace = (io: Server, roomUuid: string, rooms: RoomGroup) => {
   // Неймспейс для всех комнат игры Криптоз
   const roomNamespace = io.of(`/cryptoz/room/${roomUuid}`) as Namespace<
@@ -276,6 +278,18 @@ const createRoomNamespace = (io: Server, roomUuid: string, rooms: RoomGroup) => 
           room.logger.warn('Нельзя сыграть карту, которой нет в руке');
           return;
         }
+        if (room.socketService.pendingAck.size) {
+          const nicknames = room.socketService.pendingAckNicknames.join(', ');
+          room.logger.warn(`Нельзя разыграть: есть ожидающие действия других участников ${nicknames}`);
+          if (room.activePlayer) {
+            room.socketService.emitToPlayers(
+              new PlayerGroup([room.activePlayer]),
+              CryptozShared.EEventTypes.showToast, {
+                message: t('cryptoz.errors.waitOtherPlayers', 'ru', { nicknames }),
+              });
+          }
+          return;
+        }
 
         await card.play({ concreteTarget: target });
       } catch (error) {
@@ -294,6 +308,18 @@ const createRoomNamespace = (io: Server, roomUuid: string, rooms: RoomGroup) => 
         }
         if (!ability) {
           room.logger.warn('Нельзя сыграть способность, которой нет у участника');
+          return;
+        }
+        if (room.socketService.pendingAck.size) {
+          const nicknames = room.socketService.pendingAckNicknames.join(', ');
+          room.logger.warn(`Нельзя сыграть способность: есть ожидающие действия других участников ${nicknames}`);
+          if (room.activePlayer) {
+            room.socketService.emitToPlayers(
+              new PlayerGroup([room.activePlayer]),
+              CryptozShared.EEventTypes.showToast, {
+                message: t('cryptoz.errors.waitOtherPlayers', 'ru', { nicknames }),
+              });
+          }
           return;
         }
 

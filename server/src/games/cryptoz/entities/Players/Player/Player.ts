@@ -680,6 +680,14 @@ export class Player {
       this.logger.warn('Нельзя купить карту: игра не начата');
       return;
     }
+    if (this.room.socketService.pendingAck.size) {
+      const nicknames = this.room.socketService.pendingAckNicknames.join(', ');
+      this.room.logger.warn(`Нельзя купить карту: есть ожидающие действия других участников ${nicknames}`);
+      this.room.socketService.emitToPlayers(new PlayerGroup([this]), CryptozShared.EEventTypes.showToast, {
+        message: t('cryptoz.errors.waitOtherPlayers', 'ru', { nicknames }),
+      });
+      return;
+    }
 
     let boughtCard: AbstractCard | undefined;
     let price: number | undefined;

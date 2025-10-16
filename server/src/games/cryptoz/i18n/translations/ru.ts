@@ -127,6 +127,7 @@ export const ru = {
     noMaxMarket: 'Не указано максимальное количество карт на рынке',
     maxMarketInvalid: 'Максимальное количество карт на рынке может быть от 3 до 6',
     unknownError: 'Неизвестная ошибка',
+    waitOtherPlayers: 'Ожидайте окончания действий участников %{nicknames}',
   },
 
   modals: {

@@ -25,7 +25,10 @@ export const Hand = observer(function Hand() {
   const cards = roomStore.me?.hand ? [...roomStore.me.hand] : [];
   const showFullHandCards = settingsStore.cryptoz.showFullHandCards;
   const isInteractionLocked = dialogStore.isInteractionLocked;
-  const canDragCards = isMeActive && !isInteractionLocked;
+  const canDragCards = isMeActive
+    && !isInteractionLocked
+    && roomStore.room.isGameStarted
+    && !roomStore.room.isGameEnded;
 
   useLayoutEffect(() => {
     const updateWidth = () => {
