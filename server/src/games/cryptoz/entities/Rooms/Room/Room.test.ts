@@ -196,10 +196,27 @@ describe('Room', () => {
 
     it('Играет корону Мрака', async () => {
       mockedRoom.darknessCrown.play = vi.fn().mockResolvedValue(undefined);
+      mockedRoom.darknessCrown.changeOwner(activePlayer.nickname);
 
       await mockedRoom.endTurn(player);
 
       expect(mockedRoom.darknessCrown.play).toHaveBeenCalledTimes(1);
+    });
+
+    it('Не играет корону Мрака, если у активного участника нет короны Мрака', async () => {
+      mockedRoom.darknessCrown.play = vi.fn().mockResolvedValue(undefined);
+      mockedRoom.darknessCrown.changeOwner(player.nickname);
+
+      await mockedRoom.endTurn(player);
+      expect(mockedRoom.darknessCrown.play).not.toHaveBeenCalled();
+    });
+
+    it('Не играет корону Мрака, если ни у кого нет короны Мрака', async () => {
+      mockedRoom.darknessCrown.play = vi.fn().mockResolvedValue(undefined);
+      mockedRoom.darknessCrown.changeOwner(undefined);
+
+      await mockedRoom.endTurn(player);
+      expect(mockedRoom.darknessCrown.play).not.toHaveBeenCalled();
     });
 
     it('Добавляет лог о завершении хода', async () => {

@@ -17,20 +17,24 @@ import {
 import { DialogHeader } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 
-type TSettingsTab = 'general' | 'cryptoz';
+enum ESettingsTab {
+  CRYPTOZ = 'cryptoz',
+  GENERAL = 'general',
+}
 
-const TAB_LABELS: Record<TSettingsTab, string> = {
-  general: 'Общие',
-  cryptoz: 'Криптоз',
+const TAB_LABELS: Record<ESettingsTab, string> = {
+  [ESettingsTab.GENERAL]: 'Общие',
+  [ESettingsTab.CRYPTOZ]: 'Криптоз',
 };
 
 export const SettingsDialog = observer(function SettingsDialog({ gameName }: { gameName?: string }) {
-  const [activeTab, setActiveTab] = useState<TSettingsTab>('general');
+  const [activeTab, setActiveTab] = useState<ESettingsTab>(ESettingsTab.GENERAL);
 
-  const availableTabs = useMemo<TSettingsTab[]>(() => {
-    const tabs: TSettingsTab[] = ['cryptoz'];
+  const availableTabs = useMemo<ESettingsTab[]>(() => {
+    const tabs: ESettingsTab[] = [ESettingsTab.CRYPTOZ];
 
     return tabs;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameName]);
 
   useEffect(() => {
@@ -68,13 +72,13 @@ export const SettingsDialog = observer(function SettingsDialog({ gameName }: { g
           ))}
         </div>
         <div className="space-y-4 pt-4">
-          {activeTab === 'general' && (
+          {activeTab === ESettingsTab.GENERAL && (
             <p className="text-sm text-muted-foreground">
               Общие настройки появятся здесь позднее.
             </p>
           )}
 
-          {activeTab === 'cryptoz' && (
+          {activeTab === ESettingsTab.CRYPTOZ && (
             <div className="space-y-2">
               <label className="flex items-center gap-3">
                 <input

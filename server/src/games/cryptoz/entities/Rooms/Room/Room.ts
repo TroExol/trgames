@@ -139,7 +139,9 @@ export class Room {
 
       this.activePlayer.triggersOnHandFilledOnTurnEnd.apply();
 
-      await this.darknessCrown.play();
+      if (this.activePlayer.hasDarknessCrown) {
+        await this.darknessCrown.play();
+      }
 
       const message = t('cryptoz.logs.turnEnded', 'ru', { nickname: this.activePlayer.nickname });
       this.addLog(message);
