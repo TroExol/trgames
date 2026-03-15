@@ -1,3 +1,5 @@
+export * from './analytics/events';
+export * from './analytics/pages';
 export * from './types/ability';
 export * from './types/card';
 export * from './types/darknessCrown';
