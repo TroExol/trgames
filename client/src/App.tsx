@@ -6,6 +6,7 @@ import { cryptozRoutes } from '@/routes/games/cryptoz';
 import { ErrorPage } from '@/routes/ErrorPage';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { GameThemeProvider } from '@/providers/GameThemeProvider';
+import { AnalyticsProvider } from '@/providers/AnalyticsProvider';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 
 const router = createBrowserRouter([
@@ -26,13 +27,15 @@ const router = createBrowserRouter([
 
 const App = observer(function App() {
   return (
-    <ThemeProvider>
-      <GameThemeProvider>
-        <TooltipProvider>
-          <RouterProvider router={router} />
-        </TooltipProvider>
-      </GameThemeProvider>
-    </ThemeProvider>
+    <AnalyticsProvider>
+      <ThemeProvider>
+        <GameThemeProvider>
+          <TooltipProvider>
+            <RouterProvider router={router} />
+          </TooltipProvider>
+        </GameThemeProvider>
+      </ThemeProvider>
+    </AnalyticsProvider>
   );
 });
 
