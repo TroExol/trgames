@@ -1,4 +1,4 @@
-export enum ECryptozAnalyticsPage {
+export enum EAnalyticsPage {
   ROOM = 'room',
   ROOMS = 'rooms',
   RULES = 'rules',

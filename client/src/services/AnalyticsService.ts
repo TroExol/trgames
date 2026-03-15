@@ -8,8 +8,8 @@ import posthog from 'posthog-js';
 
 import { localStorageService } from './LocalStorageService';
 
-type TAnalyticsEvent = CryptozShared.ECryptozAnalyticsEvent | EAnalyticsEvent;
-type TAnalyticsPage = CryptozShared.ECryptozAnalyticsPage | EAnalyticsPage;
+type TAnalyticsEvent = CryptozShared.EAnalyticsEvent | EAnalyticsEvent;
+type TAnalyticsPage = CryptozShared.EAnalyticsPage | EAnalyticsPage;
 
 const ANALYTICS_ID_KEY = 'trgames:analytics-id';
 

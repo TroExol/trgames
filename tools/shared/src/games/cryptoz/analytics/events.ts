@@ -4,7 +4,7 @@ import type { ECardId } from '../types/card';
 import type { TAbilityId } from '../types/ability';
 import type { EGame } from '../../types';
 
-export enum ECryptozAnalyticsEvent {
+export enum EAnalyticsEvent {
   ABILITY_PLAYED = 'ability_played',
   CARD_BOUGHT_COMPANION = 'card_bought_companion',
   CARD_BOUGHT_DARKNESS_MADNESS = 'card_bought_darkness_madness',
@@ -25,17 +25,17 @@ export enum ECryptozAnalyticsEvent {
   TURN_ENDED = 'turn_ended',
 }
 
-export type TCryptozAnalyticsEventProperties = {
-  [ECryptozAnalyticsEvent.ABILITY_PLAYED]: { abilityId: TAbilityId; game: EGame };
-  [ECryptozAnalyticsEvent.CARD_BOUGHT_COMPANION]: { game: EGame };
-  [ECryptozAnalyticsEvent.CARD_BOUGHT_DARKNESS_MADNESS]: { game: EGame };
-  [ECryptozAnalyticsEvent.CARD_BOUGHT_HARBINGER]: { game: EGame };
-  [ECryptozAnalyticsEvent.CARD_BOUGHT_MARKET]: { cardId: ECardId; game: EGame };
-  [ECryptozAnalyticsEvent.CARD_PLAYED]: { cardId: ECardId; game: EGame };
-  [ECryptozAnalyticsEvent.GAME_ENDED]: { durationMs: number; game: EGame; playerCount: number; roomId: string };
-  [ECryptozAnalyticsEvent.GAME_STARTED]: { game: EGame; playerCount: number; roomId: string };
-  [ECryptozAnalyticsEvent.MESSAGE_SENT]: { game: EGame };
-  [ECryptozAnalyticsEvent.MODAL_RESPONDED]: {
+export type TAnalyticsEventProperties = {
+  [EAnalyticsEvent.ABILITY_PLAYED]: { abilityId: TAbilityId; game: EGame };
+  [EAnalyticsEvent.CARD_BOUGHT_COMPANION]: { game: EGame };
+  [EAnalyticsEvent.CARD_BOUGHT_DARKNESS_MADNESS]: { game: EGame };
+  [EAnalyticsEvent.CARD_BOUGHT_HARBINGER]: { game: EGame };
+  [EAnalyticsEvent.CARD_BOUGHT_MARKET]: { cardId: ECardId; game: EGame };
+  [EAnalyticsEvent.CARD_PLAYED]: { cardId: ECardId; game: EGame };
+  [EAnalyticsEvent.GAME_ENDED]: { durationMs: number; game: EGame; playerCount: number; roomId: string };
+  [EAnalyticsEvent.GAME_STARTED]: { game: EGame; playerCount: number; roomId: string };
+  [EAnalyticsEvent.MESSAGE_SENT]: { game: EGame };
+  [EAnalyticsEvent.MODAL_RESPONDED]: {
     closed: boolean;
     game: EGame;
     modalType: EModalTypes;
@@ -43,7 +43,7 @@ export type TCryptozAnalyticsEventProperties = {
     selectedShardIds?: TStoneShardId[];
     selectedVariantId?: number | string;
   };
-  [ECryptozAnalyticsEvent.MODAL_SHOWN]: {
+  [EAnalyticsEvent.MODAL_SHOWN]: {
     cardAttackId?: ECardId;
     cardsCount?: number;
     game: EGame;
@@ -51,11 +51,11 @@ export type TCryptozAnalyticsEventProperties = {
     title?: string;
     variants?: string[];
   };
-  [ECryptozAnalyticsEvent.PLAYER_READY_TOGGLED]: { game: EGame };
-  [ECryptozAnalyticsEvent.PLAYER_REMOVED]: { game: EGame; roomId: string };
-  [ECryptozAnalyticsEvent.ROOM_CREATED]: { game: EGame; roomId: string };
-  [ECryptozAnalyticsEvent.ROOM_JOINED]: { game: EGame; isViewer: boolean; roomId: string };
-  [ECryptozAnalyticsEvent.ROOM_LEFT]: { game: EGame; roomId: string };
-  [ECryptozAnalyticsEvent.ROOM_REMOVED]: { game: EGame; reason: 'admin' | 'empty'; roomId: string };
-  [ECryptozAnalyticsEvent.TURN_ENDED]: { game: EGame; roomId: string };
+  [EAnalyticsEvent.PLAYER_READY_TOGGLED]: { game: EGame };
+  [EAnalyticsEvent.PLAYER_REMOVED]: { game: EGame; roomId: string };
+  [EAnalyticsEvent.ROOM_CREATED]: { game: EGame; roomId: string };
+  [EAnalyticsEvent.ROOM_JOINED]: { game: EGame; isViewer: boolean; roomId: string };
+  [EAnalyticsEvent.ROOM_LEFT]: { game: EGame; roomId: string };
+  [EAnalyticsEvent.ROOM_REMOVED]: { game: EGame; reason: 'admin' | 'empty'; roomId: string };
+  [EAnalyticsEvent.TURN_ENDED]: { game: EGame; roomId: string };
 };
