@@ -102,6 +102,12 @@ export class SocketService {
         canClose,
         canCollapse,
       }: CryptozShared.TModalParams<CryptozShared.EModalTypes.cards>) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          cardsCount: cards.length,
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.cards,
+          title,
+        });
         openCardsDialog({
           cards,
           title: title || '',
@@ -114,6 +120,10 @@ export class SocketService {
       this.socket.on(CryptozShared.EEventTypes.showModalEndGame, ({
         players,
       }: CryptozShared.TModalParams<CryptozShared.EModalTypes.endGame>) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.endGame,
+        });
         openEndGameDialog({
           players,
         });
@@ -126,10 +136,20 @@ export class SocketService {
         }: CryptozShared.TModalParams<CryptozShared.EModalTypes.selectStartCards>,
         callback: (params: CryptozShared.TModalResponse<CryptozShared.EModalTypes.selectStartCards>
         ) => void) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.selectStartCards,
+        });
         openSelectStartCardsDialog({
           companions,
           abilities,
           onSubmit: (companion: CryptozShared.TCard, ability: CryptozShared.TAbility) => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: false,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectStartCards,
+              selectedCardIds: [companion.id],
+            });
             callback({ companion, ability });
           },
         });
@@ -147,6 +167,13 @@ export class SocketService {
         }: CryptozShared.TModalParams<CryptozShared.EModalTypes.selectCards>,
         callback: (params: CryptozShared.TModalResponse<CryptozShared.EModalTypes.selectCards>) => void,
       ) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          cardsCount: cards.length,
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.selectCards,
+          title,
+          variants: variants?.map(v => v.value),
+        });
         openCardsDialog({
           cards,
           title: title || '',
@@ -156,9 +183,21 @@ export class SocketService {
           canCollapse,
           canClose,
           onClose: () => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: true,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectCards,
+            });
             callback({ closed: true });
           },
           onSubmit: (id: string | number, selectedCards: CryptozShared.TCard[]) => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: false,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectCards,
+              selectedCardIds: selectedCards.map(c => c.id),
+              selectedVariantId: id,
+            });
             callback({ variant: id, selectedCards });
           },
         });
@@ -175,6 +214,11 @@ export class SocketService {
         }: CryptozShared.TModalParams<CryptozShared.EModalTypes.selectStoneShards>,
         callback: (params: CryptozShared.TModalResponse<CryptozShared.EModalTypes.selectStoneShards>) => void,
       ) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.selectStoneShards,
+          title,
+        });
         openStoneShardsDialog({
           stoneShards,
           title: title || '',
@@ -183,9 +227,21 @@ export class SocketService {
           canCollapse,
           canClose,
           onClose: () => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: true,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectStoneShards,
+            });
             callback({ closed: true });
           },
           onSubmit: (id: string | number, selectedStoneShards: CryptozShared.TStoneShard[]) => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: false,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectStoneShards,
+              selectedShardIds: selectedStoneShards.map(s => s.id),
+              selectedVariantId: id,
+            });
             callback({ variant: id, selectedStoneShards });
           },
         });
@@ -200,15 +256,32 @@ export class SocketService {
         }: CryptozShared.TModalParams<CryptozShared.EModalTypes.selectVariant>,
         callback: (params: CryptozShared.TModalResponse<CryptozShared.EModalTypes.selectVariant>) => void,
       ) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.selectVariant,
+          title,
+          variants: variants.map(v => v.value),
+        });
         openSelectVariantDialog({
           title: title || '',
           variants,
           canCollapse,
           canClose,
           onClose: () => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: true,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectVariant,
+            });
             callback({ closed: true });
           },
           onSubmit: (id: string | number) => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: false,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.selectVariant,
+              selectedVariantId: id,
+            });
             callback({ variant: id });
           },
         });
@@ -226,6 +299,12 @@ export class SocketService {
         }: CryptozShared.TModalParams<CryptozShared.EModalTypes.suggestEvade>,
         callback: (params: CryptozShared.TModalResponse<CryptozShared.EModalTypes.suggestEvade>) => void,
       ) => {
+        analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_SHOWN, {
+          cardAttackId: cardAttack?.id,
+          game: EGame.CRYPTOZ,
+          modalType: CryptozShared.EModalTypes.suggestEvade,
+          title,
+        });
         openSuggestEvadeDialog({
           title: title || '',
           cards,
@@ -235,9 +314,21 @@ export class SocketService {
           canCollapse,
           canClose,
           onClose: () => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: true,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.suggestEvade,
+            });
             callback({ closed: true });
           },
           onSubmit: (id: number, selectedCard: CryptozShared.TCard) => {
+            analyticsService.track(CryptozShared.EAnalyticsEvent.MODAL_RESPONDED, {
+              closed: false,
+              game: EGame.CRYPTOZ,
+              modalType: CryptozShared.EModalTypes.suggestEvade,
+              selectedCardIds: [selectedCard.id],
+              selectedVariantId: id,
+            });
             callback({ variant: id, selectedCard });
           },
         });
