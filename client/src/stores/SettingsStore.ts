@@ -1,5 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 
+import { localStorageService } from '@/services';
+
 type TGeneralSettings = Record<string, never>;
 
 type TCryptozSettings = {
@@ -11,12 +13,12 @@ type TStoredSettings = {
   cryptoz?: Partial<TCryptozSettings>;
 };
 
+const STORAGE_KEY = 'trgames:client-settings';
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export class SettingsStore {
-  private readonly storageKey = 'trgames:client-settings';
-
   public general: TGeneralSettings = {};
 
   public cryptoz: TCryptozSettings = {
@@ -25,10 +27,7 @@ export class SettingsStore {
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
-
-    if (typeof window !== 'undefined') {
-      this.loadFromStorage();
-    }
+    this.loadFromStorage();
   }
 
   public setCryptozShowFullHandCards(value: boolean): void {
@@ -37,16 +36,12 @@ export class SettingsStore {
   }
 
   private loadFromStorage(): void {
-    if (typeof window === 'undefined') {
+    const raw = localStorageService.get(STORAGE_KEY);
+    if (!raw) {
       return;
     }
 
     try {
-      const raw = window.localStorage.getItem(this.storageKey);
-      if (!raw) {
-        return;
-      }
-
       const parsed: unknown = JSON.parse(raw);
 
       if (!isRecord(parsed)) {
@@ -72,21 +67,13 @@ export class SettingsStore {
   }
 
   private saveToStorage(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
+    const payload: TStoredSettings = {
+      general: this.general,
+      cryptoz: {
+        showFullHandCards: this.cryptoz.showFullHandCards,
+      },
+    };
 
-    try {
-      const payload: TStoredSettings = {
-        general: this.general,
-        cryptoz: {
-          showFullHandCards: this.cryptoz.showFullHandCards,
-        },
-      };
-
-      window.localStorage.setItem(this.storageKey, JSON.stringify(payload));
-    } catch (error) {
-      console.warn('[SettingsStore] Не удалось сохранить настройки в localStorage.', error);
-    }
+    localStorageService.set(STORAGE_KEY, JSON.stringify(payload));
   }
 }
