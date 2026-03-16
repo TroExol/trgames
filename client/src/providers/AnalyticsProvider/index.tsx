@@ -9,7 +9,7 @@ import { PostHogProvider } from '@posthog/react';
 import { analyticsService } from '@/services';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
-const POSTHOG_HOST = 'https://us.i.posthog.com';
+const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST;
 
 analyticsService.init(POSTHOG_KEY, POSTHOG_HOST);
 
