@@ -86,10 +86,12 @@ export const Component = observer(function CryptozRoomPage() {
   }, [gameName, location.pathname, navigate, startedPathname]);
 
   useUnmount(() => {
-    analyticsService.track(CryptozShared.EAnalyticsEvent.ROOM_LEFT, {
-      game: EGame.CRYPTOZ,
-      roomId: roomStore.room.uuid,
-    });
+    if (roomStore.room.uuid) {
+      analyticsService.track(CryptozShared.EAnalyticsEvent.ROOM_LEFT, {
+        game: EGame.CRYPTOZ,
+        roomId: roomStore.room.uuid,
+      });
+    }
     socketService.close();
     roomStore.clear();
     logsStore.clear();

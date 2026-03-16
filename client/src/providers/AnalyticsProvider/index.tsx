@@ -11,14 +11,14 @@ import { analyticsService } from '@/services';
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
 const POSTHOG_HOST = 'https://us.i.posthog.com';
 
+analyticsService.init(POSTHOG_KEY, POSTHOG_HOST);
+
 interface TProps {
   children: ReactNode;
 }
 
 export const AnalyticsProvider: FC<TProps> = observer(({ children }) => {
   useEffect(() => {
-    analyticsService.init(POSTHOG_KEY, POSTHOG_HOST);
-
     const handleError = (event: ErrorEvent) => {
       analyticsService.track(EAnalyticsEvent.ERROR_OCCURRED, {
         message: event.message,
