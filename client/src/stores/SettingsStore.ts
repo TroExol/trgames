@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx';
 
-import { localStorageService } from '@/services';
+import type { LocalStorageService } from '@/services/LocalStorageService';
 
 type TGeneralSettings = Record<string, never>;
 
@@ -25,7 +25,7 @@ export class SettingsStore {
     showFullHandCards: false,
   };
 
-  constructor() {
+  constructor(private readonly localStorageService: LocalStorageService) {
     makeAutoObservable(this, {}, { autoBind: true });
     this.loadFromStorage();
   }
@@ -36,7 +36,7 @@ export class SettingsStore {
   }
 
   private loadFromStorage(): void {
-    const raw = localStorageService.get(STORAGE_KEY);
+    const raw = this.localStorageService.get(STORAGE_KEY);
     if (!raw) {
       return;
     }
@@ -74,6 +74,6 @@ export class SettingsStore {
       },
     };
 
-    localStorageService.set(STORAGE_KEY, JSON.stringify(payload));
+    this.localStorageService.set(STORAGE_KEY, JSON.stringify(payload));
   }
 }

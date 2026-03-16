@@ -1,4 +1,4 @@
-class LocalStorageService {
+export class LocalStorageService {
   private readonly cache = new Map<string, string>();
   private readonly isAvailable: boolean;
 
