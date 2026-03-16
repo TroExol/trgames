@@ -1,4 +1,4 @@
-import type { CryptozShared } from '@trgames/shared';
+import type { CryptozShared as CryptozSharedType } from '@trgames/shared';
 
 import { useDocumentTitle, useUnmount } from 'usehooks-ts';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +9,9 @@ import {
 } from 'react';
 import { observer } from 'mobx-react-lite';
 import { motion, useAnimationControls } from 'framer-motion';
+import { CryptozShared, EGame } from '@trgames/shared';
 
+import { analyticsService } from '@/services';
 import {
   logsStore,
   messagesStore,
@@ -33,6 +35,11 @@ import { Card } from './components/entites/Card';
 
 export const Component = observer(function CryptozRoomPage() {
   useDocumentTitle('Комната игры Криптоз');
+
+  useEffect(() => {
+    analyticsService.page(CryptozShared.EAnalyticsPage.ROOM);
+  }, []);
+
   const location = useLocation();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const startedPathname = useMemo(() => location.pathname, []);
@@ -79,13 +86,19 @@ export const Component = observer(function CryptozRoomPage() {
   }, [gameName, location.pathname, navigate, startedPathname]);
 
   useUnmount(() => {
+    if (roomStore.room.uuid) {
+      analyticsService.track(CryptozShared.EAnalyticsEvent.ROOM_LEFT, {
+        game: EGame.CRYPTOZ,
+        roomId: roomStore.room.uuid,
+      });
+    }
     socketService.close();
     roomStore.clear();
     logsStore.clear();
     messagesStore.clear();
   });
 
-  const showCards = (title: string, cards: CryptozShared.TCard[]) => {
+  const showCards = (title: string, cards: CryptozSharedType.TCard[]) => {
     openCardsDialog({
       title,
       cards,
@@ -93,7 +106,7 @@ export const Component = observer(function CryptozRoomPage() {
     });
   };
 
-  const showStoneShards = (stoneShards: CryptozShared.TStoneShard[]) => {
+  const showStoneShards = (stoneShards: CryptozSharedType.TStoneShard[]) => {
     openStoneShardsDialog({
       title: 'Осколки Философского камня',
       stoneShards,

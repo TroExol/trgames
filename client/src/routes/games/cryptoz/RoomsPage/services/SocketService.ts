@@ -2,10 +2,15 @@ import type { Socket } from 'socket.io-client';
 
 import { toast } from 'sonner';
 import { io } from 'socket.io-client';
-import { CryptozShared } from '@trgames/shared';
+import {
+  CryptozShared,
+  EAnalyticsEvent,
+  EGame,
+} from '@trgames/shared';
 
 import type { TSocketServiceCreateRoomParams } from '@/routes/games/cryptoz/RoomsPage/services/types';
 
+import { analyticsService } from '@/services';
 import { roomsStore } from '@/routes/games/cryptoz/RoomsPage/stores';
 import { getApiUrl } from '@/lib/constants';
 
@@ -22,6 +27,11 @@ export class SocketService {
     );
 
     this.socket.on('connect', () => {
+      if (this.socket.recovered) {
+        analyticsService.track(EAnalyticsEvent.WEBSOCKET_RECONNECTED, {
+          game: EGame.CRYPTOZ,
+        });
+      }
       if (process.env.NODE_ENV === 'development') {
         console.log('Подключение установлено');
       }
@@ -37,6 +47,10 @@ export class SocketService {
     });
 
     this.socket.on('disconnect', (reason, details) => {
+      analyticsService.track(EAnalyticsEvent.WEBSOCKET_DISCONNECTED, {
+        game: EGame.CRYPTOZ,
+        reason,
+      });
       if (!this.socket.active && process.env.NODE_ENV === 'development') {
         console.log('Соединение разорвано', reason, details);
       }
@@ -71,6 +85,10 @@ export class SocketService {
             reject(new Error(params.errorMessage));
             return;
           }
+          analyticsService.track(CryptozShared.EAnalyticsEvent.ROOM_CREATED, {
+            game: EGame.CRYPTOZ,
+            roomId: params.uuid,
+          });
           resolve(params.uuid);
         });
     });

@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { CryptozShared, EGame } from '@trgames/shared';
 
+import { analyticsService } from '@/services';
 import { roomsStore } from '@/routes/games/cryptoz/RoomsPage/stores';
 import { socketService as roomSocketService } from '@/routes/games/cryptoz/RoomPage/services';
 import { useNickname } from '@/hooks/useNickname';
@@ -29,6 +31,12 @@ export const RoomFooter = observer(function RoomFooter() {
       participant,
       roomPassword: roomPassword,
     }).then(() => {
+      analyticsService.identify({ nickname });
+      analyticsService.track(CryptozShared.EAnalyticsEvent.ROOM_JOINED, {
+        game: EGame.CRYPTOZ,
+        isViewer: participant === 'viewer',
+        roomId: roomUuid,
+      });
       navigate(`room/${roomUuid}`);
     }).catch(() => {});
   };

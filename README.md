@@ -5,79 +5,114 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 
+<h1>TRGames</h1>
+
+**Настольные игры в онлайн формате**
+
+Играйте в настольные игры с друзьями прямо в браузере — без установки, регистрации и скачивания.
+
+<a href="https://troexol.ru"><strong>Играть &raquo;</strong></a>
+&nbsp;&middot;&nbsp;
+<a href="https://github.com/TroExol/trgames/issues/new?labels=bug&template=bug-report---.md">Сообщить об ошибке</a>
+&nbsp;&middot;&nbsp;
+<a href="https://github.com/TroExol/trgames/issues/new?labels=enhancement&template=feature-request---.md">Предложить идею</a>
+
 </div>
 
-<br />
-<div align="center">
-<h3 align="center">TRGames - Настольные игры в онлайн формате</h3>
+## Игры
 
-  <p align="center">
-    <a href="https://troexol.ru"><strong>Попробуй »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/TroExol/trgames/issues/new?labels=bug&template=bug-report---.md">Сообщить ошибку</a>
-    ·
-    <a href="https://github.com/TroExol/trgames/issues/new?labels=enhancement&template=feature-request---.md">Предложить идею</a>
-  </p>
-</div>
+- **Cryptoz** — карточная игра с механиками мракобоя, укрытий, печатей, осколков славы и короны Мрака
 
-## Contributing
+## Стек технологий
 
-### Установка
+| Слой | Технологии |
+|------|-----------|
+| **Клиент** | React 18, TypeScript, Vite, MobX, Tailwind CSS, Radix UI, Framer Motion |
+| **Сервер** | Node.js, Socket.io, i18n-js |
+| **Общие типы** | TypeScript (shared workspace) |
+| **Тестирование** | Vitest |
+| **UI-документация** | Storybook |
 
-1. Установите Node.js v22
-2. Склонируйте репозиторий
-   ```sh
-   git clone https://github.com/TroExol/trgames.git
-   ```
-3. Если не установлен `yarn` - установите его
-   ```sh
-   npm install --global yarn@1.22.22
-   ```
-4. Установите зависимости из корня проекта, тогда также установятся зависимости для всех воркспейсов
-   ```sh
-   cd trgames && yarn install
-   ```
+## Архитектура
 
-### Запуск
-
-#### С отслеживанием изменений
-
-Запустите проект
-```sh
-trgames> yarn start:dev
 ```
-Клиент будет запущен по адесу http://localhost:3000, сервер - http://localhost:4001.
-
-#### Без отслеживания изменений
-
-Соберите клиент
-```sh
-trgames\client> yarn build
-```
-Сборка будет находиться в папке dist
-
-Запустите сервер
-```sh
-trgames\server> yarn start
+trgames/
+├── client/                  # React SPA
+│   └── src/
+│       ├── components/      # Переиспользуемые UI-компоненты (Radix-based)
+│       ├── routes/          # Страницы (React Router v6, lazy loading)
+│       ├── stores/          # MobX-сторы
+│       └── providers/       # Контекст-провайдеры (тема, игровая тема)
+├── server/                  # Socket.io сервер
+│   └── src/
+│       ├── games/cryptoz/   # Игровая логика (карты, модификаторы, триггеры)
+│       └── i18n/            # Локализация (русский)
+├── tools/
+│   ├── shared/              # Общие TypeScript-типы для клиента и сервера
+│   └── eslint-plugin-trgames/  # Кастомный ESLint-плагин
+└── prompts/                 # Промпты для генерации контента
 ```
 
-### Линтеры
+## Быстрый старт
 
-Для запуска проверки кода всех воркспейсов
-```sh
-trgames> yarn lint
+### Требования
+
+- Node.js v22
+- Yarn >= 1.22.22
+
+### Установка и запуск
+
+```bash
+git clone https://github.com/TroExol/trgames.git
+cd trgames
+npm install --global yarn@1.22.22  # если yarn не установлен
+yarn install
+yarn start:dev
 ```
 
-В каждом вокрспейсе есть свой скрипт для запуска проверки кода
-```sh
-trgames\server> yarn lint
+Клиент: http://localhost:3000 &nbsp;|&nbsp; Сервер: http://localhost:4001
+
+### Сборка для продакшена
+
+```bash
+cd client && yarn build    # Сборка в client/dist
+cd ../server && yarn start # Запуск сервера
 ```
 
-#### Git хуки
+## Разработка
 
-Перед пушом срабатывает git хук, который проверяет качество кода всех воркспейсов
+### Полезные команды
 
+| Команда | Описание |
+|---------|----------|
+| `yarn start:dev` | Запуск клиента и сервера с hot reload |
+| `yarn lint` | Проверка кода во всех воркспейсах |
+| `yarn workspace @trgames/server test` | Запуск серверных тестов |
+| `yarn workspace @trgames/client storybook` | Storybook на порту 6006 |
+
+### Линтинг
+
+Линтинг автоматически запускается перед коммитом через Husky pre-commit хук.
+
+Для ручного запуска:
+
+```bash
+yarn lint                              # Все воркспейсы
+yarn workspace @trgames/client lint    # Только клиент
+yarn workspace @trgames/server lint    # Только сервер
+```
+
+### Переменные окружения
+
+| Переменная | Расположение | Описание |
+|-----------|--------------|----------|
+| `VITE_API_BASE_URL` | `client/.env` | URL сервера для Socket.io |
+
+Серверные флаги передаются через CLI: `--local true` (CORS *), `--debug true` (подробные логи).
+
+## Лицензия
+
+Проект является приватным.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 [contributors-shield]: https://img.shields.io/github/contributors/TroExol/trgames.svg?style=for-the-badge

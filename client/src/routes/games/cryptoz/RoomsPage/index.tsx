@@ -1,7 +1,9 @@
 import { useDocumentTitle, useUnmount } from 'usehooks-ts';
 import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { CryptozShared } from '@trgames/shared';
 
+import { analyticsService } from '@/services';
 import { roomsStore } from '@/routes/games/cryptoz/RoomsPage/stores';
 import { socketService } from '@/routes/games/cryptoz/RoomsPage/services';
 import { RoomList } from '@/routes/games/cryptoz/RoomsPage/components/Rooms';
@@ -10,6 +12,10 @@ import { RoomFilters } from '@/routes/games/cryptoz/RoomsPage/components/RoomFil
 
 export const Component = observer(function CryptozRoomListPage() {
   useDocumentTitle('Список комнат Криптоз');
+
+  useEffect(() => {
+    analyticsService.page(CryptozShared.EAnalyticsPage.ROOMS);
+  }, []);
 
   useEffect(() => {
     socketService.connect();
