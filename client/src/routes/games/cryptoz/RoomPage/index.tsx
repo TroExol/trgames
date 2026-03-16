@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { observer } from 'mobx-react-lite';
 import { motion, useAnimationControls } from 'framer-motion';
-import { CryptozShared } from '@trgames/shared';
+import { CryptozShared, EGame } from '@trgames/shared';
 
 import { analyticsService } from '@/services';
 import {
@@ -86,6 +86,10 @@ export const Component = observer(function CryptozRoomPage() {
   }, [gameName, location.pathname, navigate, startedPathname]);
 
   useUnmount(() => {
+    analyticsService.track(CryptozShared.EAnalyticsEvent.ROOM_LEFT, {
+      game: EGame.CRYPTOZ,
+      roomId: roomStore.room.uuid,
+    });
     socketService.close();
     roomStore.clear();
     logsStore.clear();
