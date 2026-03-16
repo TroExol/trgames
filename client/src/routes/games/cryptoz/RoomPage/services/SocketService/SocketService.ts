@@ -285,29 +285,33 @@ export class SocketService {
 
   public buyMarketCard = (card: CryptozShared.TCard) => {
     this.socket?.emit(CryptozShared.EEventTypes.buyMarketCard, card);
-    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT_MARKET, {
+    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT, {
       cardId: card.id,
+      cardType: card.type,
       game: EGame.CRYPTOZ,
     });
   };
 
   public buyCompanion = () => {
     this.socket?.emit(CryptozShared.EEventTypes.buyCompanionCard);
-    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT_COMPANION, {
+    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT, {
+      cardType: CryptozShared.ECardType.COMPANION,
       game: EGame.CRYPTOZ,
     });
   };
 
   public buyHarbinger = () => {
     this.socket?.emit(CryptozShared.EEventTypes.buyHarbingerCard);
-    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT_HARBINGER, {
+    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT, {
+      cardType: CryptozShared.ECardType.HARBINGER,
       game: EGame.CRYPTOZ,
     });
   };
 
   public buyDarknessMadness = () => {
     this.socket?.emit(CryptozShared.EEventTypes.buyDarknessMadnessCard);
-    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT_DARKNESS_MADNESS, {
+    analyticsService.track(CryptozShared.EAnalyticsEvent.CARD_BOUGHT, {
+      cardType: CryptozShared.ECardType.DARKNESS_MADNESS,
       game: EGame.CRYPTOZ,
     });
   };
