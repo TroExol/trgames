@@ -13,8 +13,6 @@
 
 Play board games with friends straight from the browser — no install, no signup, nothing to download.
 
-<a href="https://troexol.ru"><strong>Play &raquo;</strong></a>
-&nbsp;&middot;&nbsp;
 <a href="https://github.com/TroExol/trgames/issues/new?labels=bug&template=bug-report---.md">Report a bug</a>
 &nbsp;&middot;&nbsp;
 <a href="https://github.com/TroExol/trgames/issues/new?labels=enhancement&template=feature-request---.md">Request a feature</a>
