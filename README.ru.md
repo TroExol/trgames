@@ -13,8 +13,6 @@
 
 Играйте в настольные игры с друзьями прямо в браузере — без установки, регистрации и скачивания.
 
-<a href="https://troexol.ru"><strong>Играть &raquo;</strong></a>
-&nbsp;&middot;&nbsp;
 <a href="https://github.com/TroExol/trgames/issues/new?labels=bug&template=bug-report---.md">Сообщить об ошибке</a>
 &nbsp;&middot;&nbsp;
 <a href="https://github.com/TroExol/trgames/issues/new?labels=enhancement&template=feature-request---.md">Предложить идею</a>
