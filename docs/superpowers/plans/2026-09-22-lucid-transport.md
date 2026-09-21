@@ -169,9 +169,15 @@ export * from './types/view';
 В `server/src/games/lucid/core/reducer.ts` удалить локальные объявления `EMoveType` и `TMove` и реэкспортировать общие, чтобы существующие импорты не сломались:
 
 ```ts
-export { EMoveType } from '@trgames/shared';
-export type { TMove } from '@trgames/shared';
+// @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
+// плоского реэкспорта не существует — извлекаем сами, чтобы обращения
+// ниже по файлу и во внешних импортах не изменились
+export const EMoveType = LucidShared.EMoveType;
+export type EMoveType = LucidShared.EMoveType;
+export type TMove = LucidShared.TMove;
 ```
+
+Пара `const` и `type` с одним именем — обычный приём слияния значения и типа: так `EMoveType` продолжает работать и как значение, и как тип.
 
 Внутри файла обращения к `EMoveType` и `TMove` оставить прежними — они теперь ссылаются на общие типы. `LucidShared.EMoveType` тоже доступен, выбери одну форму и держись её во всём файле.
 
@@ -180,7 +186,8 @@ export type { TMove } from '@trgames/shared';
 В `server/src/games/lucid/core/formatForPlayer.ts` удалить локальное объявление `TStateForPlayer`, реэкспортировать общее и убрать `log` из перечисления полей:
 
 ```ts
-export type { TStateForPlayer } from '@trgames/shared';
+// Плоского реэкспорта у пакета нет, только неймспейс
+export type TStateForPlayer = LucidShared.TStateForPlayer;
 ```
 
 В самой функции убрать строку `log: state.G.log,` из списка полей. Комментарий про список разрешённого сохранить и дополнить: журнал не отдаётся целиком, лента собирается из его прироста на стороне комнаты.
