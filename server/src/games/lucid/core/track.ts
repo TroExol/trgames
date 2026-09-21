@@ -62,6 +62,8 @@ export const buildTrack = ({ random, playerCount }: TBuildTrackParams): LucidSha
     return id;
   };
 
+  // Опирается на то же совпадение номера клетки с индексом: клетка с таким id
+  // уже создана через addCell. Порядок вызовов менять нельзя — типы это не поймают
   const linkTo = (ids: number[], targetId: number): void => {
     ids.forEach(id => cells[id].next.push(targetId));
   };
