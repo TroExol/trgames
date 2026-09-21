@@ -21,6 +21,9 @@ interface TGenerateContentParams {
   eventCellIds: number[];
   deadlineMs: number;
   seed: string;
+  // Вызывается, как только готова стадия «Мир»: тема перекрашивает экран,
+  // пока события ещё генерируются
+  onWorld?: (theme: LucidShared.TTheme) => void;
 }
 
 export interface TGenerateContentResult {
@@ -36,6 +39,7 @@ export const generateContent = async ({
   eventCellIds,
   deadlineMs,
   seed,
+  onWorld,
 }: TGenerateContentParams): Promise<TGenerateContentResult> => {
   let usage: TUsage = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -107,6 +111,8 @@ export const generateContent = async ({
     if (!world) {
       return withFallback();
     }
+
+    onWorld?.(world.theme);
 
     const events = await request(
       buildEventsPrompt(world.theme.name, world.theme.resourceName, eventCellIds),

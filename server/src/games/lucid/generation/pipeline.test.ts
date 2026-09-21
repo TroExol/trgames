@@ -114,4 +114,48 @@ describe('generateContent', () => {
     expect(result.usedFallback).toBe(true);
     expect(result.content.theme.name).toBe(loadFallbackContent([1, 2], SEED).theme.name);
   });
+
+  it('сообщает о готовности мира до того, как готовы события', async () => {
+    const seen: string[] = [];
+    const generateJson: TGenerateJson = vi.fn()
+      .mockImplementationOnce(() => {
+        seen.push('запрос мира');
+
+        return Promise.resolve({ data: validWorld, usage });
+      })
+      .mockImplementation(() => {
+        seen.push('запрос событий');
+
+        return Promise.resolve({ data: eventsFor([1, 2]), usage });
+      });
+
+    await generateContent({
+      generateJson,
+      theme: 'пираты',
+      nicknames: ['Аня'],
+      eventCellIds: [1, 2],
+      deadlineMs: Date.now() + 10_000,
+      seed: 'stages',
+      onWorld: theme => seen.push(`мир готов: ${theme.name}`),
+    });
+
+    expect(seen).toEqual(['запрос мира', 'мир готов: Пираты', 'запрос событий']);
+  });
+
+  it('о готовности мира не сообщает, если играем на запасной партии', async () => {
+    const onWorld = vi.fn();
+    const generateJson: TGenerateJson = vi.fn().mockRejectedValue(new Error('сеть недоступна'));
+
+    await generateContent({
+      generateJson,
+      theme: 'пираты',
+      nicknames: ['Аня'],
+      eventCellIds: [1],
+      deadlineMs: Date.now() + 10_000,
+      seed: 'stages',
+      onWorld,
+    });
+
+    expect(onWorld).not.toHaveBeenCalled();
+  });
 });
