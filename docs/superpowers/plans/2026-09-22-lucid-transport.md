@@ -1857,12 +1857,16 @@ export const messageForError = (error: unknown): string => {
 };
 
 export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams) => {
-  // Обёртка вместо повторяющегося try/catch в каждом обработчике
+  // Обёртка вместо повторяющегося try/catch в каждом обработчике.
+  // Сохранение здесь, а не в отдельных обработчиках: иначе партия, которая
+  // набрала состав и запустила генерацию, но не получила ни одного хода,
+  // не переживёт перезапуск сервера — а забыть вызов легко
   const guard = <TArgs extends unknown[]>(
     handler: (context: THandlerContext, ...args: TArgs) => void,
   ) => (context: THandlerContext, ...args: TArgs): void => {
     try {
       handler(context, ...args);
+      group.persist(context.party);
       broadcast(context.party);
     } catch (error) {
       fail(context.playerId, messageForError(error));
@@ -1894,6 +1898,9 @@ export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams
           party.addRibbonLine(t('lucid.ribbon.usedFallback', 'ru'));
         }
 
+        // Генерация асинхронна, и обёртка сохранила партию раньше, чем
+        // появилось состояние: сохраняем ещё раз, когда оно готово
+        group.persist(party);
         broadcast(party);
       });
     }),
@@ -1911,8 +1918,6 @@ export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams
       if (party.rawState()?.stateId === before) {
         console.warn('lucid: ход отклонён', { partyId: party.uuid, playerId, move });
       }
-
-      group.persist(party);
     }),
 
     [LucidShared.ELucidEvent.playAgain]: guard(({ party, playerId }) => {
