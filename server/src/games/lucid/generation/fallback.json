@@ -1,0 +1,91 @@
+{
+  "theme": {
+    "name": "Заброшенная станция",
+    "resourceName": "заряды",
+    "palette": ["#12161f", "#1f2937", "#38bdf8", "#f59e0b", "#e2e8f0"]
+  },
+  "events": [
+    {
+      "cellId": 1,
+      "title": "Оборванный кабель",
+      "text": "Искрящий провод перегородил коридор.",
+      "options": [
+        {
+          "text": "Перепрыгнуть",
+          "threshold": 4,
+          "success": { "atoms": [{ "kind": "MOVE", "target": "SELF", "value": 2 }] },
+          "failure": { "atoms": [{ "kind": "SKIP_TURN", "target": "SELF", "value": 1 }] }
+        },
+        {
+          "text": "Обесточить участок",
+          "cost": 2,
+          "success": { "atoms": [{ "kind": "MOVE", "target": "SELF", "value": 1 }] }
+        }
+      ]
+    },
+    {
+      "cellId": 2,
+      "title": "Склад снабжения",
+      "text": "Ящики вскрыты, но кое-что осталось.",
+      "options": [
+        {
+          "text": "Обыскать",
+          "success": { "atoms": [{ "kind": "RESOURCE", "target": "SELF", "value": 2 }] }
+        }
+      ]
+    },
+    {
+      "cellId": 3,
+      "title": "Сбой шлюза",
+      "text": "Двери захлопываются перед тем, кто вырвался вперёд.",
+      "options": [
+        {
+          "text": "Не мешать двери",
+          "success": { "atoms": [{ "kind": "MOVE", "target": "FIRST", "value": -2 }] }
+        }
+      ]
+    },
+    {
+      "cellId": 4,
+      "title": "Аварийный лифт",
+      "text": "Кабина подбирает того, кто отстал.",
+      "options": [
+        {
+          "text": "Отправить лифт вниз",
+          "success": { "atoms": [{ "kind": "MOVE", "target": "LAST", "value": 3 }] }
+        }
+      ]
+    },
+    {
+      "cellId": 5,
+      "title": "Генератор",
+      "text": "Энергии хватит не всем.",
+      "options": [
+        {
+          "text": "Забрать себе",
+          "success": { "atoms": [{ "kind": "RESOURCE", "target": "SELF", "value": 3 }] }
+        },
+        {
+          "text": "Поделить на всех",
+          "success": { "atoms": [{ "kind": "RESOURCE", "target": "ALL", "value": 1 }] }
+        }
+      ]
+    },
+    {
+      "cellId": 6,
+      "title": "Смотровая площадка",
+      "text": "Отсюда видно, кто ушёл дальше всех. И как его оттуда убрать.",
+      "options": [
+        {
+          "text": "Поменяться местами с лидером",
+          "cost": 3,
+          "success": { "atoms": [{ "kind": "SWAP_WITH_FIRST", "target": "SELF", "value": 0 }] }
+        },
+        {
+          "text": "Просто полюбоваться",
+          "success": { "atoms": [{ "kind": "RESOURCE", "target": "SELF", "value": 1 }] }
+        }
+      ]
+    }
+  ]
+}
