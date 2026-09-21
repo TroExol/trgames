@@ -3,26 +3,12 @@ import { LucidShared } from '@trgames/shared';
 import { resolveOption } from '@/games/lucid/core/options';
 import { rollAndMove, takeBranch } from '@/games/lucid/core/moves';
 
-export enum EMoveType {
-  CHOOSE_BRANCH = 'CHOOSE_BRANCH',
-  CHOOSE_OPTION = 'CHOOSE_OPTION',
-  ROLL = 'ROLL',
-}
-
-export type TMove =
-  | { type: EMoveType.ROLL; playerId: LucidShared.TPlayerId; stateId: number }
-  | {
-    type: EMoveType.CHOOSE_BRANCH;
-    playerId: LucidShared.TPlayerId;
-    stateId: number;
-    cellId: number;
-  }
-  | {
-    type: EMoveType.CHOOSE_OPTION;
-    playerId: LucidShared.TPlayerId;
-    stateId: number;
-    optionIndex: number;
-  };
+// @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
+// плоского реэкспорта не существует — извлекаем сами, чтобы обращения
+// к EMoveType и TMove ниже по файлу и во внешних импортах не изменились
+export const EMoveType = LucidShared.EMoveType;
+export type EMoveType = LucidShared.EMoveType;
+export type TMove = LucidShared.TMove;
 
 // Каждый ход допустим ровно в одной фазе. После конца партии фаза ENDED,
 // и ей не соответствует ни один ход

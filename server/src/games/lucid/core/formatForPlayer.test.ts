@@ -39,6 +39,10 @@ describe('formatForPlayer', () => {
     expect('random' in formatForPlayer(makeParty(), 'a').G).toBe(false);
   });
 
+  it('не отдаёт журнал партии: он уходит лентой, а не целиком', () => {
+    expect('log' in formatForPlayer(makeParty(), 'a').G).toBe(false);
+  });
+
   it('форма трека видна целиком: по ней рисуется поле', () => {
     const state = makeParty();
 
