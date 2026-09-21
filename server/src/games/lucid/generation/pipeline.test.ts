@@ -10,7 +10,7 @@ import type { TGenerateJson } from '@/games/lucid/generation/pipeline';
 import { generateContent, MAX_ATTEMPTS } from '@/games/lucid/generation/pipeline';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
 
-const usage = { inputTokens: 10, outputTokens: 20 };
+const usage = { inputTokens: 10, outputTokens: 20, costUsd: 0.001 };
 
 const validWorld = {
   theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#102030', '#405060', '#708090'] },
@@ -51,7 +51,7 @@ describe('generateContent', () => {
       .mockResolvedValueOnce({ data: validWorld, usage })
       .mockResolvedValue({ data: eventsFor([1]), usage });
 
-    expect((await run(generateJson)).usage).toEqual({ inputTokens: 20, outputTokens: 40 });
+    expect((await run(generateJson)).usage).toEqual({ inputTokens: 20, outputTokens: 40, costUsd: 0.002 });
   });
 
   it('при невалидном ответе повторяет запрос', async () => {

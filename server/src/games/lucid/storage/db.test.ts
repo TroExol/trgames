@@ -39,21 +39,21 @@ describe('storage', () => {
     expect(createStorage(':memory:').loadParty('нет-такой')).toBeNull();
   });
 
-  it('расход токенов накапливается по партии', () => {
+  it('расход токенов и стоимости накапливается по партии', () => {
     const storage = createStorage(':memory:');
 
-    storage.saveUsage({ partyUuid: 'p1', inputTokens: 100, outputTokens: 200, usedFallback: false });
-    storage.saveUsage({ partyUuid: 'p1', inputTokens: 50, outputTokens: 60, usedFallback: true });
+    storage.saveUsage({ partyUuid: 'p1', inputTokens: 100, outputTokens: 200, costUsd: 0.01, usedFallback: false });
+    storage.saveUsage({ partyUuid: 'p1', inputTokens: 50, outputTokens: 60, costUsd: 0.005, usedFallback: true });
 
-    expect(storage.totalUsage('p1')).toEqual({ inputTokens: 150, outputTokens: 260 });
+    expect(storage.totalUsage('p1')).toEqual({ inputTokens: 150, outputTokens: 260, costUsd: 0.015 });
   });
 
   it('расход по чужой партии не смешивается', () => {
     const storage = createStorage(':memory:');
 
-    storage.saveUsage({ partyUuid: 'p1', inputTokens: 100, outputTokens: 200, usedFallback: false });
+    storage.saveUsage({ partyUuid: 'p1', inputTokens: 100, outputTokens: 200, costUsd: 0.01, usedFallback: false });
 
-    expect(storage.totalUsage('p2')).toEqual({ inputTokens: 0, outputTokens: 0 });
+    expect(storage.totalUsage('p2')).toEqual({ inputTokens: 0, outputTokens: 0, costUsd: 0 });
   });
 
   it('удаление партии убирает её из базы', () => {

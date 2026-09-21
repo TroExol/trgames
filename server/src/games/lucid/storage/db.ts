@@ -13,6 +13,7 @@ interface TSaveUsageParams {
   partyUuid: string;
   inputTokens: number;
   outputTokens: number;
+  costUsd: number;
   usedFallback: boolean;
 }
 
@@ -32,6 +33,7 @@ export const createStorage = (path: string) => {
       party_uuid TEXT NOT NULL,
       input_tokens INTEGER NOT NULL,
       output_tokens INTEGER NOT NULL,
+      cost_usd REAL NOT NULL,
       used_fallback INTEGER NOT NULL,
       created_at INTEGER NOT NULL
     );
@@ -61,22 +63,24 @@ export const createStorage = (path: string) => {
       partyUuid,
       inputTokens,
       outputTokens,
+      costUsd,
       usedFallback,
     }: TSaveUsageParams): void => {
       db.prepare(`
-        INSERT INTO usage (party_uuid, input_tokens, output_tokens, used_fallback, created_at)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(partyUuid, inputTokens, outputTokens, usedFallback ? 1 : 0, Date.now());
+        INSERT INTO usage (party_uuid, input_tokens, output_tokens, cost_usd, used_fallback, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(partyUuid, inputTokens, outputTokens, costUsd, usedFallback ? 1 : 0, Date.now());
     },
 
     totalUsage: (partyUuid: string) => {
       const row = db.prepare(`
         SELECT COALESCE(SUM(input_tokens), 0) AS input_tokens,
-               COALESCE(SUM(output_tokens), 0) AS output_tokens
+               COALESCE(SUM(output_tokens), 0) AS output_tokens,
+               COALESCE(SUM(cost_usd), 0) AS cost_usd
         FROM usage WHERE party_uuid = ?
-      `).get(partyUuid) as { input_tokens: number; output_tokens: number };
+      `).get(partyUuid) as { input_tokens: number; output_tokens: number; cost_usd: number };
 
-      return { inputTokens: row.input_tokens, outputTokens: row.output_tokens };
+      return { inputTokens: row.input_tokens, outputTokens: row.output_tokens, costUsd: row.cost_usd };
     },
   };
 };
