@@ -4,15 +4,15 @@ export enum ECellType {
   START = 'START',
 }
 
-export type TCell = {
+export interface TCell {
   id: number;
   type: ECellType;
   // Клетки, куда можно шагнуть дальше. Больше одной — развилка. Всегда больше id
   next: number[];
-};
+}
 
-export type TTrack = {
+export interface TTrack {
   cells: TCell[];
   startId: number;
   finishId: number;
-};
+}

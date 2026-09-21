@@ -1,3 +1,3 @@
-export type TRandomState = {
+export interface TRandomState {
   seed: number;
-};
+}
