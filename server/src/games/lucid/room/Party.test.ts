@@ -3,6 +3,7 @@ import {
   expect,
   it,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
 import { Party, THEME_HINTS } from '@/games/lucid/room/Party';
 
@@ -157,5 +158,104 @@ describe('жеребьёвка темы', () => {
     party.declineTheme('a');
 
     expect(THEME_HINTS).toContain(party.drawTheme());
+  });
+});
+
+describe('старт партии', () => {
+  const readyParty = (uuid: string) => {
+    const party = new Party({ uuid, ownerId: 'a' });
+    party.join({ playerId: 'a', nickname: 'Аня' });
+    party.join({ playerId: 'b', nickname: 'Боря' });
+    party.proposeTheme('a', 'пираты');
+    party.declineTheme('b');
+
+    return party;
+  };
+
+  const content = (): LucidShared.TPartyContent => ({
+    theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#102030', '#405060', '#708090'] },
+    events: {},
+  });
+
+  it('одному играть нельзя', () => {
+    const party = new Party({ uuid: 'alone', ownerId: 'a' });
+    party.join({ playerId: 'a', nickname: 'Аня' });
+
+    expect(party.canStart).toBe(false);
+  });
+
+  it('во время генерации партия в соответствующей фазе', async () => {
+    const party = readyParty('start-phase');
+    const started = party.start({
+      generate: () => Promise.resolve({ content: content(), usedFallback: false }),
+    });
+
+    expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.GENERATING);
+
+    await started;
+  });
+
+  it('после генерации партия играется и состояние видно игроку', async () => {
+    const party = readyParty('start-done');
+
+    await party.start({ generate: () => Promise.resolve({ content: content(), usedFallback: false }) });
+
+    const view = party.view('a');
+
+    expect(view.phase).toBe(LucidShared.EPartyPhase.PLAYING);
+    expect(view.state?.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(view.state?.you).toBe('a');
+    expect(view.theme?.name).toBe('Пираты');
+  });
+
+  it('тема мира приходит раньше состояния', async () => {
+    const party = readyParty('start-world');
+    const seen: (string | undefined)[] = [];
+
+    await party.start({
+      generate: ({ onWorld }) => {
+        onWorld({ name: 'Ранний мир', resourceName: 'монеты', palette: ['#111111'] });
+        seen.push(party.view('a').theme?.name);
+        seen.push(party.view('a').state?.you);
+
+        return Promise.resolve({ content: content(), usedFallback: false });
+      },
+    });
+
+    expect(seen).toEqual(['Ранний мир', undefined]);
+  });
+
+  it('игра на запасной партии отмечена', async () => {
+    const party = readyParty('start-fallback');
+
+    await party.start({ generate: () => Promise.resolve({ content: content(), usedFallback: true }) });
+
+    expect(party.view('a').usedFallback).toBe(true);
+  });
+
+  it('ход принимается и меняет состояние', async () => {
+    const party = readyParty('start-move');
+    await party.start({ generate: () => Promise.resolve({ content: content(), usedFallback: false }) });
+
+    const before = party.view('a').state!;
+    party.applyMove({
+      type: LucidShared.EMoveType.ROLL,
+      playerId: before.ctx.currentPlayer,
+      stateId: before.stateId,
+    });
+
+    expect(party.view('a').state!.stateId).toBe(before.stateId + 1);
+  });
+
+  it('ход чужого игрока не проходит', async () => {
+    const party = readyParty('start-foreign');
+    await party.start({ generate: () => Promise.resolve({ content: content(), usedFallback: false }) });
+
+    const before = party.view('a').state!;
+    const other = before.ctx.currentPlayer === 'a' ? 'b' : 'a';
+
+    party.applyMove({ type: LucidShared.EMoveType.ROLL, playerId: other, stateId: before.stateId });
+
+    expect(party.view('a').state!.stateId).toBe(before.stateId);
   });
 });

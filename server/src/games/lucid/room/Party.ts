@@ -1,6 +1,10 @@
 import { LucidShared } from '@trgames/shared';
 
+import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
+import { setupParty } from '@/games/lucid/core/setup';
+import { applyMove as applyMoveToState } from '@/games/lucid/core/reducer';
 import { createRandom, randomInt } from '@/games/lucid/core/random';
+import { formatForPlayer } from '@/games/lucid/core/formatForPlayer';
 
 const MAX_THEME_LENGTH = 200;
 const MIN_PLAYERS = 2;
@@ -31,6 +35,23 @@ export interface TMember {
   isConnected: boolean;
   hasAnswered: boolean;
   themeProposal?: string;
+}
+
+interface TGenerateParams {
+  theme: string;
+  nicknames: string[];
+  eventCellIds: number[];
+  seed: string;
+  onWorld: (theme: LucidShared.TTheme) => void;
+}
+
+interface TGenerateResult {
+  content: LucidShared.TPartyContent;
+  usedFallback: boolean;
+}
+
+interface TStartParams {
+  generate: (params: TGenerateParams) => Promise<TGenerateResult>;
 }
 
 export class Party {
@@ -142,6 +163,52 @@ export class Party {
     return pool[picked.value];
   };
 
+  // Генерация передаётся параметром, а не берётся изнутри: так партия
+  // проверяется без обращений к сети
+  public start = async ({ generate }: TStartParams): Promise<void> => {
+    if (!this.canStart) {
+      throw new Error('cannot-start');
+    }
+
+    this.phase = LucidShared.EPartyPhase.GENERATING;
+
+    const players = [...this.members.values()]
+      .map(member => ({ id: member.playerId, nickname: member.nickname }));
+    // Трек строится здесь ради номеров клеток событий, а внутри setupParty
+    // соберётся заново из того же сида — построение детерминировано
+    const track = buildTrack({
+      random: createRandom(`${this.uuid}:track`),
+      playerCount: players.length,
+    });
+
+    const { content, usedFallback } = await generate({
+      theme: this.drawTheme(),
+      nicknames: players.map(player => player.nickname),
+      eventCellIds: eventCellIds(track),
+      seed: this.uuid,
+      onWorld: theme => {
+        this.theme = theme;
+      },
+    });
+
+    this.theme = content.theme;
+    this.usedFallback = usedFallback;
+    this.state = setupParty({ seed: this.uuid, players, content });
+    this.phase = LucidShared.EPartyPhase.PLAYING;
+  };
+
+  public applyMove = (move: LucidShared.TMove): void => {
+    if (!this.state || this.phase !== LucidShared.EPartyPhase.PLAYING) {
+      return;
+    }
+
+    this.state = applyMoveToState(this.state, move);
+
+    if (this.state.ctx.phase === LucidShared.EPhase.ENDED) {
+      this.phase = LucidShared.EPartyPhase.ENDED;
+    }
+  };
+
   public view = (playerId: LucidShared.TPlayerId): LucidShared.TPartyView => ({
     partyId: this.uuid,
     phase: this.phase,
@@ -149,7 +216,7 @@ export class Party {
     ownerId: this.ownerId,
     you: playerId,
     theme: this.theme,
-    state: undefined,
+    state: this.state ? formatForPlayer(this.state, playerId) : undefined,
     usedFallback: this.usedFallback,
   });
 
