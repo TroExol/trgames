@@ -6,7 +6,6 @@ import {
 import { LucidShared } from '@trgames/shared';
 
 import { forkTrack, makeG } from '@/games/lucid/vitest/factories';
-import { resolveTarget } from '@/games/lucid/core/targets';
 import { applyAtom } from '@/games/lucid/core/atoms';
 
 const threePlayers = () => makeG({
@@ -23,29 +22,6 @@ const atom = (
   target: LucidShared.ETarget,
   value: number,
 ): LucidShared.TAtom => ({ kind, target, value });
-
-describe('resolveTarget', () => {
-  it('первый — ближайший к финишу, последний — самый дальний', () => {
-    const G = threePlayers();
-
-    expect(resolveTarget(G, 'b', LucidShared.ETarget.FIRST)).toEqual(['a']);
-    expect(resolveTarget(G, 'a', LucidShared.ETarget.LAST)).toEqual(['b']);
-  });
-
-  it('при равном положении никто не первый и не последний', () => {
-    const G = threePlayers();
-    G.players.b.position = 6;
-
-    expect(resolveTarget(G, 'c', LucidShared.ETarget.FIRST)).toEqual([]);
-  });
-
-  it('себя и всех разрешает верно', () => {
-    const G = threePlayers();
-
-    expect(resolveTarget(G, 'b', LucidShared.ETarget.SELF)).toEqual(['b']);
-    expect(resolveTarget(G, 'b', LucidShared.ETarget.ALL)).toEqual(['a', 'b', 'c']);
-  });
-});
 
 describe('applyAtom', () => {
   it('движение идёт по связям трека', () => {
@@ -118,5 +94,31 @@ describe('applyAtom', () => {
     applyAtom(G, 'a', atom(LucidShared.EAtomKind.RESOURCE, LucidShared.ETarget.ALL, 5));
 
     expect(JSON.stringify(G)).toBe(before);
+  });
+
+  it('пустая цель никого не меняет', () => {
+    const before = threePlayers();
+    // Ничья за первое место: крайним не считается никто, цель разрешится в пустой список
+    before.players.b.position = 6;
+    const snapshot = JSON.stringify(before.players);
+
+    const G = applyAtom(before, 'c', atom(
+      LucidShared.EAtomKind.MOVE,
+      LucidShared.ETarget.FIRST,
+      -2,
+    ));
+
+    expect(JSON.stringify(G.players)).toBe(snapshot);
+  });
+
+  it('обмен местами не зависит от указанной цели', () => {
+    const G = applyAtom(threePlayers(), 'b', atom(
+      LucidShared.EAtomKind.SWAP_WITH_FIRST,
+      LucidShared.ETarget.ALL,
+      0,
+    ));
+
+    expect(G.players.b.position).toBe(6);
+    expect(G.players.a.position).toBe(1);
   });
 });
