@@ -259,3 +259,70 @@ describe('старт партии', () => {
     expect(party.view('a').state!.stateId).toBe(before.stateId);
   });
 });
+
+describe('лента событий', () => {
+  const playingParty = async (uuid: string) => {
+    const party = new Party({ uuid, ownerId: 'a' });
+    party.join({ playerId: 'a', nickname: 'Аня' });
+    party.join({ playerId: 'b', nickname: 'Боря' });
+    party.proposeTheme('a', 'пираты');
+    await party.start({
+      generate: () => Promise.resolve({
+        content: {
+          theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#102030'] },
+          events: {},
+        },
+        usedFallback: false,
+      }),
+    });
+
+    return party;
+  };
+
+  it('после хода появляются новые строки', async () => {
+    const party = await playingParty('ribbon-move');
+    const before = party.view('a').state!;
+
+    party.applyMove({
+      type: LucidShared.EMoveType.ROLL,
+      playerId: before.ctx.currentPlayer,
+      stateId: before.stateId,
+    });
+
+    expect(party.takeRibbonDelta().length).toBeGreaterThan(0);
+  });
+
+  it('прирост отдаётся один раз', async () => {
+    const party = await playingParty('ribbon-once');
+    const before = party.view('a').state!;
+
+    party.applyMove({
+      type: LucidShared.EMoveType.ROLL,
+      playerId: before.ctx.currentPlayer,
+      stateId: before.stateId,
+    });
+    party.takeRibbonDelta();
+
+    expect(party.takeRibbonDelta()).toEqual([]);
+  });
+
+  it('отклонённый ход ленту не трогает', async () => {
+    const party = await playingParty('ribbon-rejected');
+    party.takeRibbonDelta();
+
+    party.applyMove({ type: LucidShared.EMoveType.ROLL, playerId: 'нет-такого', stateId: 0 });
+
+    expect(party.takeRibbonDelta()).toEqual([]);
+  });
+
+  it('строку можно добавить и вручную', async () => {
+    const party = await playingParty('ribbon-manual');
+    party.takeRibbonDelta();
+
+    party.addRibbonLine('Придумать ваш мир не получилось, играем на запасном');
+
+    expect(party.takeRibbonDelta()).toEqual([
+      'Придумать ваш мир не получилось, играем на запасном',
+    ]);
+  });
+});

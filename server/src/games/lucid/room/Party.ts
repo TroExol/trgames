@@ -63,6 +63,10 @@ export class Party {
   private theme?: LucidShared.TTheme;
   private state?: LucidShared.TState;
   private usedFallback = false;
+  // Сколько строк журнала уже разослано. Лента — это его прирост,
+  // а не журнал целиком: за сорок минут в нём накапливаются сотни строк
+  private sentRibbonLines = 0;
+  private readonly extraRibbonLines: string[] = [];
 
   constructor({ uuid, ownerId }: TPartyConstructorParams) {
     this.uuid = uuid;
@@ -207,6 +211,22 @@ export class Party {
     if (this.state.ctx.phase === LucidShared.EPhase.ENDED) {
       this.phase = LucidShared.EPartyPhase.ENDED;
     }
+  };
+
+  // Строка от самой игры, а не от движка: например, честное признание,
+  // что придумать мир не получилось
+  public addRibbonLine = (line: string): void => {
+    this.extraRibbonLines.push(line);
+  };
+
+  public takeRibbonDelta = (): string[] => {
+    const fromState = this.state?.G.log.slice(this.sentRibbonLines) ?? [];
+    const delta = [...fromState, ...this.extraRibbonLines];
+
+    this.sentRibbonLines += fromState.length;
+    this.extraRibbonLines.length = 0;
+
+    return delta;
   };
 
   public view = (playerId: LucidShared.TPlayerId): LucidShared.TPartyView => ({
