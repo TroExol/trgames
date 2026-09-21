@@ -4,11 +4,7 @@ import {
   it,
 } from 'vitest';
 
-import {
-  createRandom,
-  rollDie,
-  shuffle,
-} from '@/games/lucid/core/random';
+import { createRandom, rollDie } from '@/games/lucid/core/random';
 
 const rollMany = (seed: string, count: number): number[] => {
   let state = createRandom(seed);
@@ -50,11 +46,5 @@ describe('random', () => {
     rollDie(state);
 
     expect(state).toEqual(before);
-  });
-
-  it('перемешивание сохраняет состав', () => {
-    const { value } = shuffle(createRandom('shuffle'), [1, 2, 3, 4, 5]);
-
-    expect([...value].sort()).toEqual([1, 2, 3, 4, 5]);
   });
 });

@@ -35,6 +35,14 @@
 
 - **Модификаторы и триггеры** (`server/src/helpers/Modifiers`, `Triggers`) — готовая инфраструктура для динамического изменения атрибутов и реакции на события. В первой версии lucid не нужна: эффекты применяются сразу и не живут во времени. Пригодится, когда появятся выложенные на поле карты.
 
+**Запуск одного файла тестов.** Команда из `CLAUDE.md` в виде `yarn workspace @trgames/server test <путь>` не работает: скрипт `test` заканчивается флагом `--silent`, и путь приклеивается к нему как значение, из-за чего vitest падает ещё до запуска с сообщением `Unexpected value "--silent=<путь>"`. Рабочая форма — с флагом `--run`:
+
+```bash
+yarn workspace @trgames/server test --run src/games/lucid/core/random.test.ts
+```
+
+Все команды ниже уже записаны в этой форме. Без пути, то есть весь набор тестов, исходная команда работает нормально.
+
 **Объектные типы объявляются через `interface`.** Это конвенция всего репозитория: в общих типах 16 `interface` против одного объектного `type`, на сервере 25 против нуля. Фрагменты кода ниже написаны через `type` — приводи их к `interface` при реализации.
 
 Через `type` остаются только то, что интерфейсом выразить нельзя или неестественно: алиасы (`TPlayerId = string`), объединения (`TMove`), типы функций (`TAtomHandler`), производные типы (`Omit<TG, 'random'>`, `ReturnType<typeof createStorage>`).
@@ -350,7 +358,7 @@ git commit -m "feat(lucid): добавить общие типы игры"
 ```ts
 import { describe, expect, it } from 'vitest';
 
-import { createRandom, rollDie, shuffle } from '@/games/lucid/core/random';
+import { createRandom, rollDie } from '@/games/lucid/core/random';
 
 const rollMany = (seed: string, count: number): number[] => {
   let state = createRandom(seed);
@@ -393,18 +401,12 @@ describe('random', () => {
 
     expect(state).toEqual(before);
   });
-
-  it('перемешивание сохраняет состав', () => {
-    const { value } = shuffle(createRandom('shuffle'), [1, 2, 3, 4, 5]);
-
-    expect([...value].sort()).toEqual([1, 2, 3, 4, 5]);
-  });
 });
 ```
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/random.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/random.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/random` не найден.
 
 - [ ] **Шаг 3: Написать реализацию**
@@ -461,28 +463,12 @@ export const randomInt = (
 export const rollDie = (state: LucidShared.TRandomState): TRandomResult<number> => {
   return randomInt(state, 1, 6);
 };
-
-export const shuffle = <T>(
-  state: LucidShared.TRandomState,
-  items: T[],
-): TRandomResult<T[]> => {
-  const result = [...items];
-  let current = state;
-
-  for (let i = result.length - 1; i > 0; i--) {
-    const picked = randomInt(current, 0, i);
-    current = picked.state;
-    [result[i], result[picked.value]] = [result[picked.value], result[i]];
-  }
-
-  return { value: result, state: current };
-};
 ```
 
 - [ ] **Шаг 4: Запустить тест и убедиться, что он проходит**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/random.test.ts`
-Ожидается: все шесть тестов зелёные.
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/random.test.ts`
+Ожидается: все пять тестов зелёные.
 
 - [ ] **Шаг 5: Коммит**
 
@@ -621,7 +607,7 @@ describe('buildTrack', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/track.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/track.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/track` не найден.
 
 - [ ] **Шаг 3: Написать реализацию**
@@ -740,7 +726,7 @@ export const buildTrack = ({ random, playerCount }: TBuildTrackParams): LucidSha
 
 - [ ] **Шаг 4: Запустить тест и убедиться, что он проходит**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/track.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/track.test.ts`
 Ожидается: все девять тестов зелёные. Если падает тест на длину трека, проверь арифметику `straightCount`: сумма прямых участков, клеток развилок, старта и финиша должна давать ровно `total`.
 
 - [ ] **Шаг 5: Коммит**
@@ -913,7 +899,7 @@ describe('moveBy', () => {
 
 - [ ] **Шаг 3: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/movement.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/movement.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/movement` не найден.
 
 - [ ] **Шаг 4: Написать реализацию**
@@ -1004,7 +990,7 @@ export const moveBy = (track: LucidShared.TTrack, from: number, value: number): 
 
 - [ ] **Шаг 5: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/movement.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/movement.test.ts`
 Ожидается: все одиннадцать тестов зелёные.
 
 - [ ] **Шаг 6: Коммит**
@@ -1154,7 +1140,7 @@ describe('applyAtom', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/atoms.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/atoms.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/targets` не найден.
 
 - [ ] **Шаг 3: Написать разрешение целей**
@@ -1276,7 +1262,7 @@ export const applyAtom = (
 
 - [ ] **Шаг 5: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/atoms.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/atoms.test.ts`
 Ожидается: все десять тестов зелёные.
 
 - [ ] **Шаг 6: Коммит**
@@ -1375,7 +1361,7 @@ describe('applyEffect', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/effects.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/effects.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/effects` не найден.
 
 - [ ] **Шаг 3: Написать вычисление условия**
@@ -1436,7 +1422,7 @@ export const applyEffect = (
 
 - [ ] **Шаг 5: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/effects.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/effects.test.ts`
 Ожидается: все пять тестов зелёные.
 
 - [ ] **Шаг 6: Коммит**
@@ -1626,7 +1612,7 @@ describe('развилки', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/reducer.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/reducer.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/reducer` не найден.
 
 - [ ] **Шаг 3: Написать создание начального состояния**
@@ -1906,7 +1892,7 @@ export const applyMove = (state: LucidShared.TState, move: TMove): LucidShared.T
 
 Тесты не пройдут, пока не готов модуль `options` из задачи 8, — это ожидаемо. Сначала выполни задачу 8, затем вернись и запусти:
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/reducer.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/reducer.test.ts`
 Ожидается: все двенадцать тестов зелёные.
 
 - [ ] **Шаг 7: Коммит**
@@ -2016,7 +2002,7 @@ describe('resolveOption', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/options.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/options.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/options` не найден.
 
 - [ ] **Шаг 3: Написать реализацию**
@@ -2072,7 +2058,7 @@ export const resolveOption = (
 
 - [ ] **Шаг 4: Запустить тесты ядра целиком**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core`
 Ожидается: зелёные тесты во всех файлах ядра, включая редьюсер из задачи 7.
 
 - [ ] **Шаг 5: Коммит**
@@ -2155,7 +2141,7 @@ describe('formatForPlayer', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/formatForPlayer.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/formatForPlayer.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/core/formatForPlayer` не найден.
 
 - [ ] **Шаг 3: Написать реализацию**
@@ -2194,7 +2180,7 @@ export const formatForPlayer = (
 
 - [ ] **Шаг 4: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/core/formatForPlayer.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/formatForPlayer.test.ts`
 Ожидается: все пять тестов зелёные.
 
 - [ ] **Шаг 5: Создать барель ядра**
@@ -2369,7 +2355,7 @@ describe('eventBatchSchema', () => {
 
 - [ ] **Шаг 3: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/generation/schema.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/generation/schema.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/generation/schema` не найден.
 
 - [ ] **Шаг 4: Написать реализацию**
@@ -2446,7 +2432,7 @@ export const eventBatchSchema = z.strictObject({
 
 - [ ] **Шаг 5: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/generation/schema.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/generation/schema.test.ts`
 Ожидается: все десять тестов зелёные. Если `z.enum` ругается на перечисление, проверь версию zod: приём TypeScript-перечислений появился в четвёртой.
 
 - [ ] **Шаг 6: Коммит**
@@ -2518,7 +2504,7 @@ describe('loadFallbackContent', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/generation/fallback.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/generation/fallback.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/generation/fallback` не найден.
 
 - [ ] **Шаг 3: Создать запасной контент**
@@ -2639,7 +2625,7 @@ export const loadFallbackContent = (): LucidShared.TPartyContent => ({
 
 - [ ] **Шаг 5: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/generation/fallback.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/generation/fallback.test.ts`
 Ожидается: все четыре теста зелёные.
 
 - [ ] **Шаг 6: Коммит**
@@ -2784,7 +2770,7 @@ describe('generateContent', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/generation/pipeline.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/generation/pipeline.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/generation/pipeline` не найден.
 
 - [ ] **Шаг 3: Написать сборку промптов**
@@ -3070,7 +3056,7 @@ export * from './schema';
 
 - [ ] **Шаг 7: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/generation/pipeline.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/generation/pipeline.test.ts`
 Ожидается: все девять тестов зелёные. Если тест про предел попыток зависает, значит цикл повторов всё ещё опирается только на время.
 
 - [ ] **Шаг 8: Коммит**
@@ -3163,7 +3149,7 @@ describe('storage', () => {
 
 - [ ] **Шаг 2: Запустить тест и убедиться, что он падает**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/storage/db.test.ts`
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/storage/db.test.ts`
 Ожидается: падение с сообщением о том, что модуль `@/games/lucid/storage/db` не найден.
 
 - [ ] **Шаг 3: Написать реализацию**
@@ -3264,8 +3250,8 @@ export * from './db';
 
 - [ ] **Шаг 4: Запустить тесты и убедиться, что они проходят**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/storage/db.test.ts`
-Ожидается: все шесть тестов зелёные.
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/storage/db.test.ts`
+Ожидается: все пять тестов зелёные.
 
 Два возможных затруднения. Если Node ругается на экспериментальный модуль `node:sqlite`, добавь в команду запуска флаг `--experimental-sqlite`. Если база не открывается вовсе, проверь, что путь именно `:memory:`: в тестах `fs` замокан через memfs, и файловая база работать не будет.
 
@@ -3404,8 +3390,8 @@ describe('партия целиком', () => {
 
 - [ ] **Шаг 2: Запустить тест**
 
-Выполнить: `yarn workspace @trgames/server test src/games/lucid/lucid.integration.test.ts`
-Ожидается: все шесть тестов зелёные.
+Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/lucid.integration.test.ts`
+Ожидается: все пять тестов зелёные.
 
 Если первый тест не дожидается победителя, проверь `walkForward`: скорее всего игрок упирается в клетку без исходящих связей раньше финиша. Если падает тест про число предложений развилки, значит движение не останавливается на развилке, а проходит её насквозь.
 

@@ -49,19 +49,3 @@ export const randomInt = (
 export const rollDie = (state: LucidShared.TRandomState): TRandomResult<number> => {
   return randomInt(state, 1, 6);
 };
-
-export const shuffle = <T>(
-  state: LucidShared.TRandomState,
-  items: T[],
-): TRandomResult<T[]> => {
-  const result = [...items];
-  let current = state;
-
-  for (let i = result.length - 1; i > 0; i--) {
-    const picked = randomInt(current, 0, i);
-    current = picked.state;
-    [result[i], result[picked.value]] = [result[picked.value], result[i]];
-  }
-
-  return { value: result, state: current };
-};
