@@ -31,6 +31,29 @@ export const forkTrack = (): LucidShared.TTrack => ({
   ],
 });
 
+// Две развилки подряд: клетка 1 расходится на ветки 2→3 и 4→5, обе сходятся
+// в клетке 6, которая сама является развилкой на ветки 7→8 и 9→10,
+// сходящиеся в клетке 11 перед финишем 12
+export const doubleForkTrack = (): LucidShared.TTrack => ({
+  startId: 0,
+  finishId: 12,
+  cells: [
+    { id: 0, type: LucidShared.ECellType.START, next: [1] },
+    { id: 1, type: LucidShared.ECellType.EVENT, next: [2, 4] },
+    { id: 2, type: LucidShared.ECellType.EVENT, next: [3] },
+    { id: 3, type: LucidShared.ECellType.EVENT, next: [6] },
+    { id: 4, type: LucidShared.ECellType.EVENT, next: [5] },
+    { id: 5, type: LucidShared.ECellType.EVENT, next: [6] },
+    { id: 6, type: LucidShared.ECellType.EVENT, next: [7, 9] },
+    { id: 7, type: LucidShared.ECellType.EVENT, next: [8] },
+    { id: 8, type: LucidShared.ECellType.EVENT, next: [11] },
+    { id: 9, type: LucidShared.ECellType.EVENT, next: [10] },
+    { id: 10, type: LucidShared.ECellType.EVENT, next: [11] },
+    { id: 11, type: LucidShared.ECellType.EVENT, next: [12] },
+    { id: 12, type: LucidShared.ECellType.FINISH, next: [] },
+  ],
+});
+
 interface TMakeGParams {
   track?: LucidShared.TTrack;
   players?: { id: string; nickname: string; position: number; resource: number }[];

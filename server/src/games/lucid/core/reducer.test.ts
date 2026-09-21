@@ -5,7 +5,11 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
-import { forkTrack } from '@/games/lucid/vitest/factories';
+import {
+  doubleForkTrack,
+  forkTrack,
+  lineTrack,
+} from '@/games/lucid/vitest/factories';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { createRandom } from '@/games/lucid/core/random';
@@ -159,5 +163,86 @@ describe('развилки', () => {
     });
 
     expect(next).toBe(onFork);
+  });
+
+  it('вторая развилка подряд снова спрашивает ветку', () => {
+    const state = makeParty('double-fork');
+    state.G.track = doubleForkTrack();
+    state.G.players.a.position = 1;
+    state.G.branchChoices = [2, 4];
+    state.G.pendingSteps = 5;
+    state.ctx.phase = LucidShared.EPhase.BRANCH;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_BRANCH,
+      playerId: 'a',
+      stateId: state.stateId,
+      cellId: 2,
+    });
+
+    // Шаг на клетку 2 тратит один шаг из пяти, дальше 2→3→6 съедают ещё два.
+    // На клетке 6 снова развилка, значит спрашиваем ветку с остатком в два шага
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.BRANCH);
+    expect(next.G.players.a.position).toBe(6);
+    expect(next.G.branchChoices).toEqual([7, 9]);
+    expect(next.G.pendingSteps).toBe(2);
+  });
+});
+
+describe('события', () => {
+  it('событие без вариантов не останавливает ход', () => {
+    const state = makeParty('empty-event');
+    state.G.track = lineTrack();
+    state.G.events = Object.fromEntries([1, 2, 3].map(cellId => [
+      cellId,
+      {
+        cellId,
+        title: 'Пусто',
+        text: 'Ничего не происходит',
+        options: [],
+      },
+    ]));
+
+    const next = roll(state);
+
+    // Куда бы ни привёл бросок, фаза выбора не наступает: выбирать не из чего
+    expect(next.ctx.phase).not.toBe(LucidShared.EPhase.CHOICE);
+  });
+
+  it('победить можно эффектом варианта, а не только броском', () => {
+    const state = makeParty('effect-win');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    // Лидер в шаге от финиша, и эффект варианта дотолкнёт именно его
+    state.G.players.b.position = 3;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Попутный ветер',
+        text: 'Кому-то он на руку больше, чем тебе',
+        options: [{
+          text: 'Поднять паруса',
+          success: {
+            atoms: [{
+              kind: LucidShared.EAtomKind.MOVE,
+              target: LucidShared.ETarget.FIRST,
+              value: 1,
+            }],
+          },
+        }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    // Победитель ищется среди всех игроков, а не только среди ходящего
+    expect(next.G.winner).toBe('b');
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ENDED);
   });
 });

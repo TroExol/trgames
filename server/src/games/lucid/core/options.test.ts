@@ -82,4 +82,19 @@ describe('resolveOption', () => {
 
     expect(G?.players.a.resource).toBe(4);
   });
+
+  it('вариант с ценой и порогом списывает ресурс независимо от исхода броска', () => {
+    const before = onePlayer();
+    const G = resolveOption(before, 'a', {
+      text: 'Купить попытку',
+      cost: 2,
+      threshold: 7,
+      success: { atoms: [gain(5)] },
+      failure: { atoms: [gain(-1)] },
+    });
+
+    // Порог 7 недостижим, значит бросок всегда неудачен: 4 − 2 за вход, затем −1
+    expect(G?.players.a.resource).toBe(1);
+    expect(G?.random).not.toEqual(before.random);
+  });
 });
