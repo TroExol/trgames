@@ -358,7 +358,7 @@ git commit -m "feat(lucid): добавить общие типы игры"
 ```ts
 import { describe, expect, it } from 'vitest';
 
-import { createRandom, rollDie } from '@/games/lucid/core/random';
+import { createRandom, randomInt, rollDie } from '@/games/lucid/core/random';
 
 const rollMany = (seed: string, count: number): number[] => {
   let state = createRandom(seed);
@@ -391,6 +391,24 @@ describe('random', () => {
 
   it('выпадают все шесть граней', () => {
     expect(new Set(rollMany('faces', 300)).size).toBe(6);
+  });
+
+  it('произвольный диапазон покрывается целиком, вместе с границами', () => {
+    // Трек строится через randomInt с произвольными диапазонами, а не через кубик,
+    // поэтому смещение min/max нужно проверить отдельно
+    let state = createRandom('range');
+    const values = new Set<number>();
+
+    for (let i = 0; i < 300; i++) {
+      const picked = randomInt(state, 0, 9);
+
+      expect(picked.value).toBeGreaterThanOrEqual(0);
+      expect(picked.value).toBeLessThanOrEqual(9);
+      values.add(picked.value);
+      state = picked.state;
+    }
+
+    expect(values.size).toBe(10);
   });
 
   it('не меняет исходное состояние', () => {
@@ -468,7 +486,7 @@ export const rollDie = (state: LucidShared.TRandomState): TRandomResult<number> 
 - [ ] **Шаг 4: Запустить тест и убедиться, что он проходит**
 
 Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/random.test.ts`
-Ожидается: все пять тестов зелёные.
+Ожидается: все шесть тестов зелёные.
 
 - [ ] **Шаг 5: Коммит**
 
