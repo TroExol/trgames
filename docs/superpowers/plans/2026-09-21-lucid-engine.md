@@ -868,6 +868,15 @@ describe('walkForward', () => {
     });
   });
 
+  it('нулевой остаток шагов оставляет игрока на месте', () => {
+    // Так бывает после выбора ветки, когда шаг на неё оказался последним
+    expect(walkForward(forkTrack(), 2, 0)).toEqual({
+      position: 2,
+      stepsLeft: 0,
+      branchChoices: [],
+    });
+  });
+
   it('стоя на развилке, предлагает выбор с первого же шага', () => {
     expect(walkForward(forkTrack(), 1, 2)).toEqual({
       position: 1,
@@ -982,25 +991,24 @@ export const walkForward = (
 // Принудительное перемещение эффектом. Выбор ветки не запрашивается: эффект может
 // двигать игрока, чей ход сейчас не идёт, поэтому берётся первая ветка
 export const moveBy = (track: LucidShared.TTrack, from: number, value: number): number => {
-  if (value === 0) {
-    return from;
-  }
+  // Обе карты строятся намеренно, а не по недосмотру: так обход остаётся одним циклом
+  // без приведений типов. Трек — несколько десятков клеток, экономить тут нечего
+  const forward = indexCells(track);
+  const backward = indexPredecessors(track);
+  const neighbors = (id: number): number[] => {
+    return (value >= 0 ? forward.get(id)?.next : backward.get(id)) ?? [];
+  };
 
-  const links = value > 0
-    ? indexCells(track)
-    : indexPredecessors(track);
   let position = from;
 
   for (let step = 0; step < Math.abs(value); step++) {
-    const next = value > 0
-      ? (links as Map<number, LucidShared.TCell>).get(position)?.next
-      : (links as Map<number, number[]>).get(position);
+    const [next] = neighbors(position);
 
-    if (!next || next.length === 0) {
+    if (next === undefined) {
       break;
     }
 
-    position = next[0];
+    position = next;
   }
 
   return position;
@@ -1010,7 +1018,7 @@ export const moveBy = (track: LucidShared.TTrack, from: number, value: number): 
 - [ ] **Шаг 5: Запустить тесты и убедиться, что они проходят**
 
 Выполнить: `yarn workspace @trgames/server test --run src/games/lucid/core/movement.test.ts`
-Ожидается: все одиннадцать тестов зелёные.
+Ожидается: все двенадцать тестов зелёные.
 
 - [ ] **Шаг 6: Коммит**
 

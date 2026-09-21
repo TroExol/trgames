@@ -28,6 +28,15 @@ describe('walkForward', () => {
     });
   });
 
+  it('нулевой остаток шагов оставляет игрока на месте', () => {
+    // Так бывает после выбора ветки, когда шаг на неё оказался последним
+    expect(walkForward(forkTrack(), 2, 0)).toEqual({
+      position: 2,
+      stepsLeft: 0,
+      branchChoices: [],
+    });
+  });
+
   it('стоя на развилке, предлагает выбор с первого же шага', () => {
     expect(walkForward(forkTrack(), 1, 2)).toEqual({
       position: 1,

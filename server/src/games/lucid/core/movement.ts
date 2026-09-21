@@ -54,6 +54,8 @@ export const walkForward = (
 // Принудительное перемещение эффектом. Выбор ветки не запрашивается: эффект может
 // двигать игрока, чей ход сейчас не идёт, поэтому берётся первая ветка
 export const moveBy = (track: LucidShared.TTrack, from: number, value: number): number => {
+  // Обе карты строятся намеренно, а не по недосмотру: так обход остаётся одним циклом
+  // без приведений типов. Трек — несколько десятков клеток, экономить тут нечего
   const forward = indexCells(track);
   const backward = indexPredecessors(track);
   const neighbors = (id: number): number[] => (value >= 0 ? forward.get(id)?.next : backward.get(id)) ?? [];
