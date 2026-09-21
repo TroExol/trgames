@@ -22,9 +22,11 @@ yarn workspace @trgames/client storybook    # Storybook (порт 6006)
 ```bash
 yarn workspace @trgames/server start:dev    # Nodemon watch mode (порт 4001)
 yarn workspace @trgames/server test         # Vitest (все тесты)
-yarn workspace @trgames/server test src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест
+yarn workspace @trgames/server test --run src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест (флаг --run обязателен)
 yarn workspace @trgames/server lint         # typecheck + eslint + тесты
 ```
+
+Флаг `--run` для запуска одного файла обязателен: скрипт `test` заканчивается флагом `--silent`, и без `--run` путь приклеивается к нему как значение — vitest падает с `Unexpected value "--silent=<путь>"`, не начав работу.
 
 ### Shared (@trgames/shared)
 ```bash
