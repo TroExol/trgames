@@ -1,4 +1,5 @@
 export * from './atoms';
+export * from './autoMove';
 export * from './effects';
 export * from './formatForPlayer';
 export * from './movement';

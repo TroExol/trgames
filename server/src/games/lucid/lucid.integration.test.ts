@@ -9,6 +9,7 @@ import { makeFallbackParty } from '@/games/lucid/vitest/factories';
 import { createStorage } from '@/games/lucid/storage/db';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { formatForPlayer } from '@/games/lucid/core/formatForPlayer';
+import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 
 const MAX_MOVES = 2000;
 
@@ -18,41 +19,31 @@ interface TPlayLog {
   choiceOffers: number;
 }
 
-// Бот: бросает кубик, на развилке берёт вторую ветку, в событии — первый
-// вариант, который может себе позволить. Брать вариант вслепую нельзя:
-// недоступный по цене движок отклонит, и бот выбирал бы его бесконечно
+// Ход выбирает та же функция, что и автопилот за отсутствующего игрока
+// (chooseAutoMove): кубик, на развилке — первая доступная ветка, в событии —
+// первый вариант, который по карману. Брать вариант вслепую нельзя:
+// недоступный по цене движок отклонит, и перебор зациклился бы
 const playToEnd = (start: LucidShared.TState): TPlayLog => {
   let state = start;
   let branchOffers = 0;
   let choiceOffers = 0;
 
   for (let i = 0; i < MAX_MOVES && state.ctx.phase !== LucidShared.EPhase.ENDED; i++) {
-    const playerId = state.ctx.currentPlayer;
-    const stateId = state.stateId;
-
     if (state.ctx.phase === LucidShared.EPhase.BRANCH) {
       branchOffers++;
-      state = applyMove(state, {
-        type: EMoveType.CHOOSE_BRANCH,
-        playerId,
-        stateId,
-        cellId: state.G.branchChoices[1],
-      });
-      continue;
     }
 
     if (state.ctx.phase === LucidShared.EPhase.CHOICE) {
       choiceOffers++;
-
-      const player = state.G.players[playerId];
-      const options = state.G.events[player.position]?.options ?? [];
-      const optionIndex = options.findIndex(option => !option.cost || option.cost <= player.resource);
-
-      state = applyMove(state, { type: EMoveType.CHOOSE_OPTION, playerId, stateId, optionIndex });
-      continue;
     }
 
-    state = applyMove(state, { type: EMoveType.ROLL, playerId, stateId });
+    const move = chooseAutoMove(state);
+
+    if (!move) {
+      break;
+    }
+
+    state = applyMove(state, move);
   }
 
   return { state, branchOffers, choiceOffers };
