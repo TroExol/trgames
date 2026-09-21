@@ -877,8 +877,9 @@ describe('walkForward', () => {
   });
 
   it('пройдя развилку, идёт до конца без остановок', () => {
+    // От клетки 2 три шага по связям: 2→3→6→7, конечная клетка — финиш
     expect(walkForward(forkTrack(), 2, 3)).toEqual({
-      position: 6,
+      position: 7,
       stepsLeft: 0,
       branchChoices: [],
     });
