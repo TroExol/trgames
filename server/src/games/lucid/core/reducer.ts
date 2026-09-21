@@ -47,24 +47,45 @@ const nextPlayer = (state: LucidShared.TState): LucidShared.TCtx => {
 };
 
 // После перемещения: либо конец партии, либо выбор ветки, либо событие, либо ход дальше
-const afterMove = (state: LucidShared.TState): LucidShared.TState => {
+const finishIfWon = (state: LucidShared.TState): LucidShared.TState | null => {
   const winner = state.G.order.find(id => state.G.players[id].position >= state.G.track.finishId);
 
-  if (winner) {
-    return {
-      ...state,
-      G: { ...state.G, winner, branchChoices: [], pendingSteps: 0 },
-      ctx: { ...state.ctx, phase: LucidShared.EPhase.ENDED },
-    };
+  if (!winner) {
+    return null;
+  }
+
+  return {
+    ...state,
+    G: { ...state.G, winner, branchChoices: [], pendingSteps: 0 },
+    ctx: { ...state.ctx, phase: LucidShared.EPhase.ENDED },
+  };
+};
+
+// Событие разыграно — ход на этом заканчивается. Проверять клетку заново нельзя:
+// вариант мог не сдвинуть игрока, и то же событие предлагалось бы ему бесконечно
+const endTurn = (state: LucidShared.TState): LucidShared.TState => {
+  return finishIfWon(state) ?? { ...state, ctx: nextPlayer(state) };
+};
+
+const afterMove = (state: LucidShared.TState): LucidShared.TState => {
+  const won = finishIfWon(state);
+
+  if (won) {
+    return won;
   }
 
   if (state.G.branchChoices.length > 1) {
     return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.BRANCH } };
   }
 
-  const event = state.G.events[state.G.players[state.ctx.currentPlayer].position];
+  const player = state.G.players[state.ctx.currentPlayer];
+  const event = state.G.events[player.position];
+  // Вариант, который игроку не по карману, выбрать нельзя. Если таковы все варианты,
+  // выбирать не из чего и событие проходит мимо: иначе у игрока не осталось бы
+  // ни одного допустимого хода и партия встала бы намертво
+  const affordable = event?.options.some(option => !option.cost || option.cost <= player.resource);
 
-  if (event && event.options.length > 0) {
+  if (affordable) {
     return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.CHOICE } };
   }
 
@@ -123,7 +144,7 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return null;
     }
 
-    return afterMove({ ...state, G: { ...G, branchChoices: [], pendingSteps: 0 } });
+    return endTurn({ ...state, G: { ...G, branchChoices: [], pendingSteps: 0 } });
   },
 };
 

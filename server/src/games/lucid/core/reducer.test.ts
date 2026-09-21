@@ -209,6 +209,72 @@ describe('события', () => {
     expect(next.ctx.phase).not.toBe(LucidShared.EPhase.CHOICE);
   });
 
+  it('событие, которое игроку не по карману целиком, проходит мимо', () => {
+    const state = makeParty('too-poor');
+    state.G.track = lineTrack();
+    state.G.players.a.resource = 0;
+    state.G.events = Object.fromEntries([1, 2, 3].map(cellId => [
+      cellId,
+      {
+        cellId,
+        title: 'Лавка',
+        text: 'Всё стоит денег, а их нет',
+        options: [{
+          text: 'Купить',
+          cost: 3,
+          success: {
+            atoms: [{
+              kind: LucidShared.EAtomKind.RESOURCE,
+              target: LucidShared.ETarget.SELF,
+              value: 1,
+            }],
+          },
+        }],
+      },
+    ]));
+
+    const next = roll(state);
+
+    // Ни одного доступного варианта: выбирать не из чего, иначе у игрока
+    // не осталось бы ни одного допустимого хода и партия встала бы
+    expect(next.ctx.phase).not.toBe(LucidShared.EPhase.CHOICE);
+  });
+
+  it('разыгранный вариант завершает ход, даже если игрок не сдвинулся', () => {
+    const state = makeParty('stay-put');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Находка',
+        text: 'Ты подбираешь монету и остаёшься где стоял',
+        options: [{
+          text: 'Подобрать',
+          success: {
+            atoms: [{
+              kind: LucidShared.EAtomKind.RESOURCE,
+              target: LucidShared.ETarget.SELF,
+              value: 1,
+            }],
+          },
+        }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    // Клетку заново не проверяем: иначе то же событие предлагалось бы бесконечно
+    expect(next.ctx.currentPlayer).toBe('b');
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+  });
+
   it('победить можно эффектом варианта, а не только броском', () => {
     const state = makeParty('effect-win');
     state.G.track = lineTrack();
