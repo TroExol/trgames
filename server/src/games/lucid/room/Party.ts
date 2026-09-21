@@ -1,8 +1,19 @@
 import { LucidShared } from '@trgames/shared';
 
+import { createRandom, randomInt } from '@/games/lucid/core/random';
+
 const MAX_THEME_LENGTH = 200;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 6;
+
+// Для тех случаев, когда не предложил никто
+export const THEME_HINTS = [
+  'заброшенная космическая станция',
+  'пираты южных морей',
+  'офис перед сдачей квартального отчёта',
+  'киберпанковые трущобы',
+  'экспедиция во льдах',
+];
 
 interface TPartyConstructorParams {
   uuid: string;
@@ -117,6 +128,18 @@ export class Party {
 
     member.themeProposal = undefined;
     member.hasAnswered = true;
+  };
+
+  // Тему выбирает кубик, а не создатель партии: мир игрокам не выбирается,
+  // он им достаётся. Сид взят от партии, поэтому жеребьёвка воспроизводима
+  public drawTheme = (): string => {
+    const proposals = [...this.members.values()]
+      .map(member => member.themeProposal)
+      .filter((theme): theme is string => Boolean(theme));
+    const pool = proposals.length > 0 ? proposals : THEME_HINTS;
+    const picked = randomInt(createRandom(`${this.uuid}:theme`), 0, pool.length - 1);
+
+    return pool[picked.value];
   };
 
   public view = (playerId: LucidShared.TPlayerId): LucidShared.TPartyView => ({

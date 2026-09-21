@@ -4,7 +4,7 @@ import {
   it,
 } from 'vitest';
 
-import { Party } from '@/games/lucid/room/Party';
+import { Party, THEME_HINTS } from '@/games/lucid/room/Party';
 
 const makeParty = () => new Party({ uuid: 'p1', ownerId: 'a' });
 
@@ -109,5 +109,53 @@ describe('предложения темы', () => {
     const party = partyWithTwo();
 
     expect(() => party.proposeTheme('a', 'т'.repeat(201))).toThrow();
+  });
+});
+
+describe('жеребьёвка темы', () => {
+  const partyWithThemes = (uuid: string) => {
+    const party = new Party({ uuid, ownerId: 'a' });
+    party.join({ playerId: 'a', nickname: 'Аня' });
+    party.join({ playerId: 'b', nickname: 'Боря' });
+    party.join({ playerId: 'c', nickname: 'Вася' });
+
+    return party;
+  };
+
+  it('выбирает одну из предложенных тем', () => {
+    const party = partyWithThemes('draw-1');
+    party.proposeTheme('a', 'пираты');
+    party.proposeTheme('b', 'киберпанк');
+    party.declineTheme('c');
+
+    expect(['пираты', 'киберпанк']).toContain(party.drawTheme());
+  });
+
+  it('жеребьёвка воспроизводима: та же партия даёт тот же выбор', () => {
+    const first = partyWithThemes('draw-same');
+    first.proposeTheme('a', 'пираты');
+    first.proposeTheme('b', 'киберпанк');
+
+    const second = partyWithThemes('draw-same');
+    second.proposeTheme('a', 'пираты');
+    second.proposeTheme('b', 'киберпанк');
+
+    expect(first.drawTheme()).toBe(second.drawTheme());
+  });
+
+  it('отказавшийся в жеребьёвке не участвует', () => {
+    const party = partyWithThemes('draw-decline');
+    party.declineTheme('a');
+    party.declineTheme('b');
+    party.proposeTheme('c', 'офис');
+
+    expect(party.drawTheme()).toBe('офис');
+  });
+
+  it('если не предложил никто, тема берётся из подсказок', () => {
+    const party = partyWithThemes('draw-empty');
+    party.declineTheme('a');
+
+    expect(THEME_HINTS).toContain(party.drawTheme());
   });
 });
