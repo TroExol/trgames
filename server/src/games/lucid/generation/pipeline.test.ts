@@ -25,12 +25,15 @@ const eventsFor = (cellIds: number[]) => ({
   })),
 });
 
+const SEED = 'pipeline';
+
 const run = (generateJson: TGenerateJson, deadlineOffsetMs = 10_000) => generateContent({
   generateJson,
   theme: 'пираты',
   nicknames: ['Аня', 'Боря'],
   eventCellIds: [1, 2],
   deadlineMs: Date.now() + deadlineOffsetMs,
+  seed: SEED,
 });
 
 describe('generateContent', () => {
@@ -109,6 +112,6 @@ describe('generateContent', () => {
     const result = await run(generateJson);
 
     expect(result.usedFallback).toBe(true);
-    expect(result.content.theme.name).toBe(loadFallbackContent().theme.name);
+    expect(result.content.theme.name).toBe(loadFallbackContent([1, 2], SEED).theme.name);
   });
 });

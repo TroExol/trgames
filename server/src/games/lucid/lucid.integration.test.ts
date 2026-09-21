@@ -5,9 +5,8 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
+import { makeFallbackParty } from '@/games/lucid/vitest/factories';
 import { createStorage } from '@/games/lucid/storage/db';
-import { loadFallbackContent } from '@/games/lucid/generation/fallback';
-import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { formatForPlayer } from '@/games/lucid/core/formatForPlayer';
 
@@ -16,6 +15,7 @@ const MAX_MOVES = 2000;
 interface TPlayLog {
   state: LucidShared.TState;
   branchOffers: number;
+  choiceOffers: number;
 }
 
 // Бот: бросает кубик, на развилке берёт вторую ветку, в событии — первый
@@ -24,6 +24,7 @@ interface TPlayLog {
 const playToEnd = (start: LucidShared.TState): TPlayLog => {
   let state = start;
   let branchOffers = 0;
+  let choiceOffers = 0;
 
   for (let i = 0; i < MAX_MOVES && state.ctx.phase !== LucidShared.EPhase.ENDED; i++) {
     const playerId = state.ctx.currentPlayer;
@@ -41,6 +42,8 @@ const playToEnd = (start: LucidShared.TState): TPlayLog => {
     }
 
     if (state.ctx.phase === LucidShared.EPhase.CHOICE) {
+      choiceOffers++;
+
       const player = state.G.players[playerId];
       const options = state.G.events[player.position]?.options ?? [];
       const optionIndex = options.findIndex(option => !option.cost || option.cost <= player.resource);
@@ -52,17 +55,10 @@ const playToEnd = (start: LucidShared.TState): TPlayLog => {
     state = applyMove(state, { type: EMoveType.ROLL, playerId, stateId });
   }
 
-  return { state, branchOffers };
+  return { state, branchOffers, choiceOffers };
 };
 
-const makeParty = (seed: string, playerCount = 3) => setupParty({
-  seed,
-  players: Array.from({ length: playerCount }, (_, index) => ({
-    id: `p${index}`,
-    nickname: `Игрок ${index}`,
-  })),
-  content: loadFallbackContent(),
-});
+const makeParty = (seed: string, playerCount = 3) => makeFallbackParty({ seed, playerCount });
 
 describe('партия целиком', () => {
   it('на любом сиде и любом числе игроков доходит до победителя', () => {
@@ -80,6 +76,14 @@ describe('партия целиком', () => {
     // Если бы выбор ветки ждал точного попадания на клетку развилки,
     // предложений было бы в разы меньше
     expect(playToEnd(makeParty('branches')).branchOffers).toBeGreaterThan(3);
+  });
+
+  it('за партию выбор варианта события предлагается не раз и не два', () => {
+    // Запасная партия могла бы выродиться в поле без единого события — этот
+    // счётчик за такое бы поручился. Порог 10 взят с запасом: у события есть
+    // варианты почти всегда (см. fallback.test.ts), значит выбор предлагается
+    // почти на каждом ходу, а до победителя обычно десятки ходов
+    expect(playToEnd(makeParty('choices')).choiceOffers).toBeGreaterThan(10);
   });
 
   it('партия воспроизводима: тот же сид даёт того же победителя', () => {

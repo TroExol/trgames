@@ -4,15 +4,10 @@ import {
   it,
 } from 'vitest';
 
+import { makeFallbackParty } from '@/games/lucid/vitest/factories';
 import { createStorage } from '@/games/lucid/storage/db';
-import { loadFallbackContent } from '@/games/lucid/generation/fallback';
-import { setupParty } from '@/games/lucid/core/setup';
 
-const makeState = () => setupParty({
-  seed: 'storage',
-  players: [{ id: 'a', nickname: 'Аня' }, { id: 'b', nickname: 'Боря' }],
-  content: loadFallbackContent(),
-});
+const makeState = () => makeFallbackParty({ seed: 'storage', playerCount: 2 });
 
 describe('storage', () => {
   it('сохранённая партия читается обратно без потерь', () => {
@@ -29,10 +24,10 @@ describe('storage', () => {
     const state = makeState();
 
     storage.saveParty({ uuid: 'p1', theme: 'станция', state });
-    state.G.players.a.position = 7;
+    state.G.players.p0.position = 7;
     storage.saveParty({ uuid: 'p1', theme: 'станция', state });
 
-    expect(storage.loadParty('p1')!.G.players.a.position).toBe(7);
+    expect(storage.loadParty('p1')!.G.players.p0.position).toBe(7);
   });
 
   it('несуществующая партия читается как null', () => {

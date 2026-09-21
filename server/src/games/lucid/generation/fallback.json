@@ -2,7 +2,13 @@
   "theme": {
     "name": "Заброшенная станция",
     "resourceName": "заряды",
-    "palette": ["#12161f", "#1f2937", "#38bdf8", "#f59e0b", "#e2e8f0"]
+    "palette": [
+      "#12161f",
+      "#1f2937",
+      "#38bdf8",
+      "#f59e0b",
+      "#e2e8f0"
+    ]
   },
   "events": [
     {
@@ -13,13 +19,37 @@
         {
           "text": "Перепрыгнуть",
           "threshold": 4,
-          "success": { "atoms": [{ "kind": "MOVE", "target": "SELF", "value": 2 }] },
-          "failure": { "atoms": [{ "kind": "SKIP_TURN", "target": "SELF", "value": 1 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
         },
         {
           "text": "Обесточить участок",
           "cost": 2,
-          "success": { "atoms": [{ "kind": "MOVE", "target": "SELF", "value": 1 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
         }
       ]
     },
@@ -30,7 +60,15 @@
       "options": [
         {
           "text": "Обыскать",
-          "success": { "atoms": [{ "kind": "RESOURCE", "target": "SELF", "value": 2 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
         }
       ]
     },
@@ -41,7 +79,15 @@
       "options": [
         {
           "text": "Не мешать двери",
-          "success": { "atoms": [{ "kind": "MOVE", "target": "FIRST", "value": -2 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -2
+              }
+            ]
+          }
         }
       ]
     },
@@ -52,7 +98,15 @@
       "options": [
         {
           "text": "Отправить лифт вниз",
-          "success": { "atoms": [{ "kind": "MOVE", "target": "LAST", "value": 3 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 3
+              }
+            ]
+          }
         }
       ]
     },
@@ -63,11 +117,27 @@
       "options": [
         {
           "text": "Забрать себе",
-          "success": { "atoms": [{ "kind": "RESOURCE", "target": "SELF", "value": 3 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          }
         },
         {
           "text": "Поделить на всех",
-          "success": { "atoms": [{ "kind": "RESOURCE", "target": "ALL", "value": 1 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "ALL",
+                "value": 1
+              }
+            ]
+          }
         }
       ]
     },
@@ -79,11 +149,1420 @@
         {
           "text": "Поменяться местами с лидером",
           "cost": 3,
-          "success": { "atoms": [{ "kind": "SWAP_WITH_FIRST", "target": "SELF", "value": 0 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "SWAP_WITH_FIRST",
+                "target": "SELF",
+                "value": 0
+              }
+            ]
+          }
         },
         {
           "text": "Просто полюбоваться",
-          "success": { "atoms": [{ "kind": "RESOURCE", "target": "SELF", "value": 1 }] }
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 7,
+      "title": "Обрыв связи",
+      "text": "Диспетчерская молчит вторые сутки, но панель вызова вдруг оживает.",
+      "options": [
+        {
+          "text": "Ответить на вызов",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 8,
+      "title": "Забытый шприц-тюбик",
+      "text": "Этикетка стёрта, но раствор внутри ещё держит цвет — значит, не просрочен.",
+      "options": [
+        {
+          "text": "Использовать самому",
+          "threshold": 5,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Передать отстающему по рации",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 9,
+      "title": "Разросшиеся лианы",
+      "text": "Заросли переросли до потолка. Просека нужна, но чем меньше заряда в фонаре, тем медленнее режешь на ощупь.",
+      "options": [
+        {
+          "text": "Прорубить путь",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ],
+            "condition": {
+              "field": "RESOURCE",
+              "operator": "LT",
+              "value": 2
+            },
+            "otherwise": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 10,
+      "title": "Узкая шахта над финишным ярусом",
+      "text": "Верхний лаз выходит прямо к финишным терминалам — но узко, потным не пролезть.",
+      "options": [
+        {
+          "text": "Протиснуться первым",
+          "threshold": 5,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Обрушить решётку за лидером",
+          "cost": 2,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 11,
+      "title": "Личное дело",
+      "text": "Папка с грифом хранит имя техника, который последним видел станцию рабочей.",
+      "options": [
+        {
+          "text": "Унести папку",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 12,
+      "title": "Спальный отсек",
+      "text": "Три койки, три тумбочки, и только одна ещё не вскрыта.",
+      "options": [
+        {
+          "text": "Взломать последнюю",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Обыскать открытые",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Прилечь на чужую койку",
+          "success": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              },
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 13,
+      "title": "Заправка шаттла",
+      "text": "В баке шаттла плещется что-то ещё пригодное. На всех не хватит.",
+      "options": [
+        {
+          "text": "Слить себе",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "text": "Подвезти отстающего",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 14,
+      "title": "Пробоина в обшивке",
+      "text": "Свист воздуха выдаёт трещину у самого шва модуля.",
+      "options": [
+        {
+          "text": "Заделать герметиком",
+          "cost": 2,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 15,
+      "title": "Скачок напряжения",
+      "text": "Реактор дал искру по всей магистрали разом — не разбирая, кто в каком отсеке.",
+      "options": [
+        {
+          "text": "Переждать удар",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "ALL",
+                "value": -1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 16,
+      "title": "Опломбированный контейнер",
+      "text": "Печать станции ещё цела. На бирке — имя того, кто сейчас идёт впереди.",
+      "options": [
+        {
+          "text": "Вскрыть чужую бронь",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Сообщить, что бронь просрочена",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 17,
+      "title": "Шлюз с обратным отсчётом",
+      "text": "Табло отсчитывает секунды до продувки — успеешь, если идёшь налегке.",
+      "options": [
+        {
+          "text": "Проскочить",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ],
+            "condition": {
+              "field": "RESOURCE",
+              "operator": "LTE",
+              "value": 2
+            },
+            "otherwise": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 18,
+      "title": "Ретранслятор ловит один сигнал",
+      "text": "Приёмник настроен на маяк того, кто дальше всех от финиша — его аварийный передатчик всё ещё бьёт SOS.",
+      "options": [
+        {
+          "text": "Усилить сигнал маяка",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 19,
+      "title": "Карантинная дверь",
+      "text": "Табличка предупреждает: кто недавно был здесь, тот и подхватил первым.",
+      "options": [
+        {
+          "text": "Опечатать за ушедшим вперёд",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "FIRST",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Пройти мимо",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 20,
+      "title": "Гидропонный бак",
+      "text": "Вода мутная, но в ней ещё что-то растёт.",
+      "options": [
+        {
+          "text": "Выпить очищенное",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -2
+              }
+            ]
+          }
+        },
+        {
+          "text": "Собрать семена",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Отнести росток отстающему",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 21,
+      "title": "Забитый фильтр",
+      "text": "От того, каким воздухом дышать дальше, зависит, сколько сил останется на путь.",
+      "options": [
+        {
+          "text": "Почистить фильтр",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ],
+            "condition": {
+              "field": "POSITION",
+              "operator": "GTE",
+              "value": 15
+            },
+            "otherwise": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 22,
+      "title": "Грузовой подъёмник",
+      "text": "Кабина спущена до самого нижнего яруса — туда, где застрял отстающий.",
+      "options": [
+        {
+          "text": "Поднять кабину вместе с ним",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 3
+              }
+            ]
+          }
+        },
+        {
+          "text": "Вызвать наверх налегке",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 23,
+      "title": "Журнал смен",
+      "text": "Последняя запись обрывается на полуслове.",
+      "options": [
+        {
+          "text": "Дочитать в темноте",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ],
+            "condition": {
+              "field": "RESOURCE",
+              "operator": "GTE",
+              "value": 5
+            },
+            "otherwise": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 24,
+      "title": "Сорванный шкаф",
+      "text": "Кто-то уже пытался его вскрыть — и не успел.",
+      "options": [
+        {
+          "text": "Закончить начатое",
+          "threshold": 3,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 25,
+      "title": "Дрон-техник",
+      "text": "Автономный дрон чинит то, что ближе всего к финишу — сейчас это не твой участок.",
+      "options": [
+        {
+          "text": "Перенастроить на лидера",
+          "cost": 2,
+          "success": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "FIRST",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Разобрать дрона на запчасти",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 26,
+      "title": "Обзорный иллюминатор",
+      "text": "Трещина в стекле держится на честном слове.",
+      "options": [
+        {
+          "text": "Заклеить и идти дальше",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 27,
+      "title": "Резервные аккумуляторы",
+      "text": "Три ячейки, разряд неравномерный.",
+      "options": [
+        {
+          "text": "Взять полную",
+          "threshold": 5,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Взять надёжную половину",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Отдать половину отстающему",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 28,
+      "title": "Инвентаризация",
+      "text": "Список требует свести дебет с кредитом, начиная с того, кто дальше всех ушёл.",
+      "options": [
+        {
+          "text": "Свести по лидеру",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -1
+              },
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Пропустить строкой",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 29,
+      "title": "Датчик давления шлюза",
+      "text": "Показания подсказывают, насколько изношен уплотнитель на этом участке пути.",
+      "options": [
+        {
+          "text": "Рискнуть пройти",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ],
+            "condition": {
+              "field": "POSITION",
+              "operator": "LT",
+              "value": 10
+            },
+            "otherwise": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 30,
+      "title": "Автоответчик",
+      "text": "Голос двадцатилетней давности всё ещё желает счастливого дежурства.",
+      "options": [
+        {
+          "text": "Дослушать до конца",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 31,
+      "title": "Аптечка на двоих",
+      "text": "Комплект рассчитан на экстренный случай — а экстренный случай это отставание на полкруга.",
+      "options": [
+        {
+          "text": "Передать отстающему",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 32,
+      "title": "Автополив сломан",
+      "text": "Растения вянут по расписанию, которого больше нет.",
+      "options": [
+        {
+          "text": "Починить",
+          "threshold": 4,
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 33,
+      "title": "Развилка воздуховодов",
+      "text": "Три трубы ведут в разные стороны станции, и только шум подсказывает, какая короче.",
+      "options": [
+        {
+          "text": "Идти на гул генератора",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Идти на тишину",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Идти на голоса",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 34,
+      "title": "Лифт застрял между этажами",
+      "text": "Кабина зависла точно там, где недавно проехал тот, кто впереди.",
+      "options": [
+        {
+          "text": "Расклинить двери",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Обесточить его этаж",
+          "cost": 2,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 35,
+      "title": "Схема станции",
+      "text": "Карта показывает короткий путь — если знаешь, где искать.",
+      "options": [
+        {
+          "text": "Свериться по карте",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ],
+            "condition": {
+              "field": "RESOURCE",
+              "operator": "GT",
+              "value": 3
+            },
+            "otherwise": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 36,
+      "title": "Личные вещи",
+      "text": "Фотография семьи на тумбочке — единственное, что здесь ещё живое.",
+      "options": [
+        {
+          "text": "Забрать всё ценное",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              },
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 37,
+      "title": "Ремкомплект для скафандра",
+      "text": "Пригодился бы тому, кто дальше всех — его снаряжение явно изношено сильнее.",
+      "options": [
+        {
+          "text": "Отправить отстающему",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "text": "Оставить себе про запас",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 38,
+      "title": "Стыковочный узел",
+      "text": "Ржавый механизм со скрипом, но подаётся.",
+      "options": [
+        {
+          "text": "Провернуть вручную",
+          "threshold": 5,
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 39,
+      "title": "Панель распределения",
+      "text": "Три рубильника, и только один не помечен предупреждением.",
+      "options": [
+        {
+          "text": "Дёрнуть немаркированный",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              },
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Дёрнуть безопасный",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Перенаправить мощность отстающему",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 40,
+      "title": "Диспетчерская лебёдка",
+      "text": "Табло показывает: грузовую платформу вызвали наверх. Кто-то там уже ждёт.",
+      "options": [
+        {
+          "text": "Сбросить вызов",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Не трогать пульт",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 41,
+      "title": "Резервный клапан",
+      "text": "Он откроется, только если понимаешь, куда давить.",
+      "options": [
+        {
+          "text": "Надавить по чутью",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 2
+              }
+            ],
+            "condition": {
+              "field": "POSITION",
+              "operator": "GTE",
+              "value": 20
+            },
+            "otherwise": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 42,
+      "title": "Аварийный канал",
+      "text": "Кто-то на другом конце станции просит подтвердить приём.",
+      "options": [
+        {
+          "text": "Ответить",
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 43,
+      "title": "Строгий карантинный протокол",
+      "text": "Правила станции требуют держать дистанцию от того, кто вырвался вперёд.",
+      "options": [
+        {
+          "text": "Соблюсти протокол",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "FIRST",
+                "value": -1
+              },
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Нарушить и догнать",
+          "threshold": 5,
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 44,
+      "title": "Последний урожай",
+      "text": "Помидоры-мутанты выросли размером с кулак.",
+      "options": [
+        {
+          "text": "Съесть",
+          "threshold": 3,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 45,
+      "title": "Магистральный узел",
+      "text": "Отсюда воздух расходится по всей станции — и слышно, кто где застрял.",
+      "options": [
+        {
+          "text": "Направить поток себе",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Направить отстающему",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "text": "Перекрыть лидеру",
+          "cost": 2,
+          "success": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "FIRST",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 46,
+      "title": "Служебная шахта вниз",
+      "text": "Обходной путь для техников — годится, чтобы подобрать того, кто провалился в самый низ станции.",
+      "options": [
+        {
+          "text": "Спуститься за отстающим",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "LAST",
+                "value": 3
+              }
+            ]
+          }
+        },
+        {
+          "text": "Идти своим маршрутом",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 47,
+      "title": "Итоговый отчёт станции",
+      "text": "Последняя страница так и не была дописана — эвакуация случилась раньше.",
+      "options": [
+        {
+          "text": "Дописать за инженера",
+          "cost": 1,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "cellId": 48,
+      "title": "Каюта начальника смены",
+      "text": "Дверь опечатана крест-накрест, но замок сдался времени раньше печати.",
+      "options": [
+        {
+          "text": "Войти",
+          "threshold": 4,
+          "success": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 3
+              }
+            ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Обойти стороной",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
+          }
         }
       ]
     }

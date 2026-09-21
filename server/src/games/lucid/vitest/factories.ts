@@ -1,5 +1,8 @@
 import { LucidShared } from '@trgames/shared';
 
+import { loadFallbackContent } from '@/games/lucid/generation/fallback';
+import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
+import { setupParty } from '@/games/lucid/core/setup';
 import { createRandom } from '@/games/lucid/core/random';
 
 // Прямой трек: 0 → 1 → 2 → 3 → 4, где 0 старт и 4 финиш
@@ -82,3 +85,26 @@ export const makeG = ({
   branchChoices: [],
   pendingSteps: 0,
 });
+
+interface TMakeFallbackPartyParams {
+  seed: string;
+  playerCount?: number;
+}
+
+// Запасная партия строится под конкретный трек, а трек — детерминированно из сида.
+// Поэтому трек собирается дважды: здесь ради номеров клеток и внутри setupParty
+export const makeFallbackParty = ({
+  seed,
+  playerCount = 3,
+}: TMakeFallbackPartyParams): LucidShared.TState => {
+  const track = buildTrack({ random: createRandom(`${seed}:track`), playerCount });
+
+  return setupParty({
+    seed,
+    players: Array.from({ length: playerCount }, (_, index) => ({
+      id: `p${index}`,
+      nickname: `Игрок ${index}`,
+    })),
+    content: loadFallbackContent(eventCellIds(track), seed),
+  });
+};

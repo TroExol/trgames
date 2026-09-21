@@ -20,6 +20,7 @@ interface TGenerateContentParams {
   // Номера реальных клеток событий: ответ модели сверяется с ними
   eventCellIds: number[];
   deadlineMs: number;
+  seed: string;
 }
 
 export interface TGenerateContentResult {
@@ -34,6 +35,7 @@ export const generateContent = async ({
   nicknames,
   eventCellIds,
   deadlineMs,
+  seed,
 }: TGenerateContentParams): Promise<TGenerateContentResult> => {
   let usage: TUsage = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -90,7 +92,7 @@ export const generateContent = async ({
   };
 
   const withFallback = (): TGenerateContentResult => ({
-    content: loadFallbackContent(),
+    content: loadFallbackContent(eventCellIds, seed),
     usage,
     usedFallback: true,
   });

@@ -8,6 +8,7 @@ import {
   createRandom,
   randomInt,
   rollDie,
+  shuffle,
 } from '@/games/lucid/core/random';
 
 const rollMany = (seed: string, count: number): number[] => {
@@ -66,5 +67,18 @@ describe('random', () => {
     rollDie(state);
 
     expect(state).toEqual(before);
+  });
+
+  it('перемешивание сохраняет состав', () => {
+    const { value } = shuffle(createRandom('shuffle'), [1, 2, 3, 4, 5]);
+
+    expect([...value].sort()).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('перемешивание воспроизводимо по сиду', () => {
+    const first = shuffle(createRandom('same'), [1, 2, 3, 4, 5, 6, 7, 8]).value;
+    const second = shuffle(createRandom('same'), [1, 2, 3, 4, 5, 6, 7, 8]).value;
+
+    expect(first).toEqual(second);
   });
 });
