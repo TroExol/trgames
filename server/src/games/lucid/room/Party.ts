@@ -54,6 +54,17 @@ interface TStartParams {
   generate: (params: TGenerateParams) => Promise<TGenerateResult>;
 }
 
+export interface TPartySnapshot {
+  uuid: string;
+  ownerId: LucidShared.TPlayerId;
+  phase: LucidShared.EPartyPhase;
+  members: TMember[];
+  theme?: LucidShared.TTheme;
+  state?: LucidShared.TState;
+  usedFallback: boolean;
+  sentRibbonLines: number;
+}
+
 export class Party {
   public readonly uuid: string;
   public readonly ownerId: LucidShared.TPlayerId;
@@ -227,6 +238,36 @@ export class Party {
     this.extraRibbonLines.length = 0;
 
     return delta;
+  };
+
+  // Снимок — это обычные данные: состояние партии проектировалось
+  // сериализуемым именно ради этого
+  public snapshot = (): TPartySnapshot => ({
+    uuid: this.uuid,
+    ownerId: this.ownerId,
+    phase: this.phase,
+    members: [...this.members.values()].map(member => ({ ...member })),
+    theme: this.theme,
+    state: this.state,
+    usedFallback: this.usedFallback,
+    sentRibbonLines: this.sentRibbonLines,
+  });
+
+  public static fromSnapshot = (snapshot: TPartySnapshot): Party => {
+    const party = new Party({ uuid: snapshot.uuid, ownerId: snapshot.ownerId });
+
+    party.phase = snapshot.phase;
+    party.theme = snapshot.theme;
+    party.state = snapshot.state;
+    party.usedFallback = snapshot.usedFallback;
+    party.sentRibbonLines = snapshot.sentRibbonLines;
+    // После перезапуска сервера соединений нет ни у кого: связь восстановится,
+    // когда клиенты переподключатся
+    snapshot.members.forEach(member => {
+      party.members.set(member.playerId, { ...member, isConnected: false });
+    });
+
+    return party;
   };
 
   public view = (playerId: LucidShared.TPlayerId): LucidShared.TPartyView => ({
