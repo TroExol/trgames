@@ -13,6 +13,10 @@ export class PartyStore {
 
   public ribbon: string[] = [];
 
+  // Сколько строк пришло за партию. Номер строки нужен ленте как ключ: без
+  // него React переиспользует те же узлы, и проявится не новая строка, а все
+  public ribbonTotal = 0;
+
   public connection: TConnection = 'connecting';
 
   public error?: string;
@@ -38,6 +42,7 @@ export class PartyStore {
   }
 
   public appendRibbon(lines: string[]): void {
+    this.ribbonTotal += lines.length;
     this.ribbon = [...this.ribbon, ...lines].slice(-RIBBON_LIMIT);
   }
 
@@ -52,6 +57,7 @@ export class PartyStore {
   public reset(): void {
     this.view = undefined;
     this.ribbon = [];
+    this.ribbonTotal = 0;
     this.connection = 'connecting';
     this.error = undefined;
   }

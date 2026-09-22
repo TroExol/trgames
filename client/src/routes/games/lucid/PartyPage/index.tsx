@@ -14,6 +14,7 @@ import type { TMood } from '@/lib/lucid/colors';
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Lobby } from '@/routes/games/lucid/PartyPage/components/Lobby';
+import { Hud } from '@/routes/games/lucid/PartyPage/components/Hud';
 import { Generating } from '@/routes/games/lucid/PartyPage/components/Generating';
 import { Board } from '@/routes/games/lucid/PartyPage/components/Board';
 import { themeStyle } from '@/lib/lucid/theme';
@@ -164,12 +165,19 @@ export const Component = observer(function LucidPartyPage() {
 
     return (
       <>
-        <div className="flex min-h-0 grow px-2">
+        {/* Высота задана точно, а не минимумом: при min-height высота
+            контейнера остаётся неопределённой, h-full у поля схлопывается,
+            и оно возвращается к своим пропорциям. Отступы равны высоте полос:
+            они лежат поверх поля, и без отступов под ними прятались бы
+            крайние ряды клеток */}
+        <div className="flex min-h-0 grow px-2 pb-32 pt-16">
           <Board
             onSelectCell={isMyBranch ? handleSelectCell : undefined}
             state={state}
           />
         </div>
+
+        <Hud />
       </>
     );
   };
