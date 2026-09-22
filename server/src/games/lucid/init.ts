@@ -118,6 +118,13 @@ export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlers
       void party.start({
         generate: params => generateContent({
           ...params,
+          // Мир готов раньше остального, и ожидание устроено как раскрытие:
+          // рассылаем его сразу, иначе игроки ждали бы конца генерации,
+          // глядя на одну и ту же строку
+          onWorld: theme => {
+            params.onWorld(theme);
+            broadcast(party);
+          },
           generateJson,
           deadlineMs: Date.now() + GENERATION_BUDGET_MS,
         }),
