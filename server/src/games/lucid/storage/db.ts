@@ -152,6 +152,13 @@ export const createStorage = <TDocument>(path: string) => {
       return row ? JSON.parse(row.state) as TDocument : null;
     },
 
+    // Сервер живёт, пока жив процесс, и никогда не закрывает соединение сам.
+    // Нужен скриптам и тестам, которые открывают файл на диске и должны
+    // отдать его обратно ОС (например, чтобы его можно было удалить)
+    close: (): void => {
+      db.close();
+    },
+
     removeParty: (uuid: string): void => {
       db.prepare('DELETE FROM parties WHERE uuid = ?').run(uuid);
     },

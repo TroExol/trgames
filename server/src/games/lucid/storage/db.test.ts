@@ -1,10 +1,15 @@
+import type * as NodeFs from 'node:fs';
 import type { LucidShared } from '@trgames/shared';
 
 import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
+import { DatabaseSync } from 'node:sqlite';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 import type { TStorage } from '@/games/lucid/storage/db';
 
@@ -142,5 +147,73 @@ describe('generationCalls и generations', () => {
         retriesCount: 2,
       }),
     ]);
+  });
+});
+
+describe('открытие базы старого формата', () => {
+  it('база с parties и usage без новых таблиц открывается, дополняется и не теряет старую usage', async () => {
+    // fs замокан глобально (setup.ts, память через memfs) — для настоящего
+    // файла на диске, который увидит нативный node:sqlite, нужен настоящий fs
+    const realFs = await vi.importActual<typeof NodeFs>('node:fs');
+
+    // :memory: не годится: нужна база, которую можно закрыть одним
+    // подключением и переоткрыть другим, как это делает сервер между запусками
+    const dir = realFs.mkdtempSync(join(tmpdir(), 'lucid-legacy-'));
+    const path = join(dir, 'legacy.db');
+
+    try {
+      // Схема до generation_calls/generations — та, что уже накоплена
+      // в боевых базах: только parties и usage
+      const legacy = new DatabaseSync(path);
+
+      legacy.exec(`
+        CREATE TABLE parties (
+          uuid TEXT PRIMARY KEY,
+          theme TEXT NOT NULL,
+          state TEXT NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE usage (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          party_uuid TEXT NOT NULL,
+          input_tokens INTEGER NOT NULL,
+          output_tokens INTEGER NOT NULL,
+          cost_usd REAL NOT NULL,
+          used_fallback INTEGER NOT NULL,
+          created_at INTEGER NOT NULL
+        );
+      `);
+      legacy.prepare(`
+        INSERT INTO usage (party_uuid, input_tokens, output_tokens, cost_usd, used_fallback, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run('old-party', 100, 200, 0.01, 0, 1_700_000_000_000);
+      legacy.close();
+
+      // Открываем тем же кодом, что и сервер: CREATE TABLE IF NOT EXISTS
+      // не должен споткнуться об уже существующие parties/usage
+      const storage = createStorage<LucidShared.TState>(path);
+
+      expect(() => {
+        storage.saveGenerationCall(callParams());
+        storage.saveGeneration(generationParams());
+      }).not.toThrow();
+
+      const report = storage.usageReport();
+
+      expect(report.totals).toEqual(expect.objectContaining({ generations: 1, calls: 1 }));
+      storage.close();
+
+      // Старая usage — не удалена и не переписана: новый код в неё не пишет
+      const check = new DatabaseSync(path);
+      const legacyRows = check.prepare('SELECT * FROM usage').all() as { party_uuid: string }[];
+      check.close();
+
+      expect(legacyRows).toHaveLength(1);
+      expect(legacyRows[0].party_uuid).toBe('old-party');
+    } finally {
+      // Соединения закрыты выше, поэтому на Windows файл уже не занят
+      realFs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
