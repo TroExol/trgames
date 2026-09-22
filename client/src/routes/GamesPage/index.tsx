@@ -4,6 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { EAnalyticsPage } from '@trgames/shared';
 
 import { analyticsService } from '@/services';
+import { LucidCard } from '@/routes/GamesPage/components/gameCards/LucidCard';
 import { CryptozCard } from '@/routes/GamesPage/components/gameCards/CryptozCard';
 
 export const Component = observer(function GameListPage() {
@@ -16,6 +17,7 @@ export const Component = observer(function GameListPage() {
   return (
     <div className="container mx-auto flex grow flex-wrap place-content-center items-center gap-10 text-white">
       <CryptozCard />
+      <LucidCard />
     </div>
   );
 });
