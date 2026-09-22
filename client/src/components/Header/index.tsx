@@ -34,6 +34,9 @@ export const Header = observer(function Header() {
   const { gameName } = useGameName();
   const { gameTheme } = useGameTheme();
   const isRoomsPage = location.pathname === `/game/${gameName}`;
+  // В lucid списка комнат нет: партия раздаётся ссылкой, и пункт уводит на
+  // страницу создания. Слова «комната» в её словаре тоже нет — только «партия»
+  const gamePageLabel = gameName === 'lucid' ? 'Новая партия' : 'Список комнат';
   const isRulesPage = location.pathname === `/game/${gameName}/rules`;
   const isUpdatesPage = location.pathname === `/game/${gameName}/updates`;
 
@@ -62,7 +65,7 @@ export const Header = observer(function Header() {
                   <NavigationMenuItem>
                     <NavigationMenuLink asChild className={buttonVariants({ variant: 'ghost' })}>
                       <Link to={`/game/${gameName}`}>
-                        Список комнат
+                        {gamePageLabel}
                       </Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
