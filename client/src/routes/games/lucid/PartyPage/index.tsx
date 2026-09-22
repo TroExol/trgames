@@ -184,9 +184,10 @@ export const Component = observer(function LucidPartyPage() {
   if (!nickname) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
-        <h1 className="font-unbounded text-2xl">Как тебя называть?</h1>
+        <h1 className="font-unbounded text-2xl" id="nickname-heading">Как тебя называть?</h1>
         <form className="flex flex-col gap-3" onSubmit={handleSubmitNickname}>
           <Input
+            aria-labelledby="nickname-heading"
             name="nickname"
             onChange={event => setNicknameDraft(event.target.value)}
             placeholder="Ник"

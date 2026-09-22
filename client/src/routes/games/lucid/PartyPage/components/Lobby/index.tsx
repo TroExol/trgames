@@ -70,6 +70,7 @@ export const Lobby = observer(function Lobby() {
       {you && !you.hasAnswered && (
         <form className="flex flex-col gap-3" onSubmit={handleSubmitTheme}>
           <Input
+            aria-label="Тема партии"
             maxLength={THEME_MAX_LENGTH}
             name="theme"
             onChange={event => setThemeDraft(event.target.value)}
