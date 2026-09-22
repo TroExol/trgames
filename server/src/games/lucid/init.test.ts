@@ -6,12 +6,14 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
+import type { TPartySnapshot } from '@/games/lucid/room/Party';
+
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
 import { createHandlers, createParty } from '@/games/lucid/init';
 
 const setup = () => {
-  const group = createPartyGroup({ storage: createStorage(':memory:') });
+  const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
   const party = group.create({ uuid: 'p1', ownerId: 'a' });
   party.join({ playerId: 'a', nickname: 'Аня' });
   party.join({ playerId: 'b', nickname: 'Боря' });
@@ -59,7 +61,7 @@ describe('обработчики', () => {
 
 describe('создание партии', () => {
   it('создаёт партию и возвращает её идентификатор', () => {
-    const group = createPartyGroup({ storage: createStorage(':memory:') });
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
     const callback = vi.fn();
 
     createParty({ group, ownerId: 'a' }, callback);
@@ -71,7 +73,7 @@ describe('создание партии', () => {
   });
 
   it('создатель становится владельцем только после входа', () => {
-    const group = createPartyGroup({ storage: createStorage(':memory:') });
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
     const callback = vi.fn();
 
     createParty({ group, ownerId: 'a' }, callback);

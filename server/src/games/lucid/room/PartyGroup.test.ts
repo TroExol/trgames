@@ -6,6 +6,8 @@ import {
   it,
 } from 'vitest';
 
+import type { TPartySnapshot } from '@/games/lucid/room/Party';
+
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
 
@@ -31,20 +33,20 @@ const startedParty = async (group: ReturnType<typeof createPartyGroup>, uuid: st
 
 describe('PartyGroup', () => {
   it('созданная партия находится по идентификатору', () => {
-    const group = createPartyGroup({ storage: createStorage(':memory:') });
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
     group.create({ uuid: 'p1', ownerId: 'a' });
 
     expect(group.get('p1')?.uuid).toBe('p1');
   });
 
   it('несуществующая партия не находится', () => {
-    const group = createPartyGroup({ storage: createStorage(':memory:') });
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
 
     expect(group.get('нет-такой')).toBeNull();
   });
 
   it('партия переживает перезапуск сервера', async () => {
-    const storage = createStorage(':memory:');
+    const storage = createStorage<TPartySnapshot>(':memory:');
     const group = createPartyGroup({ storage });
     const party = await startedParty(group, 'p1');
     const before = party.view('a').state!;
@@ -59,7 +61,7 @@ describe('PartyGroup', () => {
   });
 
   it('удалённая партия не восстанавливается', async () => {
-    const storage = createStorage(':memory:');
+    const storage = createStorage<TPartySnapshot>(':memory:');
     const group = createPartyGroup({ storage });
     await startedParty(group, 'p1');
     group.remove('p1');

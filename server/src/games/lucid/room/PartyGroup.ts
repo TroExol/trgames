@@ -6,7 +6,7 @@ import type { TPartySnapshot } from '@/games/lucid/room/Party';
 import { Party } from '@/games/lucid/room/Party';
 
 interface TCreatePartyGroupParams {
-  storage: TStorage;
+  storage: TStorage<TPartySnapshot>;
 }
 
 interface TCreateParams {
@@ -23,7 +23,7 @@ export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
     storage.saveParty({
       uuid: party.uuid,
       theme: snapshot.theme?.name ?? '',
-      state: snapshot as unknown as LucidShared.TState,
+      document: snapshot,
     });
   };
 
@@ -46,7 +46,7 @@ export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
         return inMemory;
       }
 
-      const stored = storage.loadParty(uuid) as unknown as TPartySnapshot | null;
+      const stored = storage.loadParty(uuid);
 
       if (!stored) {
         return null;

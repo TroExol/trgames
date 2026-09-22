@@ -5,6 +5,8 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
+import type { TPartySnapshot } from '@/games/lucid/room/Party';
+
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
@@ -32,7 +34,7 @@ const playToEnd = (party: ReturnType<ReturnType<typeof createPartyGroup>['create
 };
 
 describe('партия через комнату', () => {
-  const makeGroup = () => createPartyGroup({ storage: createStorage(':memory:') });
+  const makeGroup = () => createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
 
   const readyParty = (group: ReturnType<typeof makeGroup>, uuid: string, playerCount: number) => {
     const party = group.create({ uuid, ownerId: 'p0' });
@@ -80,7 +82,7 @@ describe('партия через комнату', () => {
   });
 
   it('партия продолжается после перезапуска сервера', async () => {
-    const storage = createStorage(':memory:');
+    const storage = createStorage<TPartySnapshot>(':memory:');
     const group = createPartyGroup({ storage });
     const party = readyParty(group, 'restart', 3);
 

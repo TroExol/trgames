@@ -1,12 +1,10 @@
-import type { LucidShared } from '@trgames/shared';
-
 import { DatabaseSync } from 'node:sqlite';
 
-interface TSavePartyParams {
+interface TSavePartyParams<TDocument> {
   uuid: string;
   // Тема сохраняется вместе с партией: основа будущей модерации
   theme: string;
-  state: LucidShared.TState;
+  document: TDocument;
 }
 
 interface TSaveUsageParams {
@@ -17,7 +15,10 @@ interface TSaveUsageParams {
   usedFallback: boolean;
 }
 
-export const createStorage = (path: string) => {
+// Хранилище обобщено по типу документа: что положили, то и достанем, и
+// компилятор это проверяет. Отдельной таблицы под комнату нет — вид документа
+// у нас один, вторая таблица окупится только с появлением третьего
+export const createStorage = <TDocument>(path: string) => {
   const db = new DatabaseSync(path);
 
   db.exec(`
@@ -40,19 +41,19 @@ export const createStorage = (path: string) => {
   `);
 
   return {
-    saveParty: ({ uuid, theme, state }: TSavePartyParams): void => {
+    saveParty: ({ uuid, theme, document }: TSavePartyParams<TDocument>): void => {
       db.prepare(`
         INSERT INTO parties (uuid, theme, state, updated_at) VALUES (?, ?, ?, ?)
         ON CONFLICT(uuid) DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at
-      `).run(uuid, theme, JSON.stringify(state), Date.now());
+      `).run(uuid, theme, JSON.stringify(document), Date.now());
     },
 
-    loadParty: (uuid: string): LucidShared.TState | null => {
+    loadParty: (uuid: string): TDocument | null => {
       const row = db.prepare('SELECT state FROM parties WHERE uuid = ?').get(uuid) as
         | { state: string }
         | undefined;
 
-      return row ? JSON.parse(row.state) as LucidShared.TState : null;
+      return row ? JSON.parse(row.state) as TDocument : null;
     },
 
     removeParty: (uuid: string): void => {
@@ -85,4 +86,4 @@ export const createStorage = (path: string) => {
   };
 };
 
-export type TStorage = ReturnType<typeof createStorage>;
+export type TStorage<TDocument> = ReturnType<typeof createStorage<TDocument>>;

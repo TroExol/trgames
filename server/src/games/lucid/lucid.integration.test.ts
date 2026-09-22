@@ -83,7 +83,7 @@ describe('партия целиком', () => {
   });
 
   it('партия переживает сохранение и загрузку посреди игры', () => {
-    const storage = createStorage(':memory:');
+    const storage = createStorage<LucidShared.TState>(':memory:');
     let state = makeParty('restart', 2);
 
     state = applyMove(state, {
@@ -91,7 +91,7 @@ describe('партия целиком', () => {
       playerId: state.ctx.currentPlayer,
       stateId: state.stateId,
     });
-    storage.saveParty({ uuid: 'p1', theme: 'станция', state });
+    storage.saveParty({ uuid: 'p1', theme: 'станция', document: state });
 
     const restored = storage.loadParty('p1')!;
 

@@ -4,7 +4,7 @@ import { uid } from 'uid';
 import { LucidShared } from '@trgames/shared';
 
 import type { TPartyGroup } from '@/games/lucid/room/PartyGroup';
-import type { Party } from '@/games/lucid/room/Party';
+import type { Party, TPartySnapshot } from '@/games/lucid/room/Party';
 import type { TAutopilot } from '@/games/lucid/room/autopilot';
 
 import { t } from '@/i18n';
@@ -152,7 +152,7 @@ export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams
 };
 
 export const init = (io: Server): void => {
-  const group = createPartyGroup({ storage: createStorage(STORAGE_PATH) });
+  const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(STORAGE_PATH) });
 
   // Общий неймспейс игры: единственное, что он умеет, — создать партию.
   // Через неймспейс партии это невозможно, потому что рукопожатие там
