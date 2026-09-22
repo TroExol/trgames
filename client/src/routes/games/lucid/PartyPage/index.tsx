@@ -1,6 +1,6 @@
 import type { FormEvent, ReactNode } from 'react';
 
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   useEffect,
   useMemo,
@@ -16,6 +16,7 @@ import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Lobby } from '@/routes/games/lucid/PartyPage/components/Lobby';
 import { Hud } from '@/routes/games/lucid/PartyPage/components/Hud';
 import { Generating } from '@/routes/games/lucid/PartyPage/components/Generating';
+import { Ending } from '@/routes/games/lucid/PartyPage/components/Ending';
 import { Board } from '@/routes/games/lucid/PartyPage/components/Board';
 import { themeStyle } from '@/lib/lucid/theme';
 import { deriveRoles } from '@/lib/lucid/colors';
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/Button';
 
 export const Component = observer(function LucidPartyPage() {
   const { partyId } = useParams();
+  const navigate = useNavigate();
   const playerId = usePlayerId();
   const [nickname, setNickname] = useNickname();
   const [nicknameDraft, setNicknameDraft] = useState('');
@@ -59,6 +61,17 @@ export const Component = observer(function LucidPartyPage() {
       partyStore.reset();
     };
   }, [nickname, partyId, playerId]);
+
+  // Номер новой партии приходит полем вида, а не строкой ленты, поэтому
+  // переход случается у всех, а не только у нажавшего: остальные не нажимали
+  // ничего, и оставить их на экране победы значило бы разорвать компанию
+  const nextPartyId = partyStore.view?.nextPartyId;
+
+  useEffect(() => {
+    if (nextPartyId) {
+      navigate(`/game/lucid/party/${nextPartyId}`);
+    }
+  }, [navigate, nextPartyId]);
 
   const handleSubmitNickname = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -178,6 +191,10 @@ export const Component = observer(function LucidPartyPage() {
         </div>
 
         <Hud />
+
+        {/* Поле остаётся видимым вокруг экрана победы: партия закончилась
+            на нём, и это стоит показать */}
+        {view.phase === LucidShared.EPartyPhase.ENDED && <Ending />}
       </>
     );
   };
