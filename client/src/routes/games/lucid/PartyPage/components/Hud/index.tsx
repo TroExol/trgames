@@ -7,6 +7,8 @@ import { LucidShared } from '@trgames/shared';
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
+import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
+import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
 import { Button } from '@/components/ui/Button';
 
 import { Die } from './components/Die';
@@ -16,12 +18,20 @@ import { Die } from './components/Die';
 const EMoveType = LucidShared.EMoveType;
 const EPhase = LucidShared.EPhase;
 
+// Ветки развилки укладываются по возрастанию номера клетки: меньший номер
+// уходит вверх от общей линии, больший — вниз (см. layoutTrack). Подпись
+// направлением, а не номером: номер клетки человеку ничего не говорит
+const BRANCH_LABELS = ['Верхняя тропа', 'Нижняя тропа'];
+
 // Интерфейс лежит поверх поля узкими полосами сверху и снизу: поле занимает
 // экран целиком и остаётся героем экрана, полосы молчат
 export const Hud = observer(function Hud() {
   // Оптимистичных ходов нет: после нажатия кнопка молчит до прихода нового
   // stateId, а не до применения хода у себя
   const [sentStateId, setSentStateId] = useState<number>();
+  // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
+  // событие открывается само, разворачивать его руками не нужно
+  const [collapsedCell, setCollapsedCell] = useState<number>();
   const { state, view } = partyStore;
 
   if (!state || !view) {
@@ -31,12 +41,38 @@ export const Hud = observer(function Hud() {
   const { theme } = state.G;
   const you = state.G.players[state.you];
   const current = state.G.players[state.ctx.currentPlayer];
+  const isMyTurn = state.ctx.currentPlayer === state.you;
+  const isSent = sentStateId === state.stateId;
   const offline = new Set(view.members.filter(member => !member.isConnected).map(member => member.playerId));
+  // Событие берётся по клетке ходящего игрока: его читают все, а не только тот,
+  // чей ход
+  const event = state.ctx.phase === EPhase.CHOICE ? state.G.events[current.position] : undefined;
+  const isCollapsed = event !== undefined && collapsedCell === event.cellId;
 
   const handleRoll = (): void => {
     setSentStateId(state.stateId);
     // stateId — версия состояния, на которой игрок принимал решение
     socketService.makeMove({ playerId: state.you, stateId: state.stateId, type: EMoveType.ROLL });
+  };
+
+  const handleChooseBranch = (cellId: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      cellId,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.CHOOSE_BRANCH,
+    });
+  };
+
+  const handleChooseOption = (optionIndex: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      optionIndex,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.CHOOSE_OPTION,
+    });
   };
 
   // Невозможное нельзя нажать: не твой ход — кнопок нет вовсе. Тогда отказ
@@ -48,7 +84,7 @@ export const Hud = observer(function Hud() {
       return <p className="font-unbounded text-base">{winner ? `Победил ${winner.nickname}` : 'Партия окончена'}</p>;
     }
 
-    if (state.ctx.currentPlayer !== state.you) {
+    if (!isMyTurn) {
       return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
     }
 
@@ -56,7 +92,7 @@ export const Hud = observer(function Hud() {
       return (
         <Button
           className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
-          disabled={sentStateId === state.stateId}
+          disabled={isSent}
           onClick={handleRoll}
           style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
           variant="outline"
@@ -66,10 +102,31 @@ export const Hud = observer(function Hud() {
       );
     }
 
-    // Ветки выбираются на самом поле: они там уже обведены акцентом, а их
-    // номера в полосе человеку ничего не говорят
+    // Развилка читается геометрией, и основной способ — нажать на клетку прямо
+    // на поле. Кнопки дублируют его: пальцем в клетку попасть труднее, а
+    // телефон не получает урезанную игру
     if (state.ctx.phase === EPhase.BRANCH) {
-      return <p className="text-sm">Выбери на поле, куда свернуть</p>;
+      return (
+        <div className="flex flex-col gap-1">
+          <p className="text-xs" style={{ color: 'var(--lucid-muted)' }}>Выбери, куда свернуть</p>
+
+          <div className="flex flex-wrap gap-2">
+            {[...state.G.branchChoices].sort((first, second) => first - second).map((cellId, index) => (
+              <Button
+                className="whitespace-normal border-2 bg-transparent hover:bg-transparent"
+                disabled={isSent}
+                key={cellId}
+                onClick={() => handleChooseBranch(cellId)}
+                size="sm"
+                style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+                variant="outline"
+              >
+                {BRANCH_LABELS[index] ?? `Тропа ${index + 1}`}
+              </Button>
+            ))}
+          </div>
+        </div>
+      );
     }
 
     return <p className="text-sm">Событие ждёт решения</p>;
@@ -118,6 +175,15 @@ export const Hud = observer(function Hud() {
         className="absolute inset-x-0 bottom-0 flex flex-col gap-2 px-3 pb-3 pt-2 backdrop-blur-sm"
         style={{ backgroundColor: 'var(--lucid-veil)' }}
       >
+        {event && isCollapsed && (
+          <EventBar
+            currentNickname={current.nickname}
+            isMyTurn={isMyTurn}
+            onExpand={() => setCollapsedCell(undefined)}
+            title={event.title}
+          />
+        )}
+
         <Ribbon />
 
         <div className="flex items-center gap-3">
@@ -125,6 +191,19 @@ export const Hud = observer(function Hud() {
           <div className="min-w-0 grow">{renderAction()}</div>
         </div>
       </div>
+
+      {event && !isCollapsed && (
+        <EventCard
+          currentNickname={current.nickname}
+          event={event}
+          isMyTurn={isMyTurn}
+          isSent={isSent}
+          onChoose={handleChooseOption}
+          onCollapse={() => setCollapsedCell(event.cellId)}
+          resource={you.resource}
+          resourceName={theme.resourceName}
+        />
+      )}
     </>
   );
 });
