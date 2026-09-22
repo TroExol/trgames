@@ -233,6 +233,33 @@ describe('старт партии', () => {
     expect(party.view('a').usedFallback).toBe(true);
   });
 
+  it('сбой генерации откатывает партию в лобби, но не теряет состав и темы', async () => {
+    const party = readyParty('start-abort');
+
+    await expect(party.start({
+      generate: () => Promise.reject(new Error('модель недоступна')),
+    })).rejects.toThrow('модель недоступна');
+
+    party.abortStart();
+    party.addRibbonLine('Не получилось собрать партию — запустите ещё раз');
+
+    const view = party.view('a');
+
+    expect(view.phase).toBe(LucidShared.EPartyPhase.LOBBY);
+    expect(party.canStart).toBe(true);
+    expect(view.members.find(member => member.playerId === 'a')?.themeProposal).toBe('пираты');
+    expect(party.takeRibbonDelta()).toContain('Не получилось собрать партию — запустите ещё раз');
+  });
+
+  it('abortStart не трогает партию, которая уже играется', async () => {
+    const party = readyParty('start-abort-noop');
+
+    await party.start({ generate: () => Promise.resolve({ content: content(), usedFallback: false }) });
+    party.abortStart();
+
+    expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.PLAYING);
+  });
+
   it('ход принимается и меняет состояние', async () => {
     const party = readyParty('start-move');
     await party.start({ generate: () => Promise.resolve({ content: content(), usedFallback: false }) });

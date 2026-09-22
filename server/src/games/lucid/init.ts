@@ -148,6 +148,31 @@ export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlers
         // появилось состояние: сохраняем ещё раз, когда оно готово
         group.persist(party);
         broadcast(party);
+      }).catch((error: unknown) => {
+        // Без этого catch сбой в generate, в раскладке или в then выше
+        // (запись в sqlite, рассылка) улетает необработанным отказом промиса:
+        // Node 22 на нём гасит весь процесс, а с ним и соседний Cryptoz
+        console.error('lucid: старт партии сорвался', { partyId: party.uuid, playerId, error });
+
+        // Партия уже играется — откатывать нечего, сбой пришёлся на
+        // сохранение или рассылку после старта. Повтор их здесь может упасть
+        // тем же образом и уйти уже вторым необработанным отказом
+        if (party.view(playerId).phase === LucidShared.EPartyPhase.PLAYING) {
+          return;
+        }
+
+        try {
+          party.abortStart();
+          party.addRibbonLine(t('lucid.ribbon.startFailed', 'ru'));
+          group.persist(party);
+          broadcast(party);
+        } catch (rollbackError) {
+          console.error('lucid: не удалось откатить партию после сбоя старта', {
+            partyId: party.uuid,
+            playerId,
+            error: rollbackError,
+          });
+        }
       });
     }),
 

@@ -226,6 +226,21 @@ export class Party {
     this.phase = LucidShared.EPartyPhase.PLAYING;
   };
 
+  // Сбой генерации или раскладки не должен держать партию в подвисшей
+  // генерации: откатываем в лобби, чтобы владелец мог нажать «начать» ещё
+  // раз. Состав и предложенные темы не трогаем — их собирал не start.
+  // Если генерация уже доехала до PLAYING, откатывать нечего: сбой пришёлся
+  // на что-то после старта, и фазу менять нельзя
+  public abortStart = (): void => {
+    if (this.phase !== LucidShared.EPartyPhase.GENERATING) {
+      return;
+    }
+
+    this.phase = LucidShared.EPartyPhase.LOBBY;
+    this.theme = undefined;
+    this.state = undefined;
+  };
+
   public applyMove = (move: LucidShared.TMove): void => {
     if (!this.state || this.phase !== LucidShared.EPartyPhase.PLAYING) {
       return;

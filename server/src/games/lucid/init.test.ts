@@ -11,6 +11,11 @@ import type { TPartySnapshot } from '@/games/lucid/room/Party';
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
 import { createHandlers, createParty } from '@/games/lucid/init';
+import { generateContent } from '@/games/lucid/generation/pipeline';
+
+// Настоящий пайплайн стучится в сеть. Подменяем его целиком, чтобы вызвать
+// отказ generate без реального похода в OpenRouter
+vi.mock('@/games/lucid/generation/pipeline', () => ({ generateContent: vi.fn() }));
 
 const setup = () => {
   const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
@@ -63,6 +68,23 @@ describe('обработчики', () => {
     handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'b' });
 
     expect(fail).toHaveBeenCalledWith(party, 'b', 'Начать партию пока нельзя');
+  });
+
+  it('отказ generate откатывает партию в лобби и не роняет процесс необработанным отказом', async () => {
+    const { handlers, party } = setup();
+    vi.mocked(generateContent).mockRejectedValueOnce(new Error('модель недоступна'));
+
+    handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'a' });
+
+    // Цепочка старта запущена без await (fire-and-forget), поэтому ждём её
+    // ручным прогоном микрозадач: если бы .catch отсутствовал, отказ ушёл бы
+    // необработанным, и до этой точки процесс vitest бы не дошёл живым
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+
+    expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.LOBBY);
+    expect(party.canStart).toBe(true);
   });
 
   it('номер повторной партии уезжает видом, а не строкой ленты', () => {
