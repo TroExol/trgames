@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ignoreFiles = {
-  client: ['client/**/*', '!client/src/**/*', '!client/vite.config.ts'],
+  client: ['client/**/*', '!client/src/**/*', '!client/vite.config.ts', '!client/vitest.config.mts'],
   server: ['server/**/*', '!server/src/**/*', '!server/vitest/**/*', '!server/__mocks__', '!server/vitest.config.mts'],
   shared: ['tools/shared/**/*', '!tools/shared/src/**/*'],
 };
