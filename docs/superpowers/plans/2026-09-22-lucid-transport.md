@@ -38,7 +38,6 @@
 
 ```
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_012tU1vHvzzPFk6WoSGvpzvT
 ```
 
 **Особенности тестового окружения** (`server/src/vitest/setup.ts`): глобально включены фейковые таймеры с фиксированной датой, `fs` замокан через memfs (база данных только `:memory:`), `Logger` и `FunctionResultObserver` замоканы.
