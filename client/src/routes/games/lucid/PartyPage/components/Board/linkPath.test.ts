@@ -4,7 +4,11 @@ import {
   it,
 } from 'vitest';
 
-import { linkPath, tilePath } from './linkPath';
+import {
+  linkMiddle,
+  linkPath,
+  tilePath,
+} from './linkPath';
 
 const cell = (x: number, y: number, col = 0) => ({ x, y, col });
 
@@ -22,6 +26,17 @@ describe('лента трека', () => {
 
   it('не падает на совпадающих точках', () => {
     expect(() => linkPath(cell(50, 60), cell(50, 60))).not.toThrow();
+  });
+});
+
+describe('середина связи', () => {
+  it('внутри ряда лежит посередине между клетками', () => {
+    expect(linkMiddle(cell(66, 100), cell(198, 88))).toEqual({ x: 132, y: 94 });
+  });
+
+  it('на развороте вынесена за край ряда, как и сама дуга', () => {
+    expect(linkMiddle(cell(990, 98, 7), cell(990, 228, 7))).toEqual({ x: 1042.5, y: 163 });
+    expect(linkMiddle(cell(66, 98, 0), cell(66, 228, 0))).toEqual({ x: 13.5, y: 163 });
   });
 });
 

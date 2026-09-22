@@ -7,15 +7,23 @@ import { observer } from 'mobx-react-lite';
 import type { TMood } from '@/lib/lucid/colors';
 
 import {
+  CELL_STEP,
   cellsPerRowFor,
   depthCount,
   layoutTrack,
+  ROW_STEP,
 } from '@/lib/lucid/trackLayout';
 import { hashString } from '@/lib/lucid/theme';
 import { regionForDepth, resolveRegions } from '@/lib/lucid/regions';
 import { deriveRoles } from '@/lib/lucid/colors';
 
-import { linkPath, tilePath } from './linkPath';
+import type { TSpot } from './linkPath';
+
+import {
+  linkMiddle,
+  linkPath,
+  tilePath,
+} from './linkPath';
 
 export interface TBoardProps {
   state: LucidShared.TStateForPlayer;
@@ -44,17 +52,22 @@ const TOKEN_RADIUS = 11;
 const TOKEN_SPREAD = 14;
 const LABEL_SIZE = 15;
 const LABEL_GAP = 30;
-// Подложка края — воздух, а не второй предмет внимания
+// Подложка края — воздух, а не второй предмет внимания: та же лента, только
+// шире и почти прозрачная
 const BACKDROP_OPACITY = 0.07;
-const BACKDROP_PAD_X = 46;
-const BACKDROP_PAD_Y = 52;
+const BACKDROP_GROWTH = 2.5;
 // Поля вокруг трека: ник над верхним рядом и подложка края не должны обрезаться
 const PAD_X = 46;
 const PAD_TOP = 50;
 const PAD_BOTTOM = 46;
 // Ниже этого размера подпись не читается, сколько бы клеток ни влезло в ряд
 const MIN_TEXT_PX = 12;
+// Предел растяжения промежутка между рядами
+const ROW_STRETCH = 1.5;
 const DRAW_MS = 1400;
+
+// Ширина картинки известна до укладки: по ней считается растяжение рядов
+const viewWidthFor = (perRow: number): number => perRow * CELL_STEP + PAD_X * 2;
 
 export const Board = observer(function Board({ state, onSelectCell }: TBoardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,11 +82,19 @@ export const Board = observer(function Board({ state, onSelectCell }: TBoardProp
   // до посещения. У партий, сгенерированных до краёв, список пуст, и путь
   // красится одной линией
   const regions = resolveRegions(theme.regions ?? [], roles.base);
-  const layout = layoutTrack(
-    track,
-    cellsPerRowFor(width, height, depthCount(track)),
-    hashString(theme.name),
+  const trackDepth = depthCount(track);
+  const perRow = cellsPerRowFor(width, height, trackDepth);
+  const rows = Math.max(Math.ceil(trackDepth / perRow), 1);
+  // Клеток в ряду целое число, и раскладка в пропорцию экрана точно не
+  // попадает: на узком экране доска упирается в ширину и не добирает по
+  // высоте. Остаток высоты раздаётся промежуткам между рядами — дальше
+  // полутора обычных шаг не растягивается, иначе выходит лестница
+  const rowStep = Math.min(
+    ROW_STEP * ROW_STRETCH,
+    Math.max(ROW_STEP, (viewWidthFor(perRow) * (height / Math.max(width, 1))
+      - ROW_STEP - PAD_TOP - PAD_BOTTOM) / Math.max(rows - 1, 1)),
   );
+  const layout = layoutTrack(track, perRow, hashString(theme.name), rowStep);
   const regionAt = (depth: number) => regionForDepth(regions, depth, layout.maxDepth);
 
   const viewWidth = layout.width + PAD_X * 2;
@@ -123,24 +144,75 @@ export const Board = observer(function Board({ state, onSelectCell }: TBoardProp
     });
   });
 
-  // Подложка за отрезком края и подпись у его начала
-  const backdrops = regions.flatMap(region => {
-    const owned = layout.cells.filter(cell => regionAt(cell.depth) === region);
+  // Фишки нескольких игроков на одной клетке расходятся по кругу, иначе
+  // верхняя закрывает собой все остальные
+  const groups = new Map<number, LucidShared.TPlayerId[]>();
+
+  state.G.order.forEach(playerId => {
+    const { position } = state.G.players[playerId];
+
+    groups.set(position, [...(groups.get(position) ?? []), playerId]);
+  });
+
+  // Точки, которых подпись края сторонится: центры клеток, середины связей и
+  // ники. Этого хватает, чтобы не наехать ни на соседний ряд, ни на прядь
+  // развилки, ни на чужую подпись
+  const busy = [
+    ...layout.cells,
+    ...layout.links.map(link => linkMiddle(layout.byId[link.from], layout.byId[link.to])),
+    // Ники стоят над своими клетками — подпись обходит и их
+    ...Array.from(groups.keys()).flatMap(position => {
+      const cell = layout.byId[position];
+
+      return cell ? [{ x: cell.x, y: cell.y - LABEL_GAP }] : [];
+    }),
+  ];
+
+  // Подпись края стоит у его первой клетки и отходит поперёк пути: на ленте её
+  // не прочесть, а вдоль пути её перечеркнёт соседний ряд. Поперечное
+  // направление — угол касательной в клетке, повёрнутый на прямой угол
+  const labels = regions.flatMap(region => {
+    const owned = layout.cells
+      .filter(cell => regionAt(cell.depth) === region)
+      .sort((first, second) => first.depth - second.depth);
 
     if (owned.length === 0) {
       return [];
     }
 
-    const left = Math.min(...owned.map(cell => cell.x));
-    const top = Math.min(...owned.map(cell => cell.y));
+    const gap = RIBBON_WIDTH / 2 + textSize;
+    // Размеры строки на глаз: две трети кегля на букву в ширину и полтора
+    // кегля в высоту
+    const halfWidth = (region.name.length * textSize) / 3;
+    const halfHeight = textSize * 0.75;
+    // Сначала обе стороны от первой клетки, потом вдвое дальше от неё, и лишь
+    // потом следующие клетки: на развороте ряда поперечное направление
+    // смотрит в соседний ряд, и у первой клетки места не остаётся
+    const points = owned.slice(0, 5).flatMap(cell => [1, -1, 2, -2].map(side => ({
+      x: cell.x + Math.cos(cell.angle + Math.PI / 2) * gap * side,
+      y: cell.y + Math.sin(cell.angle + Math.PI / 2) * gap * side,
+    })));
+    // Насколько подпись разошлась с лентой: отрицательное — легла на неё
+    const clearance = (point: TSpot): number => Math.min(...busy.map(spot => Math.max(
+      Math.abs(spot.x - point.x) - halfWidth - TILE_ALONG / 2,
+      Math.abs(spot.y - point.y) - halfHeight - RIBBON_WIDTH / 2,
+    )));
+    // На узком экране смещённая подпись вылезает за край картинки — тогда она
+    // уходит на другую сторону ленты
+    const inside = (point: TSpot): boolean =>
+      point.x - halfWidth >= -PAD_X
+      && point.x + halfWidth <= layout.width + PAD_X
+      && point.y - halfHeight >= -PAD_TOP
+      && point.y + halfHeight <= layout.height + PAD_BOTTOM;
+    // Первое подошедшее место, а если не подошло ни одно — самое просторное
+    const point = points.find(candidate => inside(candidate) && clearance(candidate) > 0)
+      ?? points.reduce((best, candidate) => (clearance(candidate) > clearance(best) ? candidate : best));
 
-    return [{
-      height: Math.max(...owned.map(cell => cell.y)) - top + BACKDROP_PAD_Y * 2,
-      region,
-      width: Math.max(...owned.map(cell => cell.x)) - left + BACKDROP_PAD_X * 2,
-      x: left - BACKDROP_PAD_X,
-      y: top - BACKDROP_PAD_Y,
-    }];
+    // Поставленная подпись занимает место: её концы становятся занятыми
+    // точками, и соседний край уводит свою подпись в другое
+    busy.push({ x: point.x - halfWidth, y: point.y }, { x: point.x + halfWidth, y: point.y });
+
+    return [{ ink: region.ink, name: region.name, x: point.x, y: point.y }];
   });
 
   // Прочерчивание — событие начала партии, а не отклик на перерисовку: оно
@@ -172,16 +244,6 @@ export const Board = observer(function Board({ state, onSelectCell }: TBoardProp
     });
   });
 
-  // Фишки нескольких игроков на одной клетке расходятся по кругу, иначе
-  // верхняя закрывает собой все остальные
-  const groups = new Map<number, LucidShared.TPlayerId[]>();
-
-  state.G.order.forEach(playerId => {
-    const { position } = state.G.players[playerId];
-
-    groups.set(position, [...(groups.get(position) ?? []), playerId]);
-  });
-
   return (
     <div className="size-full" ref={containerRef}>
       {width
@@ -193,18 +255,25 @@ export const Board = observer(function Board({ state, onSelectCell }: TBoardProp
             >
               <title>{`Трек мира «${theme.name}»`}</title>
 
-              {/* Ключ по порядку: имена и цвета краёв приходят от модели и могут совпасть */}
-              {backdrops.map((backdrop, index) => (
-                <rect
-                  fill={backdrop.region.ribbon}
-                  height={backdrop.height}
-                  key={index}
-                  opacity={BACKDROP_OPACITY}
-                  width={backdrop.width}
-                  x={backdrop.x}
-                  y={backdrop.y}
-                />
-              ))}
+              {/* Подложка края — сама его лента, только шире и почти прозрачная.
+                  Край змеится через несколько рядов, и описанный вокруг его
+                  клеток прямоугольник залезал бы на чужие отрезки пути.
+                  Ключ по порядку: имена и цвета краёв приходят от модели и
+                  могут совпасть */}
+              {regions.length > 0
+                ? ribbons.map((ribbon, index) => (
+                    <path
+                      d={ribbon.d}
+                      fill="none"
+                      key={index}
+                      opacity={BACKDROP_OPACITY}
+                      stroke={ribbon.color}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={RIBBON_WIDTH * BACKDROP_GROWTH}
+                    />
+                  ))
+                : null}
 
               {/* Лента одной толщины на всём протяжении: путь равноправен */}
               {ribbons.map((ribbon, index) => (
@@ -234,22 +303,25 @@ export const Board = observer(function Board({ state, onSelectCell }: TBoardProp
                 />
               ))}
 
-              {/* Подпись края поверх ленты и в обводке основы: отрезки краёв
-                  налезают друг на друга, и подпись под лентой не прочесть */}
-              {backdrops.map((backdrop, index) => (
+              {/* Подпись края поверх ленты и в обводке основы: место ей
+                  подобрано в стороне от пути, но фишка или чужой ряд могут
+                  подойти вплотную, и под лентой её было бы не прочесть */}
+              {labels.map((label, index) => (
                 <text
                   className="font-golos"
-                  fill={backdrop.region.ink}
+                  dominantBaseline="middle"
+                  fill={label.ink}
                   fontSize={textSize}
                   key={index}
                   letterSpacing={0.4}
                   paintOrder="stroke"
                   stroke="var(--lucid-base)"
                   strokeWidth={4}
-                  x={backdrop.x + 14}
-                  y={backdrop.y + textSize + 9}
+                  textAnchor="middle"
+                  x={label.x}
+                  y={label.y}
                 >
-                  {backdrop.region.name}
+                  {label.name}
                 </text>
               ))}
 

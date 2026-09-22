@@ -1,6 +1,9 @@
-interface TPoint {
+export interface TSpot {
   x: number;
   y: number;
+}
+
+interface TPoint extends TSpot {
   col: number;
 }
 
@@ -15,19 +18,29 @@ const TURN_OUT = 70;
 
 const round = (value: number): number => Math.round(value * 100) / 100;
 
-// Связь между клетками — кубическая кривая. Внутри ряда управляющие точки
-// отнесены на половину горизонтальной разницы, отчего получается пологая S
-export const linkPath = (from: TPoint, to: TPoint): string => {
-  const dx = to.x - from.x;
-  // Разворот в конце ряда: горизонтальной разницы нет, и управляющие точки
-  // выносятся наружу — выходит широкая дуга вместо скоса
-  const control = dx === 0
+// Управляющие точки обеих кривых стоят по горизонтали в одном месте. Внутри
+// ряда оно отнесено на половину горизонтальной разницы, отчего получается
+// пологая S. На развороте в конце ряда разницы нет, и место выносится
+// наружу — выходит широкая дуга вместо скоса
+const controlFor = (from: TPoint, to: TPoint): number =>
+  (to.x === from.x
     ? from.x + (from.col === 0 ? -TURN_OUT : TURN_OUT)
-    : from.x + dx / 2;
+    : from.x + (to.x - from.x) / 2);
+
+// Связь между клетками — кубическая кривая
+export const linkPath = (from: TPoint, to: TPoint): string => {
+  const control = controlFor(from, to);
 
   return `M${round(from.x)} ${round(from.y)}`
     + `C${round(control)} ${round(from.y)} ${round(control)} ${round(to.y)} ${round(to.x)} ${round(to.y)}`;
 };
+
+// Середина связи — точка кривой при t = 0.5. По ней подпись края обходит ленту
+// там, где между клетками она уходит в сторону: на развороте в конце ряда
+export const linkMiddle = (from: TPoint, to: TPoint): TSpot => ({
+  x: (from.x + to.x + 6 * controlFor(from, to)) / 8,
+  y: (from.y + to.y) / 2,
+});
 
 // Плитка — четырёхугольник поперёк ленты, повёрнутый по ходу пути. Скругление
 // делается обводкой с stroke-linejoin="round", а не радиусом: так плитки

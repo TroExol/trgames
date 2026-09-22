@@ -116,7 +116,16 @@ const angleAt = (cell: TLaidCell, previous: TLaidCell[], next: TLaidCell[]): num
   return dx === 0 && dy === 0 ? 0 : Math.atan2(dy, dx);
 };
 
-export const layoutTrack = (track: LucidShared.TTrack, perRow: number, seed = 0): TTrackLayout => {
+// Промежуток между рядами задаётся снаружи: число клеток в ряду целое, и
+// раскладка в пропорцию экрана точно не попадает — остаток высоты раздаётся
+// промежуткам. Поля сверху и снизу при этом не растут: доска заполняет рамку,
+// а не висит в ней
+export const layoutTrack = (
+  track: LucidShared.TTrack,
+  perRow: number,
+  seed = 0,
+  rowStep = ROW_STEP,
+): TTrackLayout => {
   const depths = depthsFromStart(track);
   const byDepth = new Map<number, LucidShared.TCell[]>();
 
@@ -150,7 +159,7 @@ export const layoutTrack = (track: LucidShared.TTrack, perRow: number, seed = 0)
         row,
         col,
         x: col * CELL_STEP + CELL_STEP / 2,
-        y: row * ROW_STEP + ROW_STEP / 2 + meander(depth, seed) + strand * STRAND_OFFSET,
+        y: row * rowStep + ROW_STEP / 2 + meander(depth, seed) + strand * STRAND_OFFSET,
         angle: 0,
       });
     });
@@ -178,7 +187,7 @@ export const layoutTrack = (track: LucidShared.TTrack, perRow: number, seed = 0)
     rows,
     perRow,
     width: perRow * CELL_STEP,
-    height: rows * ROW_STEP,
+    height: (rows - 1) * rowStep + ROW_STEP,
     maxDepth: Math.max(...cells.map(cell => cell.depth)),
   };
 };
