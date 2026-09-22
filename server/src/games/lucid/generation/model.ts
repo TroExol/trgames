@@ -25,6 +25,7 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash';
 export const generateJson = async (
   prompt: string,
   schema?: z.ZodType,
+  signal?: AbortSignal,
 ): Promise<TGenerateJsonResult> => {
   const client = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY ?? '' });
 
@@ -50,7 +51,7 @@ export const generateJson = async (
       },
       // Запрос всегда без стрима, поэтому ответ гарантированно ChatResult, а не поток событий.
       // Сама SDK-перегрузка это не выводит из инлайн-литерала — уточняем явно
-    }) as ChatResult;
+    }, { signal }) as ChatResult;
 
     const content = response.choices[0]?.message.content;
 

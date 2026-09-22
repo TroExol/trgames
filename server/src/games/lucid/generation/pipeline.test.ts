@@ -7,7 +7,11 @@ import {
 
 import type { TGenerateJson } from '@/games/lucid/generation/pipeline';
 
-import { generateContent, MAX_ATTEMPTS } from '@/games/lucid/generation/pipeline';
+import {
+  EVENTS_CHUNK_SIZE,
+  generateContent,
+  MAX_ATTEMPTS,
+} from '@/games/lucid/generation/pipeline';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
 
 const usage = { inputTokens: 10, outputTokens: 20, costUsd: 0.001 };
@@ -36,11 +40,22 @@ const eventsFor = (cellIds: number[]) => ({
 
 const SEED = 'pipeline';
 
-const run = (generateJson: TGenerateJson, deadlineOffsetMs = 10_000) => generateContent({
+// Клеток больше, чем влезает в один кусок: ответ придёт двумя запросами
+const MANY_CELLS = Array.from({ length: EVENTS_CHUNK_SIZE + 3 }, (_, index) => index + 1);
+
+// Промпт событий перечисляет номера клеток своего куска — по ним и отвечаем
+const askedCells = (prompt: string): number[] =>
+  (/клеток: ([\d, ]+)/.exec(prompt)?.[1] ?? '').split(', ').map(Number);
+
+const run = (
+  generateJson: TGenerateJson,
+  deadlineOffsetMs = 10_000,
+  eventCellIds = [1, 2],
+) => generateContent({
   generateJson,
   theme: 'пираты',
   nicknames: ['Аня', 'Боря'],
-  eventCellIds: [1, 2],
+  eventCellIds,
   deadlineMs: Date.now() + deadlineOffsetMs,
   seed: SEED,
 });
@@ -113,6 +128,47 @@ describe('generateContent', () => {
 
     expect(result.usedFallback).toBe(true);
     expect(generateJson).not.toHaveBeenCalled();
+  });
+
+  it('события всех клеток собираются из нескольких кусков', async () => {
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockImplementation((prompt: string) =>
+        Promise.resolve({ data: eventsFor(askedCells(prompt)), usage }));
+
+    const result = await run(generateJson, 10_000, MANY_CELLS);
+
+    expect(Object.keys(result.content.events).map(Number)).toEqual(MANY_CELLS);
+    expect(result.usedFallback).toBe(false);
+    // Мир и два куска: одним запросом столько событий не просится
+    expect(generateJson).toHaveBeenCalledTimes(3);
+  });
+
+  it('неудавшийся кусок уводит на запасную партию целиком', async () => {
+    const lastCell = MANY_CELLS[MANY_CELLS.length - 1];
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockImplementation((prompt: string) => Promise.resolve({
+        // Последний кусок не даётся ни с какой попытки. Смешивать его события
+        // с запасными нельзя: мир должен остаться цельным
+        data: askedCells(prompt).includes(lastCell) ? { broken: true } : eventsFor(askedCells(prompt)),
+        usage,
+      }));
+
+    expect((await run(generateJson, 10_000, MANY_CELLS)).usedFallback).toBe(true);
+  });
+
+  it('истёкший бюджет обрывает уже летящий запрос', async () => {
+    // Модель не отвечает никогда: прекратить ожидание может только сигнал
+    const generateJson: TGenerateJson = (prompt, schema, signal) => new Promise((_resolve, reject) => {
+      signal?.addEventListener('abort', () => reject(new Error('запрос прерван')));
+    });
+
+    const generated = run(generateJson, 5_000);
+
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    expect((await generated).usedFallback).toBe(true);
   });
 
   it('при падении модели отдаёт запасную партию', async () => {
