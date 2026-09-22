@@ -14,6 +14,13 @@ export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: numb
 export const THRESHOLD_RANGE = { min: 2, max: 6 };
 export const COST_RANGE = { min: 1, max: 3 };
 
+// Края мира: участки пути со своими названиями и цветами
+export const REGION_RANGE = { min: 3, max: 5 } as const;
+export const REGION_NAME_MAX = 24;
+// Шесть шестнадцатеричных цифр: короткую запись не принимаем, чтобы на клиенте
+// был ровно один формат
+const HEX_COLOR = /^#[\da-f]{6}$/i;
+
 const atomSchema = z
   .strictObject({
     kind: z.enum(LucidShared.EAtomKind),
@@ -56,9 +63,19 @@ export const worldSchema = z.strictObject({
   theme: z.strictObject({
     name: z.string().min(1).max(80),
     resourceName: z.string().min(1).max(40),
-    palette: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).min(3).max(6),
+    palette: z.array(z.string().regex(HEX_COLOR)).min(3).max(6),
     // Необязательное: модель может его не прислать, отсутствие обрабатывает клиент
     mood: z.enum(LucidShared.EThemeMood).optional(),
+    // Обязательное в схеме, но необязательное в типе: без требования модель
+    // края не вернёт, а партии, сгенерированные раньше, лежат в базе без них
+    // и обязаны продолжать играться
+    regions: z
+      .array(z.strictObject({
+        name: z.string().min(1).max(REGION_NAME_MAX),
+        color: z.string().regex(HEX_COLOR),
+      }))
+      .min(REGION_RANGE.min)
+      .max(REGION_RANGE.max),
   }),
 });
 

@@ -9,12 +9,23 @@ export enum EThemeMood {
   LIGHT = 'LIGHT',
 }
 
+// Край мира: участок пути со своим названием и цветом. Нужен, чтобы дорога
+// шла через разные места, как на бумажной доске, — но, в отличие от неё, цвет
+// здесь ничего не говорит о содержимом клеток: оно секрет до посещения
+export interface TRegion {
+  name: string;
+  color: string;
+}
+
 export interface TTheme {
   name: string;
   resourceName: string;
   palette: string[];
   // Необязательное: модель может его не прислать, и клиент обходится без него
   mood?: EThemeMood;
+  // Три-пять краёв по порядку следования от старта к финишу.
+  // Необязательно: у партий, сгенерированных раньше, поля нет
+  regions?: TRegion[];
 }
 
 export interface TEvent {

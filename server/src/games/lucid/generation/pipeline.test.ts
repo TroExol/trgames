@@ -13,7 +13,16 @@ import { loadFallbackContent } from '@/games/lucid/generation/fallback';
 const usage = { inputTokens: 10, outputTokens: 20, costUsd: 0.001 };
 
 const validWorld = {
-  theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#102030', '#405060', '#708090'] },
+  theme: {
+    name: 'Пираты',
+    resourceName: 'дублоны',
+    palette: ['#102030', '#405060', '#708090'],
+    regions: [
+      { name: 'Бухта висельников', color: '#102030' },
+      { name: 'Пальмовый берег', color: '#405060' },
+      { name: 'Пороховой трюм', color: '#708090' },
+    ],
+  },
 };
 
 const eventsFor = (cellIds: number[]) => ({

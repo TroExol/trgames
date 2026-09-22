@@ -3,6 +3,8 @@ import { LucidShared } from '@trgames/shared';
 import {
   ATOM_RANGES,
   COST_RANGE,
+  REGION_NAME_MAX,
+  REGION_RANGE,
   THRESHOLD_RANGE,
 } from '@/games/lucid/generation/schema';
 
@@ -44,13 +46,20 @@ export const buildWorldPrompt = (theme: string, nicknames: string[]): string => 
 Имена игроков: ${nicknames.join(', ')}.
 
 Верни JSON строго такого вида, без пояснений:
-{"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...],"mood":"DARK"}}
+{"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...],"mood":"DARK",
+"regions":[{"name":"...","color":"#rrggbb"}, ...]}}
 
 name — название мира в духе темы, до 80 символов.
 resourceName — как в этом мире называются монеты, до 40 символов.
 palette — от 3 до 6 цветов в формате #rrggbb, сочетающихся между собой.
 mood — DARK, если мир мрачный, тревожный или опасный, LIGHT, если светлый,
 тёплый или задорный. Яркость палитры тут ни при чём, важен тон мира.
+regions — от ${REGION_RANGE.min} до ${REGION_RANGE.max} краёв мира, через которые
+идёт дорога, по порядку следования от старта к финишу. Название короткое, до
+${REGION_NAME_MAX} знаков, в духе мира: «Соляные пустоши», «Машинный зал», а не
+«Край номер два». Цвет каждого края в формате #rrggbb, различим от соседних и
+перекликается с палитрой мира, а не спорит с ней. Края описывают места, а не
+события: что за местность, а не что там случится.
 `.trim();
 
 export const buildEventsPrompt = (

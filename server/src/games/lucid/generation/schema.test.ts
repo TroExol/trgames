@@ -42,6 +42,21 @@ const withAtoms = (atoms: unknown[]) => ({
   options: [{ ...validEvent.options[0], success: { atoms } }],
 });
 
+// Фабрика, а не константа: проверки правят поля темы, и общий объект утаскивал
+// бы правку в соседние тесты
+const validWorld = (): { theme: LucidShared.TTheme } => ({
+  theme: {
+    name: 'Пираты Карибского моря',
+    resourceName: 'дублоны',
+    palette: ['#102030', '#405060', '#708090', '#a0b0c0', '#d0e0f0'],
+    regions: [
+      { name: 'Бухта висельников', color: '#102030' },
+      { name: 'Пальмовый берег', color: '#a0b0c0' },
+      { name: 'Пороховой трюм', color: '#405060' },
+    ],
+  },
+});
+
 describe('eventSchema', () => {
   it('принимает корректное событие', () => {
     expect(eventSchema.safeParse(validEvent).success).toBe(true);
@@ -99,49 +114,90 @@ describe('eventSchema', () => {
 
 describe('worldSchema', () => {
   it('принимает корректную тему', () => {
-    const result = worldSchema.safeParse({
-      theme: {
-        name: 'Пираты Карибского моря',
-        resourceName: 'дублоны',
-        palette: ['#102030', '#405060', '#708090', '#a0b0c0', '#d0e0f0'],
-      },
-    });
+    const result = worldSchema.safeParse(validWorld());
 
     expect(result.success).toBe(true);
   });
 
   it('принимает тему с настроением', () => {
-    const result = worldSchema.safeParse({
-      theme: {
-        name: 'Жуткий цирк',
-        resourceName: 'жетоны',
-        palette: ['#f0e8e0', '#e8d8c8', '#d8c0a8'],
-        mood: LucidShared.EThemeMood.DARK,
-      },
-    });
+    const world = validWorld();
 
-    expect(result.success).toBe(true);
+    world.theme.mood = LucidShared.EThemeMood.DARK;
+
+    expect(worldSchema.safeParse(world).success).toBe(true);
   });
 
   it('отклоняет неизвестное настроение', () => {
-    const result = worldSchema.safeParse({
-      theme: {
-        name: 'Пираты',
-        resourceName: 'дублоны',
-        palette: ['#102030', '#405060', '#708090'],
-        mood: 'SPOOKY',
-      },
-    });
+    const world = validWorld();
 
-    expect(result.success).toBe(false);
+    expect(worldSchema.safeParse({
+      ...world,
+      theme: { ...world.theme, mood: 'SPOOKY' },
+    }).success).toBe(false);
   });
 
   it('отклоняет палитру неверного формата', () => {
-    const result = worldSchema.safeParse({
-      theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['красный'] },
-    });
+    const world = validWorld();
 
-    expect(result.success).toBe(false);
+    expect(worldSchema.safeParse({
+      ...world,
+      theme: { ...world.theme, palette: ['красный'] },
+    }).success).toBe(false);
+  });
+
+  it('принимает мир с пятью краями', () => {
+    const world = validWorld();
+
+    world.theme.regions = [
+      { name: 'Соляные пустоши', color: '#c9b79c' },
+      { name: 'Машинный зал', color: '#415a77' },
+      { name: 'Оранжерея', color: '#4f7942' },
+      { name: 'Шлюзовой отсек', color: '#1f2937' },
+      { name: 'Реакторный блок', color: '#f59e0b' },
+    ];
+
+    expect(worldSchema.safeParse(world).success).toBe(true);
+  });
+
+  it('требует края: без требования в схеме модель их не вернёт', () => {
+    const { theme } = validWorld();
+
+    delete theme.regions;
+
+    expect(worldSchema.safeParse({ theme }).success).toBe(false);
+  });
+
+  it('отвергает край с кривым цветом', () => {
+    const world = validWorld();
+
+    world.theme.regions = [{ name: 'Соляные пустоши', color: 'бежевый' }];
+
+    expect(worldSchema.safeParse(world).success).toBe(false);
+  });
+
+  it('отвергает два края и шесть краёв', () => {
+    const parseWithRegions = (count: number): boolean => {
+      const world = validWorld();
+
+      world.theme.regions = Array.from({ length: count }, () => ({ name: 'Край', color: '#c9b79c' }));
+
+      return worldSchema.safeParse(world).success;
+    };
+
+    expect(parseWithRegions(2)).toBe(false);
+    expect(parseWithRegions(6)).toBe(false);
+  });
+
+  it('отвергает слишком длинное название края', () => {
+    const world = validWorld();
+
+    world.theme.regions = [
+      { name: 'Бесконечные соляные пустоши мёртвого моря', color: '#c9b79c' },
+      { name: 'Машинный зал', color: '#415a77' },
+      { name: 'Оранжерея', color: '#4f7942' },
+    ];
+
+    expect(worldSchema.safeParse(world).success).toBe(false);
   });
 });
 
