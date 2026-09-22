@@ -85,6 +85,7 @@ describe('обработчики', () => {
 
     expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.LOBBY);
     expect(party.canStart).toBe(true);
+    expect(party.takeRibbonDelta()).toContain('Не получилось собрать партию — запустите ещё раз');
   });
 
   it('номер повторной партии уезжает видом, а не строкой ленты', () => {

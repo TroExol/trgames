@@ -68,4 +68,17 @@ describe('PartyGroup', () => {
 
     expect(createPartyGroup({ storage }).get('p1')).toBeNull();
   });
+
+  it('persist после удаления не воскрешает партию зомби-записью', async () => {
+    const storage = createStorage<TPartySnapshot>(':memory:');
+    const group = createPartyGroup({ storage });
+    const party = await startedParty(group, 'p1');
+
+    group.remove('p1');
+    // Долгая генерация могла всё ещё держать ссылку на party и прислать
+    // persist уже после того, как уборка удалила партию из группы
+    group.persist(party);
+
+    expect(createPartyGroup({ storage }).get('p1')).toBeNull();
+  });
 });

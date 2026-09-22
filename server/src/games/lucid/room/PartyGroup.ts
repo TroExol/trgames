@@ -18,6 +18,13 @@ export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
   const parties = new Map<string, Party>();
 
   const save = (party: Party): void => {
+    // Пока шла долгая генерация, уборка могла удалить опустевшую партию из
+    // группы: persist, который придёт следом из init.ts, не должен вернуть
+    // её в базу зомби-записью, которая поднимется после перезапуска сервера
+    if (!parties.has(party.uuid)) {
+      return;
+    }
+
     const snapshot = party.snapshot();
 
     storage.saveParty({

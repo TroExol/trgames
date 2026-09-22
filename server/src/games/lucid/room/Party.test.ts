@@ -233,12 +233,27 @@ describe('старт партии', () => {
     expect(party.view('a').usedFallback).toBe(true);
   });
 
-  it('сбой генерации откатывает партию в лобби, но не теряет состав и темы', async () => {
+  it('сбой раскладки после удачной генерации откатывает партию и сбрасывает всё, что выставил start', async () => {
     const party = readyParty('start-abort');
+    const worldTheme = { name: 'Мир из onWorld', resourceName: 'осколки', palette: ['#222222'] };
+    // events — геттер, который бросает при обращении, а не просто пустой
+    // словарь: setupParty форму content не проверяет и на пустых событиях
+    // не упал бы, а generate успевает благополучно вернуться — иначе usedFallback
+    // и theme не успевают выставиться, и откат нечего было бы проверять
+    const brokenContent: LucidShared.TPartyContent = {
+      theme: { name: 'Сломанный мир', resourceName: 'обломки', palette: ['#111111'] },
+      get events(): LucidShared.TPartyContent['events'] {
+        throw new Error('раскладка сломана');
+      },
+    };
 
     await expect(party.start({
-      generate: () => Promise.reject(new Error('модель недоступна')),
-    })).rejects.toThrow('модель недоступна');
+      generate: params => {
+        params.onWorld(worldTheme);
+
+        return Promise.resolve({ content: brokenContent, usedFallback: true });
+      },
+    })).rejects.toThrow('раскладка сломана');
 
     party.abortStart();
     party.addRibbonLine('Не получилось собрать партию — запустите ещё раз');
@@ -246,6 +261,9 @@ describe('старт партии', () => {
     const view = party.view('a');
 
     expect(view.phase).toBe(LucidShared.EPartyPhase.LOBBY);
+    expect(view.theme).toBeUndefined();
+    expect(view.usedFallback).toBe(false);
+    expect(view.state).toBeUndefined();
     expect(party.canStart).toBe(true);
     expect(view.members.find(member => member.playerId === 'a')?.themeProposal).toBe('пираты');
     expect(party.takeRibbonDelta()).toContain('Не получилось собрать партию — запустите ещё раз');
