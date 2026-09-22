@@ -164,11 +164,14 @@ export const Hud = observer(function Hud() {
       >
         <div className="flex items-baseline justify-between gap-3">
           <h1 className="truncate font-unbounded text-base">{theme.name}</h1>
+          {/* Название ресурса придумывает нейросеть, и склонять его по числу
+              нечем: рода и типа склонения у строки нет. Название стоит перед
+              числом подписью — подпись со значением не согласуются */}
           <p className="shrink-0 font-unbounded text-base">
-            {you.resource}
-            <span className="pl-1 font-golos text-xs" style={{ color: 'var(--lucid-muted)' }}>
+            <span className="pr-1 font-golos text-xs" style={{ color: 'var(--lucid-muted)' }}>
               {theme.resourceName}
             </span>
+            {you.resource}
           </p>
         </div>
 
@@ -252,7 +255,6 @@ export const Hud = observer(function Hud() {
           onChoose={handleChooseOption}
           onCollapse={() => setCollapsedCell(event.cellId)}
           resource={you.resource}
-          resourceName={theme.resourceName}
         />
       )}
     </>

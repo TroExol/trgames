@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 interface TProps {
   option: LucidShared.TOption;
   resource: number;
-  resourceName: string;
   disabled: boolean;
   onClick: () => void;
 }
@@ -15,7 +14,6 @@ interface TProps {
 export const OptionButton = observer(function OptionButton({
   option,
   resource,
-  resourceName,
   disabled,
   onClick,
 }: TProps) {
@@ -26,7 +24,9 @@ export const OptionButton = observer(function OptionButton({
   const notes = [
     // Порог показывается всегда, а не при наведении: решение принимается по нему
     option.threshold ? `нужно ${option.threshold} и больше на кубике` : undefined,
-    option.cost ? `стоит ${option.cost} ${resourceName}` : undefined,
+    // Название ресурса нейросетевое, склонять его по числу нечем — оно
+    // остаётся в верхней полосе, а здесь подпись со значением: «цена 5»
+    option.cost ? `цена ${option.cost}` : undefined,
   ].filter(Boolean);
 
   return (
@@ -45,10 +45,11 @@ export const OptionButton = observer(function OptionButton({
         </span>
       )}
 
-      {/* Вариант виден, но недоступен, и рядом сказано, сколько не хватает */}
+      {/* Вариант виден, но недоступен: рядом стоит то, что есть, — разница с
+          ценой читается сама */}
       {isTooExpensive && (
         <span className="text-sm leading-snug" style={{ color: 'var(--lucid-accent)' }}>
-          {`не хватает ${missing} ${resourceName}`}
+          {`у тебя ${resource}`}
         </span>
       )}
     </Button>

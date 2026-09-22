@@ -13,7 +13,6 @@ interface TProps {
   isMyTurn: boolean;
   currentNickname: string;
   resource: number;
-  resourceName: string;
   // Оптимистичных ходов нет: после отправки кнопки молчат до нового stateId
   isSent: boolean;
   onChoose: (optionIndex: number) => void;
@@ -27,7 +26,6 @@ export const EventCard = observer(function EventCard({
   isMyTurn,
   currentNickname,
   resource,
-  resourceName,
   isSent,
   onChoose,
   onCollapse,
@@ -65,7 +63,6 @@ export const EventCard = observer(function EventCard({
                       onClick={() => onChoose(index)}
                       option={option}
                       resource={resource}
-                      resourceName={resourceName}
                     />
                   </li>
                 ))}
