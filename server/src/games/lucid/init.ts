@@ -130,6 +130,19 @@ export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreat
         throw new Error('cannot-start');
       }
 
+      // Партия уже расплатилась за генерацию временем и токенами: сбой записи
+      // статистики (диск, sqlite) — это только потерянная строка учёта, а не
+      // повод откатить удачный результат или увести генерацию на запасной
+      // контент. Пайплайн ничего не знает про хранилище и не может сам решить,
+      // безопасно ли проглотить исключение — поэтому оборачиваем здесь
+      const recordStats = (action: () => void): void => {
+        try {
+          action();
+        } catch (error) {
+          console.error('lucid: не удалось записать статистику генерации', { partyId: party.uuid, error });
+        }
+      };
+
       void party.start({
         generate: params => generateContent({
           ...params,
@@ -144,12 +157,12 @@ export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreat
           deadlineMs: Date.now() + GENERATION_BUDGET_MS,
           // Пишется сразу на каждый вызов модели — в том числе на кусок,
           // долетевший уже после того, как вся генерация ушла на запасную партию
-          onCall: call => storage.saveGenerationCall({ partyUuid: party.uuid, ...call }),
+          onCall: call => recordStats(() => storage.saveGenerationCall({ partyUuid: party.uuid, ...call })),
         }).then(result => {
           // Итоговая строка — один раз на генерацию, и для удачной, и для
           // запасной партии. Метрики считаются по содержимому, которое
           // реально досталось игрокам, а не по тому, что просили у модели
-          storage.saveGeneration({
+          recordStats(() => storage.saveGeneration({
             partyUuid: party.uuid,
             model: MODEL_ID,
             usedFallback: result.usedFallback,
@@ -158,7 +171,7 @@ export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreat
             callsCount: result.stats.callsCount,
             retriesCount: result.stats.retriesCount,
             ...computeContentMetrics(result.content),
-          });
+          }));
 
           return result;
         }),

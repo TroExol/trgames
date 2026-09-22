@@ -161,6 +161,77 @@ describe('обработчики', () => {
     expect(report.recent[0]).toEqual(expect.objectContaining({ usedFallback: true, retriesCount: 1 }));
   });
 
+  it('сбой записи итоговой строки не откатывает партию и не уводит её на запасной контент', async () => {
+    const { handlers, party, storage } = setup();
+
+    vi.spyOn(storage, 'saveGeneration').mockImplementation(() => {
+      throw new Error('диск недоступен');
+    });
+    vi.mocked(generateContent).mockResolvedValueOnce({
+      content: emptyContent(),
+      usedFallback: false,
+      stats: {
+        durationMs: 500,
+        requestedEvents: 1,
+        callsCount: 1,
+        retriesCount: 0,
+      },
+    });
+
+    handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'a' });
+
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+
+    // Партия доехала до игры на настоящем контенте модели, а не откатилась
+    // в лобби и не подменилась запасной партией из-за упавшей записи в базу
+    expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.PLAYING);
+    expect(party.view('a').usedFallback).toBe(false);
+  });
+
+  it('сбой записи строки вызова не роняет генерацию в запасную партию', async () => {
+    const { handlers, party, storage } = setup();
+
+    vi.spyOn(storage, 'saveGenerationCall').mockImplementation(() => {
+      throw new Error('диск недоступен');
+    });
+    vi.mocked(generateContent).mockImplementationOnce(({ onCall }) => {
+      // onCall зовётся из пайплайна так же, как в бою: сам вызов не должен
+      // бросить наружу и увести генерацию на запасной контент
+      expect(() => onCall?.({
+        stage: 'world',
+        model: 'test/model',
+        attempt: 1,
+        inputTokens: 1,
+        outputTokens: 1,
+        costUsd: 0,
+        durationMs: 1,
+        outcome: 'ok',
+      })).not.toThrow();
+
+      return Promise.resolve({
+        content: emptyContent(),
+        usedFallback: false,
+        stats: {
+          durationMs: 500,
+          requestedEvents: 1,
+          callsCount: 1,
+          retriesCount: 0,
+        },
+      });
+    });
+
+    handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'a' });
+
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+
+    expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.PLAYING);
+    expect(party.view('a').usedFallback).toBe(false);
+  });
+
   it('номер повторной партии уезжает видом, а не строкой ленты', () => {
     const { handlers, party } = setup();
 
