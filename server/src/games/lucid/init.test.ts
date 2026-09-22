@@ -20,13 +20,20 @@ const setup = () => {
 
   const broadcast = vi.fn();
   const fail = vi.fn();
-  const handlers = createHandlers({ group, broadcast, fail });
+  const sync = vi.fn();
+  const handlers = createHandlers({
+    group,
+    broadcast,
+    fail,
+    sync,
+  });
 
   return {
     group,
     party,
     broadcast,
     fail,
+    sync,
     handlers,
   };
 };
@@ -56,6 +63,37 @@ describe('обработчики', () => {
     handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'b' });
 
     expect(fail).toHaveBeenCalledWith('b', 'Начать партию пока нельзя');
+  });
+
+  it('номер повторной партии уезжает видом, а не строкой ленты', () => {
+    const { handlers, party } = setup();
+
+    handlers[LucidShared.ELucidEvent.playAgain]({ party, playerId: 'a' });
+
+    const nextPartyId = party.view('a').nextPartyId;
+
+    expect(nextPartyId).toBeDefined();
+    // Выдирать номер партии из строки, написанной для человека, клиент не должен
+    party.takeRibbonDelta().forEach(line => expect(line).not.toContain(nextPartyId!));
+  });
+
+  it('повторная партия рождается без подключённых и получает срок удаления', () => {
+    const {
+      group,
+      handlers,
+      party,
+      sync,
+    } = setup();
+
+    handlers[LucidShared.ELucidEvent.playAgain]({ party, playerId: 'a' });
+
+    const next = group.get(party.view('a').nextPartyId!)!;
+
+    expect(next.view('a').members).toHaveLength(2);
+    // Места заняты, но ни один человек ещё не подключился: иначе партия
+    // выглядит полной и остаётся в базе навсегда, если по ссылке никто не придёт
+    expect(next.hasConnected).toBe(false);
+    expect(sync).toHaveBeenCalledWith(next);
   });
 });
 

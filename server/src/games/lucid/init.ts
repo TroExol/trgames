@@ -43,6 +43,9 @@ interface TCreateHandlersParams {
   group: TPartyGroup;
   broadcast: (party: Party) => void;
   fail: (playerId: LucidShared.TPlayerId, message: string) => void;
+  // Новая партия из «сыграть ещё» рождается пустой: срок удаления ей нужен
+  // прямо при создании, как и обычному лобби
+  sync: (party: Party) => void;
 }
 
 export const messageForError = (error: unknown): string => {
@@ -81,7 +84,7 @@ export const createParty = (
   }
 };
 
-export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams) => {
+export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlersParams) => {
   // Обёртка вместо повторяющегося try/catch в каждом обработчике.
   // Сохранение здесь, а не в отдельных обработчиках: иначе партия, которая
   // набрала состав и запустила генерацию, но не получила ни одного хода,
@@ -150,9 +153,19 @@ export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams
 
       party.view(playerId).members.forEach(member => {
         next.join({ playerId: member.playerId, nickname: member.nickname });
+        // Место занято, но человек ещё не подключился. Без этого новая партия
+        // выглядит полной подключённых, не получает срока удаления и остаётся
+        // в базе навсегда, если по ссылке никто так и не придёт
+        next.disconnect(member.playerId);
       });
 
-      party.addRibbonLine(`Новая партия: ${next.uuid}`);
+      // Номер новой партии уезжает видом, а не строкой ленты: лента написана
+      // для человека, и выдирать из неё номер регулярным выражением клиент
+      // не должен
+      party.setNextParty(next.uuid);
+      group.persist(next);
+      sync(next);
+      party.addRibbonLine(t('lucid.ribbon.playAgain', 'ru'));
     }),
   };
 };
@@ -292,7 +305,12 @@ export const init = (io: Server): void => {
     cleanup.sync(party);
   };
 
-  const handlers = createHandlers({ group, broadcast: party => broadcast(party), fail });
+  const handlers = createHandlers({
+    group,
+    broadcast: party => broadcast(party),
+    fail,
+    sync: cleanup.sync,
+  });
 
   namespace.use((socket, next) => {
     const { partyId, playerId, nickname } = socket.handshake.query;

@@ -63,6 +63,7 @@ export interface TPartySnapshot {
   state?: LucidShared.TState;
   usedFallback: boolean;
   sentRibbonLines: number;
+  nextPartyId?: string;
 }
 
 export class Party {
@@ -78,6 +79,8 @@ export class Party {
   // а не журнал целиком: за сорок минут в нём накапливаются сотни строк
   private sentRibbonLines = 0;
   private readonly extraRibbonLines: string[] = [];
+  // Куда уходить после победы, если с этой партии начали следующую
+  private nextPartyId?: string;
 
   constructor({ uuid, ownerId }: TPartyConstructorParams) {
     this.uuid = uuid;
@@ -249,6 +252,11 @@ export class Party {
     this.extraRibbonLines.push(line);
   };
 
+  // С этой партии начали следующую тем же составом
+  public setNextParty = (uuid: string): void => {
+    this.nextPartyId = uuid;
+  };
+
   public takeRibbonDelta = (): string[] => {
     const fromState = this.state?.G.log.slice(this.sentRibbonLines) ?? [];
     const delta = [...fromState, ...this.extraRibbonLines];
@@ -270,6 +278,7 @@ export class Party {
     state: this.state,
     usedFallback: this.usedFallback,
     sentRibbonLines: this.sentRibbonLines,
+    nextPartyId: this.nextPartyId,
   });
 
   public static fromSnapshot = (snapshot: TPartySnapshot): Party => {
@@ -280,6 +289,7 @@ export class Party {
     party.state = snapshot.state;
     party.usedFallback = snapshot.usedFallback;
     party.sentRibbonLines = snapshot.sentRibbonLines;
+    party.nextPartyId = snapshot.nextPartyId;
     // После перезапуска сервера соединений нет ни у кого: связь восстановится,
     // когда клиенты переподключатся
     snapshot.members.forEach(member => {
@@ -298,6 +308,7 @@ export class Party {
     theme: this.theme,
     state: this.state ? formatForPlayer(this.state, playerId) : undefined,
     usedFallback: this.usedFallback,
+    nextPartyId: this.nextPartyId,
   });
 
   private requireLobbyMember = (playerId: LucidShared.TPlayerId): TMember => {
