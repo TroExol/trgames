@@ -187,6 +187,7 @@ export const Component = observer(function LucidPartyPage() {
         <h1 className="font-unbounded text-2xl">Как тебя называть?</h1>
         <form className="flex flex-col gap-3" onSubmit={handleSubmitNickname}>
           <Input
+            name="nickname"
             onChange={event => setNicknameDraft(event.target.value)}
             placeholder="Ник"
             value={nicknameDraft}

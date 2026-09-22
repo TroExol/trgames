@@ -71,6 +71,7 @@ export const Lobby = observer(function Lobby() {
         <form className="flex flex-col gap-3" onSubmit={handleSubmitTheme}>
           <Input
             maxLength={THEME_MAX_LENGTH}
+            name="theme"
             onChange={event => setThemeDraft(event.target.value)}
             placeholder="Тема партии, например «заброшенная космическая станция»"
             value={themeDraft}
