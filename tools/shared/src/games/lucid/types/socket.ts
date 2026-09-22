@@ -3,6 +3,7 @@ import type { TMove } from './move';
 
 export enum ELucidEvent {
   appendRibbon = 'append-ribbon',
+  createParty = 'create-party',
   declineTheme = 'decline-theme',
   makeMove = 'make-move',
   playAgain = 'play-again',
@@ -27,4 +28,14 @@ export interface TLucidClientToServerEvents {
   [ELucidEvent.startParty]: () => void;
   [ELucidEvent.makeMove]: (move: TMove) => void;
   [ELucidEvent.playAgain]: () => void;
+}
+
+export interface TLucidLobbyClientToServerEvents {
+  [ELucidEvent.createParty]: (
+    callback: (result: { status: 'ok'; partyId: string } | { status: 'error'; message: string }) => void
+  ) => void;
+}
+
+export interface TLucidLobbyServerToClientEvents {
+  [ELucidEvent.showError]: (params: { message: string }) => void;
 }

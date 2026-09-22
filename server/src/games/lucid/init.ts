@@ -50,6 +50,31 @@ export const messageForError = (error: unknown): string => {
   return ERROR_MESSAGES[code] ?? t('lucid.errors.unknown', 'ru');
 };
 
+interface TCreatePartyContext {
+  group: TPartyGroup;
+  ownerId: LucidShared.TPlayerId;
+}
+
+type TCreatePartyCallback = (
+  result: { status: 'ok'; partyId: string } | { status: 'error'; message: string },
+) => void;
+
+// Создатель сообщает свой идентификатор сам: рукопожатие партии его назначить
+// не может, партии-то ещё нет, а идентификатор у создателя уже есть — выдан
+// браузером при первом заходе
+export const createParty = (
+  { group, ownerId }: TCreatePartyContext,
+  callback: TCreatePartyCallback,
+): void => {
+  try {
+    const party = group.create({ uuid: uid(), ownerId });
+
+    callback({ status: 'ok', partyId: party.uuid });
+  } catch (error) {
+    callback({ status: 'error', message: messageForError(error) });
+  }
+};
+
 export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams) => {
   // Обёртка вместо повторяющегося try/catch в каждом обработчике.
   // Сохранение здесь, а не в отдельных обработчиках: иначе партия, которая
@@ -127,11 +152,36 @@ export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams
 };
 
 export const init = (io: Server): void => {
+  const group = createPartyGroup({ storage: createStorage(STORAGE_PATH) });
+
+  // Общий неймспейс игры: единственное, что он умеет, — создать партию.
+  // Через неймспейс партии это невозможно, потому что рукопожатие там
+  // требует уже существующий идентификатор
+  const lobby = io.of('/lucid/lobby') as Namespace<
+    LucidShared.TLucidLobbyClientToServerEvents,
+    LucidShared.TLucidLobbyServerToClientEvents
+  >;
+
+  lobby.on('connection', socket => {
+    const ownerId = socket.handshake.query.playerId;
+
+    socket.on(LucidShared.ELucidEvent.createParty, callback => {
+      if (typeof ownerId !== 'string') {
+        callback({ status: 'error', message: t('lucid.errors.unknown', 'ru') });
+
+        return;
+      }
+
+      createParty({ group, ownerId }, callback);
+    });
+
+    socket.on('error', error => console.error(error));
+  });
+
   const namespace = io.of('/lucid') as Namespace<
     LucidShared.TLucidClientToServerEvents,
     LucidShared.TLucidServerToClientEvents
   >;
-  const group = createPartyGroup({ storage: createStorage(STORAGE_PATH) });
   // Один автопилот на партию, а не на подключение: иначе таймер, заведённый
   // прежним соединением, остался бы в объекте, до которого новое не дотянется
   const autopilots = new Map<string, TAutopilot>();

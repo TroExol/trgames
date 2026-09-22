@@ -8,7 +8,7 @@ import { LucidShared } from '@trgames/shared';
 
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
-import { createHandlers } from '@/games/lucid/init';
+import { createHandlers, createParty } from '@/games/lucid/init';
 
 const setup = () => {
   const group = createPartyGroup({ storage: createStorage(':memory:') });
@@ -54,5 +54,33 @@ describe('обработчики', () => {
     handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'b' });
 
     expect(fail).toHaveBeenCalledWith('b', 'Начать партию пока нельзя');
+  });
+});
+
+describe('создание партии', () => {
+  it('создаёт партию и возвращает её идентификатор', () => {
+    const group = createPartyGroup({ storage: createStorage(':memory:') });
+    const callback = vi.fn();
+
+    createParty({ group, ownerId: 'a' }, callback);
+
+    const [result] = callback.mock.calls[0] as [{ status: string; partyId: string }];
+
+    expect(result.status).toBe('ok');
+    expect(group.get(result.partyId)).not.toBeNull();
+  });
+
+  it('создатель становится владельцем только после входа', () => {
+    const group = createPartyGroup({ storage: createStorage(':memory:') });
+    const callback = vi.fn();
+
+    createParty({ group, ownerId: 'a' }, callback);
+
+    const [result] = callback.mock.calls[0] as [{ partyId: string }];
+    const party = group.get(result.partyId)!;
+
+    // Владелец назначается при создании, но состав пуст, пока он не подключился
+    expect(party.ownerId).toBe('a');
+    expect(party.view(party.ownerId).members).toHaveLength(0);
   });
 });
