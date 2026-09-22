@@ -38,9 +38,10 @@ export const Ending = observer(function Ending() {
             {winner ? winner.nickname : 'Партия окончена'}
           </h2>
           {/* Роль — не секрет, но и не главное: мельче и глуше имени победителя,
-              как подпись темы строкой ниже */}
+              как подпись темы строкой ниже. Не обрезаем: места хватает, а на
+              телефоне title по тапу не всплывает — длинную роль иначе не прочитать */}
           {winner?.role && (
-            <p className="truncate text-sm" style={{ color: 'var(--lucid-muted)' }} title={winner.role}>
+            <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>
               {winner.role}
             </p>
           )}

@@ -4,7 +4,16 @@ import {
   it,
 } from 'vitest';
 
-import { buildEventsPrompt } from '@/games/lucid/generation/prompt';
+import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
+
+describe('buildWorldPrompt', () => {
+  it('просит роли игроков и перечисляет ники, для которых их нужно придумать', () => {
+    const prompt = buildWorldPrompt('пираты', ['Аня', 'Боря']);
+
+    expect(prompt).toContain('"roles":[{"nickname"');
+    expect(prompt).toContain('Имена игроков: Аня, Боря.');
+  });
+});
 
 describe('buildEventsPrompt', () => {
   it('должен разделять количество событий и номера клеток', () => {
