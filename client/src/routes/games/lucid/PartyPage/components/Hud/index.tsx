@@ -192,6 +192,17 @@ export const Hud = observer(function Hud() {
                 />
               )}
               <span>{state.G.players[playerId].nickname}</span>
+              {/* Роль — не секрет, но и не главное: мельче ника и всегда приглушена,
+                  даже у текущего игрока. На узком экране режется многоточием, а не ломает строку */}
+              {state.G.players[playerId].role && (
+                <span
+                  className="max-w-24 truncate text-[10px]"
+                  style={{ color: 'var(--lucid-muted)' }}
+                  title={state.G.players[playerId].role}
+                >
+                  {`— ${state.G.players[playerId].role}`}
+                </span>
+              )}
               {offline.has(playerId) && <span>· связь потеряна</span>}
             </li>
           ))}

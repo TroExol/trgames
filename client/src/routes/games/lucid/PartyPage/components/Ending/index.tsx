@@ -37,6 +37,13 @@ export const Ending = observer(function Ending() {
           <h2 className="font-unbounded text-3xl leading-tight">
             {winner ? winner.nickname : 'Партия окончена'}
           </h2>
+          {/* Роль — не секрет, но и не главное: мельче и глуше имени победителя,
+              как подпись темы строкой ниже */}
+          {winner?.role && (
+            <p className="truncate text-sm" style={{ color: 'var(--lucid-muted)' }} title={winner.role}>
+              {winner.role}
+            </p>
+          )}
           <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{state.G.theme.name}</p>
         </div>
 

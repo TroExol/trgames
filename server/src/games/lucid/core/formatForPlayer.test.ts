@@ -65,4 +65,19 @@ describe('formatForPlayer', () => {
 
     expect(formatForPlayer(state, 'a').G.lastRoll).toEqual({ playerId: 'a', value: 4 });
   });
+
+  it('отдаёт роли игроков: они не секрет', () => {
+    const state = setupParty({
+      seed: 'roles',
+      players: [{ id: 'a', nickname: 'Аня' }, { id: 'b', nickname: 'Боря' }],
+      content: {
+        theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#001122'] },
+        events: {},
+        roles: [{ nickname: 'Аня', role: 'хранитель компаса' }],
+      },
+    });
+
+    expect(formatForPlayer(state, 'a').G.players.a.role).toBe('хранитель компаса');
+    expect(formatForPlayer(state, 'a').G.players.b.role).toBeUndefined();
+  });
 });

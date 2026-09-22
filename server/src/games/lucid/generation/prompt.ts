@@ -36,6 +36,20 @@ const describeTargets = (): string => {
   return Object.entries(TARGET_DESCRIPTIONS).map(([key, text]) => `- ${key}: ${text}`).join('\n');
 };
 
+// Пустая строка, если ролей нет вовсе: старые миры и сбой генерации ролей
+// не должны оставлять в промпте пустой абзац
+const describeRoles = (roles: LucidShared.TRole[]): string => {
+  if (roles.length === 0) {
+    return '';
+  }
+
+  const list = roles.map(({ nickname, role }) => `${nickname} — ${role}`).join(', ');
+
+  return `\nВ мире есть роли игроков: ${list}. Событие может выпасть любому из\n`
+    + 'игроков, поэтому персонажа по роли упомянуть можно, но нельзя писать так,\n'
+    + 'будто событие происходит именно с ним.\n';
+};
+
 export const buildWorldPrompt = (theme: string, nicknames: string[]): string => `
 Ты придумываешь оформление настольной игры-бродилки.
 
@@ -47,7 +61,8 @@ export const buildWorldPrompt = (theme: string, nicknames: string[]): string => 
 
 Верни JSON строго такого вида, без пояснений:
 {"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...],"mood":"DARK",
-"regions":[{"name":"...","color":"#rrggbb"}, ...]}}
+"regions":[{"name":"...","color":"#rrggbb"}, ...]},
+"roles":[{"nickname":"...","role":"..."}, ...]}
 
 name — название мира в духе темы, до 80 символов.
 resourceName — как в этом мире называются монеты, до 40 символов.
@@ -60,17 +75,22 @@ ${REGION_NAME_MAX} знаков, в духе мира: «Соляные пуст
 «Край номер два». Цвет каждого края в формате #rrggbb, различим от соседних и
 перекликается с палитрой мира, а не спорит с ней. Края описывают места, а не
 события: что за местность, а не что там случится.
+roles — короткая роль в мире партии для каждого игрока по имени из списка
+выше: nickname — точно одно из этих имён, без выдумывания новых, role — 2-5
+слов в духе темы, например «хранитель чайника», а не описание характера или
+судьбы.
 `.trim();
 
 export const buildEventsPrompt = (
   themeName: string,
   resourceName: string,
   cellIds: number[],
+  roles: LucidShared.TRole[],
 ): string => `
 Ты пишешь события для клеток настольной игры-бродилки.
 
 Мир: ${themeName}. Ресурс называется «${resourceName}».
-
+${describeRoles(roles)}
 Количество событий: ${cellIds.length}. Номера клеток, по одному событию на каждую: ${cellIds.join(', ')}.
 Других номеров клеток не существует, выдумывать их нельзя.
 

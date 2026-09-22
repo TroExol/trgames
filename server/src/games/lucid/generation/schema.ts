@@ -77,6 +77,13 @@ export const worldSchema = z.strictObject({
       .min(REGION_RANGE.min)
       .max(REGION_RANGE.max),
   }),
+  // Необязательное и не привязанное к списку игроков схемой: сверка ников
+  // с реальными игроками и их нехватка — забота setupParty, а не валидации.
+  // Так неполный или кривой ответ про роли не заставляет перегенерировать весь мир
+  roles: z.array(z.strictObject({
+    nickname: z.string().min(1).max(60),
+    role: z.string().min(1).max(50),
+  })).optional(),
 });
 
 export const eventBatchSchema = z.strictObject({

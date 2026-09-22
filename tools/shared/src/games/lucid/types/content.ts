@@ -37,8 +37,19 @@ export interface TEvent {
   options: TOption[];
 }
 
+// Роль игрока в мире партии, как её вернула модель. Привязана к нику, а не
+// к playerId: на стадии «Мир» модель знает только имена, сопоставление
+// с конкретным игроком делает setupParty
+export interface TRole {
+  nickname: string;
+  role: string;
+}
+
 // Всё, что генерирует нейросеть для одной партии
 export interface TPartyContent {
   theme: TTheme;
   events: Record<number, TEvent>;
+  // Необязательное: модель может прислать не для всех игроков или не прислать
+  // вовсе, тогда часть или все останутся без роли
+  roles?: TRole[];
 }

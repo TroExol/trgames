@@ -154,7 +154,7 @@ export const generateContent = async ({
 
     // У каждого куска своя валидация и свои попытки, но идут они разом
     const batches = await Promise.all(chunk(eventCellIds, EVENTS_CHUNK_SIZE).map(chunkIds => request(
-      buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkIds),
+      buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkIds, world.roles ?? []),
       eventBatchSchema,
       parseEvents(chunkIds),
     )));
@@ -173,6 +173,8 @@ export const generateContent = async ({
           (acc, event) => ({ ...acc, [event.cellId]: event }),
           {},
         ),
+        // Сопоставление с конкретными игроками — забота setupParty, здесь только сырой ответ модели
+        roles: world.roles,
       },
       usage,
       usedFallback: false,
