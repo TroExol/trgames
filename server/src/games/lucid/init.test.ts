@@ -53,7 +53,7 @@ describe('обработчики', () => {
 
     handlers[LucidShared.ELucidEvent.proposeTheme]({ party, playerId: 'a' }, '  ');
 
-    expect(fail).toHaveBeenCalledWith('a', 'Тема не может быть пустой');
+    expect(fail).toHaveBeenCalledWith(party, 'a', 'Тема не может быть пустой');
     expect(broadcast).not.toHaveBeenCalled();
   });
 
@@ -62,7 +62,7 @@ describe('обработчики', () => {
 
     handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'b' });
 
-    expect(fail).toHaveBeenCalledWith('b', 'Начать партию пока нельзя');
+    expect(fail).toHaveBeenCalledWith(party, 'b', 'Начать партию пока нельзя');
   });
 
   it('номер повторной партии уезжает видом, а не строкой ленты', () => {

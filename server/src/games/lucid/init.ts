@@ -22,6 +22,13 @@ const GENERATION_BUDGET_MS = 90_000;
 // В тестах база живёт в памяти, в бою — файлом рядом с сервером
 const STORAGE_PATH = process.env.LUCID_DB_PATH ?? 'lucid.db';
 
+// Комната личного вида — на партию, а не на игрока: один и тот же человек
+// держит открытыми две партии подряд, и комната только по playerId общая
+// у них обеих. Тогда вид старой партии уезжает во вкладку, где открыта новая,
+// и перекрывает её, а сама старая считает игрока подключённым
+const playerRoom = (partyUuid: string, playerId: LucidShared.TPlayerId): string =>
+  `player:${partyUuid}:${playerId}`;
+
 // Ошибки партии — это коды, а не тексты: перевод живёт в одном месте
 const ERROR_MESSAGES: Record<string, string> = {
   'cannot-start': t('lucid.errors.cannotStart', 'ru'),
@@ -42,7 +49,7 @@ interface THandlerContext {
 interface TCreateHandlersParams {
   group: TPartyGroup;
   broadcast: (party: Party) => void;
-  fail: (playerId: LucidShared.TPlayerId, message: string) => void;
+  fail: (party: Party, playerId: LucidShared.TPlayerId, message: string) => void;
   // Новая партия из «сыграть ещё» рождается пустой: срок удаления ей нужен
   // прямо при создании, как и обычному лобби
   sync: (party: Party) => void;
@@ -97,7 +104,7 @@ export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlers
       group.persist(context.party);
       broadcast(context.party);
     } catch (error) {
-      fail(context.playerId, messageForError(error));
+      fail(context.party, context.playerId, messageForError(error));
     }
   };
 
@@ -224,8 +231,8 @@ export const init = (io: Server): void => {
     LucidShared.TLucidServerToClientEvents
   >;
 
-  const fail = (playerId: LucidShared.TPlayerId, message: string): void => {
-    namespace.to(`player:${playerId}`).emit(LucidShared.ELucidEvent.showError, { message });
+  const fail = (party: Party, playerId: LucidShared.TPlayerId, message: string): void => {
+    namespace.to(playerRoom(party.uuid, playerId)).emit(LucidShared.ELucidEvent.showError, { message });
   };
 
   // autopilotFor и syncAutopilot ссылаются на broadcast раньше её объявления:
@@ -298,7 +305,7 @@ export const init = (io: Server): void => {
   const broadcast = (party: Party): void => {
     party.view(party.ownerId).members.forEach(member => {
       namespace
-        .to(`player:${member.playerId}`)
+        .to(playerRoom(party.uuid, member.playerId))
         .emit(LucidShared.ELucidEvent.updateParty, party.view(member.playerId));
     });
 
@@ -354,7 +361,7 @@ export const init = (io: Server): void => {
     // Две комнаты: одна на партию для общих сообщений, одна на игрока —
     // чтобы личный вид уехал только ему
     void socket.join(party.uuid);
-    void socket.join(`player:${playerId}`);
+    void socket.join(playerRoom(party.uuid, playerId));
 
     group.persist(party);
     broadcast(party);
@@ -380,8 +387,9 @@ export const init = (io: Server): void => {
       // потерю старого: обрыв транспорта и перезагрузка страницы дают именно
       // такой порядок. Гасить связь тогда нельзя — за живым человеком начал бы
       // ходить автопилот. К этому событию сокет уже покинул свои комнаты,
-      // поэтому в комнате игрока остались только живые соединения
-      if (!namespace.adapter.rooms.get(`player:${playerId}`)?.size) {
+      // поэтому в комнате игрока остались только живые соединения — и только
+      // этой партии: соединение к соседней за живое тут не считается
+      if (!namespace.adapter.rooms.get(playerRoom(party.uuid, playerId))?.size) {
         party.disconnect(playerId);
       }
 
