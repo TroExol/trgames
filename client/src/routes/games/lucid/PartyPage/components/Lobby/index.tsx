@@ -98,7 +98,7 @@ export const Lobby = observer(function Lobby() {
               </Button>
             )
           : (
-              <p className="font-golos text-center text-muted-foreground">Ждём остальных</p>
+              <p className="text-center font-golos text-muted-foreground">Ждём остальных</p>
             )
       )}
     </div>

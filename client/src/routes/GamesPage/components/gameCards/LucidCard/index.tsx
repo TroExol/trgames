@@ -4,8 +4,8 @@ import { observer } from 'mobx-react-lite';
 export const LucidCard = observer(function LucidCard() {
   return (
     <Link
-      className="font-unbounded relative overflow-hidden rounded-3xl border-4 border-border
-        bg-black/40 p-20 text-center text-4xl font-bold transition-shadow
+      className="relative overflow-hidden rounded-3xl border-4 border-border bg-black/40
+        p-20 text-center font-unbounded text-4xl font-bold transition-shadow
         hover:shadow-lg hover:shadow-accent"
       to="/game/lucid"
     >
