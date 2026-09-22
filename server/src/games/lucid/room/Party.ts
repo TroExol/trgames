@@ -224,6 +224,10 @@ export class Party {
     }
   };
 
+  // Полное состояние нужно автопилоту: он выбирает ход по тому же состоянию,
+  // по которому его проверяет движок
+  public rawState = (): LucidShared.TState | undefined => this.state;
+
   // Строка от самой игры, а не от движка: например, честное признание,
   // что придумать мир не получилось
   public addRibbonLine = (line: string): void => {
