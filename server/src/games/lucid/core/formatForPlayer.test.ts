@@ -58,4 +58,11 @@ describe('formatForPlayer', () => {
 
     expect(formatForPlayer(state, 'a').stateId).toBe(state.stateId);
   });
+
+  it('отдаёт последний бросок', () => {
+    const state = makeParty();
+    state.G.lastRoll = { playerId: 'a', value: 4 };
+
+    expect(formatForPlayer(state, 'a').G.lastRoll).toEqual({ playerId: 'a', value: 4 });
+  });
 });

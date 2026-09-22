@@ -28,6 +28,7 @@ export const formatForPlayer = (
     winner: state.G.winner,
     branchChoices: state.G.branchChoices,
     pendingSteps: state.G.pendingSteps,
+    lastRoll: state.G.lastRoll,
   };
 
   return {

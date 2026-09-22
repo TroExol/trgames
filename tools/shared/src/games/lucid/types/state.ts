@@ -19,6 +19,16 @@ export enum EPhase {
   ROLL = 'ROLL',
 }
 
+// Последний бросок кубика в партии. Нужен клиенту, чтобы нарисовать грань и
+// озвучить бросок. Разбирать строку журнала регулярным выражением нельзя:
+// текст журнала предназначен человеку и меняется свободно
+export interface TRoll {
+  playerId: TPlayerId;
+  value: number;
+  // Есть, если бросок был проверкой варианта события, а не броском на движение
+  threshold?: number;
+}
+
 export interface TG {
   players: Record<TPlayerId, TPlayer>;
   order: TPlayerId[];
@@ -38,6 +48,7 @@ export interface TG {
   branchChoices: number[];
   // Сколько шагов осталось дойти после выбора ветки
   pendingSteps: number;
+  lastRoll?: TRoll;
 }
 
 export interface TCtx {

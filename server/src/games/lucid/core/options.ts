@@ -33,6 +33,7 @@ export const resolveOption = (
   const withRoll: LucidShared.TG = {
     ...paid,
     random: roll.state,
+    lastRoll: { playerId: actorId, value: roll.value, threshold: option.threshold },
     log: [
       ...paid.log,
       `${player.nickname} бросает кубик: ${roll.value} против порога ${option.threshold}`,

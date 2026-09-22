@@ -27,7 +27,7 @@ export const rollAndMove = (
   const roll = rollDie(G.random);
   const player = G.players[playerId];
   const moved = applyWalk(
-    { ...G, random: roll.state },
+    { ...G, random: roll.state, lastRoll: { playerId, value: roll.value } },
     playerId,
     walkForward(G.track, player.position, roll.value),
   );
