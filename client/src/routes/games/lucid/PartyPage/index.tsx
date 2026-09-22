@@ -3,9 +3,11 @@ import type { FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { LucidShared } from '@trgames/shared';
 
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
+import { Lobby } from '@/routes/games/lucid/PartyPage/components/Lobby';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { useNickname } from '@/hooks/useNickname';
 import { Input } from '@/components/ui/Input';
@@ -72,14 +74,21 @@ export const Component = observer(function LucidPartyPage() {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="font-golos">{partyStore.error}</p>
-        <Button
-          onClick={() => {
-            partyStore.setError(undefined);
-            socketService.connect({ partyId, playerId, nickname });
-          }}
-        >
-          Попробовать снова
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            onClick={() => {
+              partyStore.setError(undefined);
+              socketService.connect({ partyId, playerId, nickname });
+            }}
+          >
+            Попробовать снова
+          </Button>
+          {/* Если сервер отказал из-за занятого ника, повтор с тем же ником */}
+          {/* будет падать бесконечно — нужен путь назад, к полю ввода */}
+          <Button onClick={() => setNickname('')} type="button" variant="outline">
+            Ввести другой ник
+          </Button>
+        </div>
       </main>
     );
   }
@@ -94,7 +103,9 @@ export const Component = observer(function LucidPartyPage() {
 
   return (
     <main className="min-h-dvh px-4 py-6">
-      <p className="font-golos">{partyStore.view.phase}</p>
+      {partyStore.view.phase === LucidShared.EPartyPhase.LOBBY
+        ? <Lobby />
+        : <p className="font-golos">{partyStore.view.phase}</p>}
     </main>
   );
 });
