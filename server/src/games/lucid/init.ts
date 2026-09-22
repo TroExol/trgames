@@ -170,6 +170,10 @@ export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreat
             requestedEvents: result.stats.requestedEvents,
             callsCount: result.stats.callsCount,
             retriesCount: result.stats.retriesCount,
+            // Своей колонкой, а не джойном на parties: строка партии исчезает
+            // через несколько минут после опустения комнаты (см. cleanup.ts),
+            // а строка генерации должна помнить название мира и после этого
+            worldName: result.content.theme.name,
             ...computeContentMetrics(result.content),
           }));
 

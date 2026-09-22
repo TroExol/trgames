@@ -77,6 +77,7 @@ const generationParams = (overrides: Partial<Parameters<TStorage<unknown>['saveG
   paidOptionShare: 0.5,
   antiLeaderShare: 0.25,
   helpLastShare: 0.25,
+  worldName: 'Тестовый мир',
   ...overrides,
 });
 
@@ -110,6 +111,28 @@ describe('generationCalls и generations', () => {
     });
   });
 
+  it('по дням суммирует стоимость реально сделанных в этот день вызовов', () => {
+    const storage = createStorage<LucidShared.TState>(':memory:');
+
+    vi.setSystemTime(new Date(2026, 0, 10, 12));
+    storage.saveGenerationCall(callParams({ costUsd: 0.01 }));
+    storage.saveGeneration(generationParams());
+
+    // Второй день: две генерации не было — только два вызова и одна
+    // генерация, стоимость дня всё равно должна сложить оба вызова
+    vi.setSystemTime(new Date(2026, 0, 11, 12));
+    storage.saveGenerationCall(callParams({ costUsd: 0.02 }));
+    storage.saveGenerationCall(callParams({ costUsd: 0.03 }));
+    storage.saveGeneration(generationParams());
+
+    const { byDay } = storage.usageReport();
+
+    expect(byDay).toEqual([
+      { day: '2026-01-11', generations: 1, costUsd: 0.05 },
+      { day: '2026-01-10', generations: 1, costUsd: 0.01 },
+    ]);
+  });
+
   it('группировка по моделям считает долю ошибок и среднюю длительность', () => {
     const storage = createStorage<LucidShared.TState>(':memory:');
 
@@ -126,15 +149,11 @@ describe('generationCalls и generations', () => {
     ]);
   });
 
-  it('последние генерации несут название мира из таблицы партий и свою стоимость', () => {
+  it('последние генерации несут своё название мира и свою стоимость', () => {
     const storage = createStorage<LucidShared.TState>(':memory:');
 
-    // Лобби сохраняется без темы, настоящая приходит вторым сохранением после
-    // генерации — ON CONFLICT обязан её обновить, а не оставить пустой
-    storage.saveParty({ uuid: 'p1', theme: '', document: makeState() });
-    storage.saveParty({ uuid: 'p1', theme: 'Пиратская бухта', document: makeState() });
     storage.saveGenerationCall(callParams({ costUsd: 0.03 }));
-    storage.saveGeneration(generationParams({ retriesCount: 2 }));
+    storage.saveGeneration(generationParams({ retriesCount: 2, worldName: 'Пиратская бухта' }));
 
     const { recent } = storage.usageReport();
 
@@ -148,72 +167,113 @@ describe('generationCalls и generations', () => {
       }),
     ]);
   });
+
+  it('название мира остаётся в отчёте, даже когда строка партии уже удалена уборкой', () => {
+    const storage = createStorage<LucidShared.TState>(':memory:');
+
+    // Уборка удаляет parties через несколько минут после опустения комнаты
+    // (cleanup.ts) — задолго до того, как кто-то откроет отчёт
+    storage.saveParty({ uuid: 'p1', theme: 'Пиратская бухта', document: makeState() });
+    storage.saveGeneration(generationParams({ worldName: 'Пиратская бухта' }));
+    storage.removeParty('p1');
+
+    expect(storage.usageReport().recent[0].worldName).toBe('Пиратская бухта');
+  });
 });
 
 describe('открытие базы старого формата', () => {
-  it('база с parties и usage без новых таблиц открывается, дополняется и не теряет старую usage', async () => {
-    // fs замокан глобально (setup.ts, память через memfs) — для настоящего
-    // файла на диске, который увидит нативный node:sqlite, нужен настоящий fs
-    const realFs = await vi.importActual<typeof NodeFs>('node:fs');
+  it(
+    'база с parties/usage и generations без world_name открывается, мигрирует колонку и не теряет старые строки',
+    async () => {
+      // fs замокан глобально (setup.ts, память через memfs) — для настоящего
+      // файла на диске, который увидит нативный node:sqlite, нужен настоящий fs
+      const realFs = await vi.importActual<typeof NodeFs>('node:fs');
 
-    // :memory: не годится: нужна база, которую можно закрыть одним
-    // подключением и переоткрыть другим, как это делает сервер между запусками
-    const dir = realFs.mkdtempSync(join(tmpdir(), 'lucid-legacy-'));
-    const path = join(dir, 'legacy.db');
+      // :memory: не годится: нужна база, которую можно закрыть одним
+      // подключением и переоткрыть другим, как это делает сервер между запусками
+      const dir = realFs.mkdtempSync(join(tmpdir(), 'lucid-legacy-'));
+      const path = join(dir, 'legacy.db');
 
-    try {
-      // Схема до generation_calls/generations — та, что уже накоплена
-      // в боевых базах: только parties и usage
-      const legacy = new DatabaseSync(path);
+      try {
+        // Две старые схемы разом: parties/usage — то, что накоплено в боевых
+        // базах до этой ветки; generations без world_name — промежуточная
+        // версия этой же ветки (более ранний коммит, колонка появилась позже
+        // самой таблицы)
+        const legacy = new DatabaseSync(path);
 
-      legacy.exec(`
-        CREATE TABLE parties (
-          uuid TEXT PRIMARY KEY,
-          theme TEXT NOT NULL,
-          state TEXT NOT NULL,
-          updated_at INTEGER NOT NULL
-        );
+        legacy.exec(`
+          CREATE TABLE parties (
+            uuid TEXT PRIMARY KEY,
+            theme TEXT NOT NULL,
+            state TEXT NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
 
-        CREATE TABLE usage (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          party_uuid TEXT NOT NULL,
-          input_tokens INTEGER NOT NULL,
-          output_tokens INTEGER NOT NULL,
-          cost_usd REAL NOT NULL,
-          used_fallback INTEGER NOT NULL,
-          created_at INTEGER NOT NULL
-        );
-      `);
-      legacy.prepare(`
-        INSERT INTO usage (party_uuid, input_tokens, output_tokens, cost_usd, used_fallback, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run('old-party', 100, 200, 0.01, 0, 1_700_000_000_000);
-      legacy.close();
+          CREATE TABLE usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            party_uuid TEXT NOT NULL,
+            input_tokens INTEGER NOT NULL,
+            output_tokens INTEGER NOT NULL,
+            cost_usd REAL NOT NULL,
+            used_fallback INTEGER NOT NULL,
+            created_at INTEGER NOT NULL
+          );
 
-      // Открываем тем же кодом, что и сервер: CREATE TABLE IF NOT EXISTS
-      // не должен споткнуться об уже существующие parties/usage
-      const storage = createStorage<LucidShared.TState>(path);
+          CREATE TABLE generations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            party_uuid TEXT NOT NULL,
+            model TEXT NOT NULL,
+            used_fallback INTEGER NOT NULL,
+            duration_ms INTEGER NOT NULL,
+            requested_events INTEGER NOT NULL,
+            calls_count INTEGER NOT NULL,
+            retries_count INTEGER NOT NULL,
+            paid_option_share REAL NOT NULL,
+            anti_leader_share REAL NOT NULL,
+            help_last_share REAL NOT NULL,
+            created_at INTEGER NOT NULL
+          );
+        `);
+        legacy.prepare(`
+          INSERT INTO usage (party_uuid, input_tokens, output_tokens, cost_usd, used_fallback, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run('old-party', 100, 200, 0.01, 0, 1_700_000_000_000);
+        legacy.prepare(`
+          INSERT INTO generations (
+            party_uuid, model, used_fallback, duration_ms, requested_events,
+            calls_count, retries_count, paid_option_share, anti_leader_share, help_last_share, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run('old-gen', 'old/model', 0, 100, 1, 1, 0, 0, 0, 0, 1_700_000_000_000);
+        legacy.close();
 
-      expect(() => {
-        storage.saveGenerationCall(callParams());
-        storage.saveGeneration(generationParams());
-      }).not.toThrow();
+        // Открываем тем же кодом, что и сервер: CREATE TABLE IF NOT EXISTS
+        // и миграция world_name не должны споткнуться об уже существующие
+        // parties/usage/generations
+        const storage = createStorage<LucidShared.TState>(path);
 
-      const report = storage.usageReport();
+        expect(() => {
+          storage.saveGenerationCall(callParams());
+          storage.saveGeneration(generationParams({ worldName: 'Новый мир' }));
+        }).not.toThrow();
 
-      expect(report.totals).toEqual(expect.objectContaining({ generations: 1, calls: 1 }));
-      storage.close();
+        const report = storage.usageReport();
 
-      // Старая usage — не удалена и не переписана: новый код в неё не пишет
-      const check = new DatabaseSync(path);
-      const legacyRows = check.prepare('SELECT * FROM usage').all() as { party_uuid: string }[];
-      check.close();
+        // Старая строка generations (без world_name) и новая — обе на месте
+        expect(report.totals).toEqual(expect.objectContaining({ generations: 2, calls: 1 }));
+        expect(report.recent.map(row => row.worldName).sort()).toEqual(['', 'Новый мир']);
+        storage.close();
 
-      expect(legacyRows).toHaveLength(1);
-      expect(legacyRows[0].party_uuid).toBe('old-party');
-    } finally {
-      // Соединения закрыты выше, поэтому на Windows файл уже не занят
-      realFs.rmSync(dir, { recursive: true, force: true });
-    }
-  });
+        // Старая usage — не удалена и не переписана: новый код в неё не пишет
+        const check = new DatabaseSync(path);
+        const legacyRows = check.prepare('SELECT * FROM usage').all() as { party_uuid: string }[];
+        check.close();
+
+        expect(legacyRows).toHaveLength(1);
+        expect(legacyRows[0].party_uuid).toBe('old-party');
+      } finally {
+        // Соединения закрыты выше, поэтому на Windows файл уже не занят
+        realFs.rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
 });

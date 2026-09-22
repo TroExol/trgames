@@ -20,6 +20,9 @@ type TSaveGenerationParams = {
   requestedEvents: number;
   callsCount: number;
   retriesCount: number;
+  // Своя колонка, а не джойн на parties: строка партии удаляется через
+  // CLEANUP_DELAY_MS после опустения комнаты, а строка генерации остаётся
+  worldName: string;
 } & TContentMetrics;
 
 export interface TUsageTotals {
@@ -120,6 +123,10 @@ export const createStorage = <TDocument>(path: string) => {
       created_at INTEGER NOT NULL
     );
 
+    -- Отчёт почти всегда фильтрует и джойнит вызовы по party_uuid (итоги,
+    -- по дням, по моделям, последние генерации)
+    CREATE INDEX IF NOT EXISTS idx_generation_calls_party_uuid ON generation_calls(party_uuid);
+
     CREATE TABLE IF NOT EXISTS generations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       party_uuid TEXT NOT NULL,
@@ -132,9 +139,21 @@ export const createStorage = <TDocument>(path: string) => {
       paid_option_share REAL NOT NULL,
       anti_leader_share REAL NOT NULL,
       help_last_share REAL NOT NULL,
+      world_name TEXT,
       created_at INTEGER NOT NULL
     );
   `);
+
+  // world_name появился позже самой таблицы generations: базы, успевшие
+  // накопить строки без него (более ранний коммит этой же ветки), не должны
+  // спотыкаться при открытии. ALTER TABLE ADD COLUMN в sqlite не умеет
+  // IF NOT EXISTS сам, поэтому проверяем через PRAGMA
+  const hasWorldNameColumn = (db.prepare('PRAGMA table_info(generations)').all() as { name: string }[])
+    .some(column => column.name === 'world_name');
+
+  if (!hasWorldNameColumn) {
+    db.exec('ALTER TABLE generations ADD COLUMN world_name TEXT');
+  }
 
   return {
     saveParty: ({ uuid, theme, document }: TSavePartyParams<TDocument>): void => {
@@ -211,12 +230,13 @@ export const createStorage = <TDocument>(path: string) => {
       paidOptionShare,
       antiLeaderShare,
       helpLastShare,
+      worldName,
     }: TSaveGenerationParams): void => {
       db.prepare(`
         INSERT INTO generations (
-          party_uuid, model, used_fallback, duration_ms, requested_events,
-          calls_count, retries_count, paid_option_share, anti_leader_share, help_last_share, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          party_uuid, model, used_fallback, duration_ms, requested_events, calls_count,
+          retries_count, paid_option_share, anti_leader_share, help_last_share, world_name, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         partyUuid,
         model,
@@ -228,6 +248,7 @@ export const createStorage = <TDocument>(path: string) => {
         paidOptionShare,
         antiLeaderShare,
         helpLastShare,
+        worldName,
         Date.now(),
       );
     },
@@ -321,19 +342,21 @@ export const createStorage = <TDocument>(path: string) => {
 
       // party_uuid у generations почти всегда уникален: перегенерация одной
       // и той же партии (после abortStart) — редкость, которой здесь
-      // намеренно пренебрегаем ради простоты запроса
+      // намеренно пренебрегаем ради простоты запроса.
+      // Название мира — своя колонка (world_name), а не джойн на parties:
+      // строка партии удаляется через несколько минут после опустения
+      // комнаты, и к моменту чтения отчёта её почти никогда уже нет
       const recent: TRecentGeneration[] = (db.prepare(`
         SELECT g.created_at AS created_at, g.model AS model, g.duration_ms AS duration_ms,
                g.used_fallback AS used_fallback, g.paid_option_share AS paid_option_share,
                g.anti_leader_share AS anti_leader_share, g.help_last_share AS help_last_share,
                g.retries_count AS retries_count,
-               COALESCE(p.theme, '') AS world_name,
+               COALESCE(g.world_name, '') AS world_name,
                COALESCE(
                  (SELECT SUM(c.cost_usd) FROM generation_calls c WHERE c.party_uuid = g.party_uuid),
                  0
                ) AS cost_usd
         FROM generations g
-        LEFT JOIN parties p ON p.uuid = g.party_uuid
         ORDER BY g.created_at DESC
         LIMIT 10
       `).all() as {
