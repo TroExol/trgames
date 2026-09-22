@@ -228,6 +228,15 @@ export class Party {
   // по которому его проверяет движок
   public rawState = (): LucidShared.TState | undefined => this.state;
 
+  public nicknameOf = (playerId: LucidShared.TPlayerId): string => {
+    return this.members.get(playerId)?.nickname ?? '';
+  };
+
+  // Нужен проверке автопилота: ходит ли сейчас тот, кого нет на связи
+  public isConnected = (playerId: LucidShared.TPlayerId): boolean => {
+    return this.members.get(playerId)?.isConnected ?? false;
+  };
+
   // Строка от самой игры, а не от движка: например, честное признание,
   // что придумать мир не получилось
   public addRibbonLine = (line: string): void => {

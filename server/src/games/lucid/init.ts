@@ -5,13 +5,21 @@ import { LucidShared } from '@trgames/shared';
 
 import type { TPartyGroup } from '@/games/lucid/room/PartyGroup';
 import type { Party } from '@/games/lucid/room/Party';
+import type { TAutopilot } from '@/games/lucid/room/autopilot';
 
 import { t } from '@/i18n';
+import { createStorage } from '@/games/lucid/storage/db';
+import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
+import { createAutopilot } from '@/games/lucid/room/autopilot';
 import { generateContent } from '@/games/lucid/generation/pipeline';
 import { generateJson } from '@/games/lucid/generation/model';
+import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 
 // Сколько ждём генерацию, прежде чем сесть за запасную партию
 const GENERATION_BUDGET_MS = 90_000;
+
+// В тестах база живёт в памяти, в бою — файлом рядом с сервером
+const STORAGE_PATH = process.env.LUCID_DB_PATH ?? 'lucid.db';
 
 // Ошибки партии — это коды, а не тексты: перевод живёт в одном месте
 const ERROR_MESSAGES: Record<string, string> = {
@@ -123,8 +131,162 @@ export const init = (io: Server): void => {
     LucidShared.TLucidClientToServerEvents,
     LucidShared.TLucidServerToClientEvents
   >;
+  const group = createPartyGroup({ storage: createStorage(STORAGE_PATH) });
+  // Один автопилот на партию, а не на подключение: иначе таймер, заведённый
+  // прежним соединением, остался бы в объекте, до которого новое не дотянется
+  const autopilots = new Map<string, TAutopilot>();
+
+  const fail = (playerId: LucidShared.TPlayerId, message: string): void => {
+    namespace.to(`player:${playerId}`).emit(LucidShared.ELucidEvent.showError, { message });
+  };
+
+  // autopilotFor и syncAutopilot ссылаются на broadcast раньше её объявления:
+  // это разрешено, потому что обе используют её изнутри колбэков, которые
+  // выполнятся уже после того, как broadcast будет присвоена ниже
+  const autopilotFor = (party: Party): TAutopilot => {
+    const existing = autopilots.get(party.uuid);
+
+    if (existing) {
+      return existing;
+    }
+
+    const created = createAutopilot({
+      play: absentId => {
+        const state = party.rawState();
+
+        if (!state) {
+          return;
+        }
+
+        const move = chooseAutoMove(state);
+
+        if (!move) {
+          return;
+        }
+
+        const before = state.stateId;
+
+        party.applyMove({ ...move, playerId: absentId });
+
+        // Строка в ленту только если ход действительно применился: иначе
+        // игроки прочитали бы про ход, которого не было
+        if (party.rawState()?.stateId !== before) {
+          party.addRibbonLine(t('lucid.ribbon.autopilotMoved', 'ru', {
+            nickname: party.nicknameOf(absentId),
+          }));
+        }
+
+        group.persist(party);
+        broadcast(party);
+      },
+    });
+
+    autopilots.set(party.uuid, created);
+
+    return created;
+  };
+
+  // Автопилот нужен ровно тогда, когда ходить должен тот, кого нет на связи.
+  // Проверка после каждой рассылки заодно перевзводит таймер сама: сходил
+  // автопилот — состояние изменилось — проверили снова
+  const syncAutopilot = (party: Party): void => {
+    const autopilot = autopilotFor(party);
+    const state = party.rawState();
+
+    autopilot.stop();
+
+    if (!state || state.ctx.phase === LucidShared.EPhase.ENDED) {
+      autopilots.delete(party.uuid);
+
+      return;
+    }
+
+    if (!party.isConnected(state.ctx.currentPlayer)) {
+      autopilot.schedule(state.ctx.currentPlayer);
+    }
+  };
+
+  // Каждому свой вид: непройденные клетки не должны уехать игроку
+  const broadcast = (party: Party): void => {
+    party.view(party.ownerId).members.forEach(member => {
+      namespace
+        .to(`player:${member.playerId}`)
+        .emit(LucidShared.ELucidEvent.updateParty, party.view(member.playerId));
+    });
+
+    const delta = party.takeRibbonDelta();
+
+    if (delta.length > 0) {
+      namespace.to(party.uuid).emit(LucidShared.ELucidEvent.appendRibbon, delta);
+    }
+
+    syncAutopilot(party);
+  };
+
+  const handlers = createHandlers({ group, broadcast: party => broadcast(party), fail });
+
+  namespace.use((socket, next) => {
+    const { partyId, playerId, nickname } = socket.handshake.query;
+
+    if (typeof partyId !== 'string' || typeof playerId !== 'string'
+      || typeof nickname !== 'string') {
+      next(new Error(t('lucid.errors.partyNotFound', 'ru')));
+
+      return;
+    }
+
+    const party = group.get(partyId);
+
+    if (!party) {
+      next(new Error(t('lucid.errors.partyNotFound', 'ru')));
+
+      return;
+    }
+
+    try {
+      party.join({ playerId, nickname });
+      next();
+    } catch (error) {
+      next(new Error(messageForError(error)));
+    }
+  });
 
   namespace.on('connection', socket => {
+    const partyId = socket.handshake.query.partyId as string;
+    const playerId = socket.handshake.query.playerId as string;
+    const party = group.get(partyId)!;
+    const context = { party, playerId };
+
+    // Две комнаты: одна на партию для общих сообщений, одна на игрока —
+    // чтобы личный вид уехал только ему
+    void socket.join(party.uuid);
+    void socket.join(`player:${playerId}`);
+
+    group.persist(party);
+    broadcast(party);
+
+    socket.on(LucidShared.ELucidEvent.proposeTheme, theme => {
+      handlers[LucidShared.ELucidEvent.proposeTheme](context, theme);
+    });
+    socket.on(LucidShared.ELucidEvent.declineTheme, () => {
+      handlers[LucidShared.ELucidEvent.declineTheme](context);
+    });
+    socket.on(LucidShared.ELucidEvent.startParty, () => {
+      handlers[LucidShared.ELucidEvent.startParty](context);
+    });
+    socket.on(LucidShared.ELucidEvent.makeMove, move => {
+      handlers[LucidShared.ELucidEvent.makeMove](context, move);
+    });
+    socket.on(LucidShared.ELucidEvent.playAgain, () => {
+      handlers[LucidShared.ELucidEvent.playAgain](context);
+    });
+
+    socket.on('disconnect', () => {
+      party.disconnect(playerId);
+      // Заводить таймер здесь не нужно: рассылка сама решит, нужен ли он
+      broadcast(party);
+    });
+
     socket.on('error', error => console.error(error));
   });
 };
