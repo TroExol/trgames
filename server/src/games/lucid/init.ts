@@ -16,8 +16,12 @@ import { generateContent } from '@/games/lucid/generation/pipeline';
 import { generateJson } from '@/games/lucid/generation/model';
 import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 
-// Сколько ждём генерацию, прежде чем сесть за запасную партию
-const GENERATION_BUDGET_MS = 90_000;
+// Сколько ждём генерацию, прежде чем сесть за запасную партию. Это потолок,
+// а не обычное ожидание: замер живой партии дал пять с небольшим минут на
+// сорок восемь событий, и упирается это уже не в пайплайн, а в скорость самой
+// модели (её меняет LUCID_MODEL). Срок короче означал бы, что партия ждёт
+// генерацию, а потом всё равно садится за запасную — худшее из двух
+const GENERATION_BUDGET_MS = 420_000;
 
 // В тестах база живёт в памяти, в бою — файлом рядом с сервером
 const STORAGE_PATH = process.env.LUCID_DB_PATH ?? 'lucid.db';
