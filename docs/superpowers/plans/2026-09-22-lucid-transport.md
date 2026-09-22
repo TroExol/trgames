@@ -1729,7 +1729,7 @@ export const ru = {
       unknown: 'Что-то пошло не так',
     },
     ribbon: {
-      autopilotMoved: '{{nickname}}: ход сделан автоматически, связь потеряна',
+      autopilotMoved: '%{nickname}: ход сделан автоматически, связь потеряна',
       usedFallback: 'Придумать ваш мир не получилось, играем на запасном',
     },
   },
@@ -1987,6 +1987,10 @@ git commit -m "feat(lucid): добавить таблицу обработчик
 
 - [ ] **Шаг 1: Дописать подключение**
 
+Ключевое в этом шаге — **когда просыпается автопилот**. Он реагирует не на обрыв связи, а на то, чей сейчас ход: после каждой рассылки проверяем, на связи ли ходящий игрок, и либо заводим один таймер, либо снимаем его.
+
+Так оба очевидных способа ошибиться закрыты по построению. Автопилот, заведённый «на обрыв связи», сработал бы не в свой ход — при трёх игроках это обычный случай, — движок отклонил бы такой ход, и никто не завёл бы таймер заново: партия зависла бы навсегда в ожидании хода, которого некому сделать. А один автопилот на партию вместо одного на подключение означает, что вернувшийся игрок действительно отменяет свой таймер, а не создаёт новый пустой объект.
+
 Заменить заготовку `init` в `server/src/games/lucid/init.ts` на полную версию:
 
 ```ts
@@ -1996,13 +2000,83 @@ export const init = (io: Server): void => {
     LucidShared.TLucidServerToClientEvents
   >;
   const group = createPartyGroup({ storage: createStorage(STORAGE_PATH) });
+  // Один автопилот на партию, а не на подключение: иначе таймер, заведённый
+  // прежним соединением, остался бы в объекте, до которого новое не дотянется
+  const autopilots = new Map<string, TAutopilot>();
 
   const fail = (playerId: LucidShared.TPlayerId, message: string): void => {
     namespace.to(`player:${playerId}`).emit(LucidShared.ELucidEvent.showError, { message });
   };
 
+  // Объявлено заранее: рассылка вызывает проверку автопилота, а та после
+  // автоматического хода снова вызывает рассылку
+  let broadcast: (party: Party) => void;
+
+  const autopilotFor = (party: Party): TAutopilot => {
+    const existing = autopilots.get(party.uuid);
+
+    if (existing) {
+      return existing;
+    }
+
+    const created = createAutopilot({
+      play: absentId => {
+        const state = party.rawState();
+
+        if (!state) {
+          return;
+        }
+
+        const move = chooseAutoMove(state);
+
+        if (!move) {
+          return;
+        }
+
+        const before = state.stateId;
+
+        party.applyMove({ ...move, playerId: absentId });
+
+        // Строка в ленту только если ход действительно применился: иначе
+        // игроки прочитали бы про ход, которого не было
+        if (party.rawState()?.stateId !== before) {
+          party.addRibbonLine(t('lucid.ribbon.autopilotMoved', 'ru', {
+            nickname: party.nicknameOf(absentId),
+          }));
+        }
+
+        group.persist(party);
+        broadcast(party);
+      },
+    });
+
+    autopilots.set(party.uuid, created);
+
+    return created;
+  };
+
+  // Автопилот нужен ровно тогда, когда ходить должен тот, кого нет на связи.
+  // Проверка после каждой рассылки заодно перевзводит таймер сама: сходил
+  // автопилот — состояние изменилось — проверили снова
+  const syncAutopilot = (party: Party): void => {
+    const autopilot = autopilotFor(party);
+    const state = party.rawState();
+
+    autopilot.stop();
+
+    if (!state || state.ctx.phase === LucidShared.EPhase.ENDED) {
+      autopilots.delete(party.uuid);
+
+      return;
+    }
+
+    if (!party.isConnected(state.ctx.currentPlayer)) {
+      autopilot.schedule(state.ctx.currentPlayer);
+    }
+  };
+
   // Каждому свой вид: непройденные клетки не должны уехать игроку
-  const broadcast = (party: Party): void => {
+  broadcast = (party: Party): void => {
     party.view(party.ownerId).members.forEach(member => {
       namespace
         .to(`player:${member.playerId}`)
@@ -2014,9 +2088,11 @@ export const init = (io: Server): void => {
     if (delta.length > 0) {
       namespace.to(party.uuid).emit(LucidShared.ELucidEvent.appendRibbon, delta);
     }
+
+    syncAutopilot(party);
   };
 
-  const handlers = createHandlers({ group, broadcast, fail });
+  const handlers = createHandlers({ group, broadcast: party => broadcast(party), fail });
 
   namespace.use((socket, next) => {
     const { partyId, playerId, nickname } = socket.handshake.query;
@@ -2055,30 +2131,7 @@ export const init = (io: Server): void => {
     void socket.join(party.uuid);
     void socket.join(`player:${playerId}`);
 
-    const autopilot = createAutopilot({
-      play: absentId => {
-        const state = party.rawState();
-
-        if (!state) {
-          return;
-        }
-
-        const move = chooseAutoMove(state);
-
-        if (!move) {
-          return;
-        }
-
-        party.applyMove({ ...move, playerId: absentId });
-        party.addRibbonLine(t('lucid.ribbon.autopilotMoved', 'ru', {
-          nickname: party.nicknameOf(absentId),
-        }));
-        group.persist(party);
-        broadcast(party);
-      },
-    });
-
-    autopilot.cancel(playerId);
+    group.persist(party);
     broadcast(party);
 
     socket.on(LucidShared.ELucidEvent.proposeTheme, theme => {
@@ -2099,7 +2152,7 @@ export const init = (io: Server): void => {
 
     socket.on('disconnect', () => {
       party.disconnect(playerId);
-      autopilot.schedule(playerId);
+      // Заводить таймер здесь не нужно: рассылка сама решит, нужен ли он
       broadcast(party);
     });
 
@@ -2108,7 +2161,7 @@ export const init = (io: Server): void => {
 };
 ```
 
-Добавить в начало файла недостающие импорты (`createPartyGroup`, `createStorage`) и константу пути к базе:
+Добавить в начало файла недостающие импорты (`createPartyGroup`, `createStorage`, `createAutopilot`, тип `TAutopilot`, `chooseAutoMove`, тип `Party`) и константу пути к базе:
 
 ```ts
 // В тестах база живёт в памяти, в бою — файлом рядом с сервером
@@ -2126,6 +2179,11 @@ const STORAGE_PATH = process.env.LUCID_DB_PATH ?? 'lucid.db';
 
   public nicknameOf = (playerId: LucidShared.TPlayerId): string => {
     return this.members.get(playerId)?.nickname ?? '';
+  };
+
+  // Нужен проверке автопилота: ходит ли сейчас тот, кого нет на связи
+  public isConnected = (playerId: LucidShared.TPlayerId): boolean => {
+    return this.members.get(playerId)?.isConnected ?? false;
   };
 ```
 
