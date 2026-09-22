@@ -120,7 +120,7 @@ const quantize = ({ r, g, b }: TRgb): TRgb => ({
 // Тон и насыщенность сохраняются, двигается только светлота: текст остаётся
 // «из этого мира». Если не хватило и этого, берём чёрный или белый — для любой
 // основы один из них даёт не меньше 4.58:1, так что порог достижим всегда
-const forceContrast = (color: TRgb, base: TRgb, target: number): TRgb => {
+export const ensureContrast = (color: TRgb, base: TRgb, target: number): TRgb => {
   const quantized = quantize(color);
 
   if (contrastRatio(quantized, base) >= target) {
@@ -175,8 +175,8 @@ export const deriveRoles = (palette: string[], mood?: TMood): TThemeRoles => {
   const accentSource = (visible.length > 0 ? visible : candidates)
     .reduce((best, entry) => (entry.oklch.c > best.oklch.c ? entry : best));
 
-  const text = toHex(forceContrast(textSource.rgb, baseEntry.rgb, 4.5));
-  const accent = toHex(forceContrast(accentSource.rgb, baseEntry.rgb, 3));
+  const text = toHex(ensureContrast(textSource.rgb, baseEntry.rgb, 4.5));
+  const accent = toHex(ensureContrast(accentSource.rgb, baseEntry.rgb, 3));
   const supports = candidates
     .filter(entry => entry !== textSource && entry !== accentSource)
     .map(entry => entry.hex);

@@ -2,7 +2,12 @@ import type { CSSProperties } from 'react';
 
 import type { TThemeRoles } from '@/lib/lucid/colors';
 
-import { parseHex } from '@/lib/lucid/colors';
+import {
+  contrastRatio,
+  ensureContrast,
+  parseHex,
+  toHex,
+} from '@/lib/lucid/colors';
 
 // FNV-1a: нужен устойчивый номер из названия мира, чтобы фон одной партии
 // не менялся между перерисовками и совпадал у всех игроков
@@ -29,6 +34,32 @@ const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${channel(rgb.r)}, ${channel(rgb.g)}, ${channel(rgb.b)}, ${alpha})`;
 };
 
+// Линия трека — это и есть поле, а поле обязано читаться. Опоры контрастом с
+// основой не связаны, и бледная опора на бледной основе стирает трек целиком.
+// Берётся самая различимая опора и дотягивается до порога сдвигом светлоты:
+// взять вместо неё акцент было бы короче, но тогда линия и то, что можно
+// нажать, красятся одинаково — и метка хода с кольцами развилки пропадают
+const lineColor = (roles: TThemeRoles): string => {
+  const base = parseHex(roles.base);
+
+  if (!base) {
+    return roles.accent;
+  }
+
+  const contrast = (hex: string): number => {
+    const rgb = parseHex(hex);
+
+    return rgb ? contrastRatio(rgb, base) : 0;
+  };
+  const best = roles.supports.reduce(
+    (winner, hex) => (contrast(hex) > contrast(winner) ? hex : winner),
+    roles.supports[0] ?? roles.accent,
+  );
+  const rgb = parseHex(best);
+
+  return rgb ? toHex(ensureContrast(rgb, base, 3)) : roles.accent;
+};
+
 export const themeStyle = (roles: TThemeRoles, worldName: string): CSSProperties => {
   const hash = hashString(worldName);
   // Угол, шаг и плотность выводятся из названия мира: один код, разный
@@ -51,8 +82,7 @@ export const themeStyle = (roles: TThemeRoles, worldName: string): CSSProperties
     '--lucid-base': roles.base,
     '--lucid-text': roles.text,
     '--lucid-accent': roles.accent,
-    // Линия трека: опора, если она есть, иначе цвет текста вполсилы
-    '--lucid-line': roles.supports[0] ?? withAlpha(roles.text, 0.6),
+    '--lucid-line': lineColor(roles),
     '--lucid-muted': withAlpha(roles.text, 0.62),
     '--lucid-veil': withAlpha(roles.base, 0.88),
   };
