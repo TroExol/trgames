@@ -45,7 +45,7 @@ const MANY_CELLS = Array.from({ length: EVENTS_CHUNK_SIZE + 3 }, (_, index) => i
 
 // Промпт событий перечисляет номера клеток своего куска — по ним и отвечаем
 const askedCells = (prompt: string): number[] =>
-  (/клеток: ([\d, ]+)/.exec(prompt)?.[1] ?? '').split(', ').map(Number);
+  (/каждую: ([\d, ]+)/.exec(prompt)?.[1] ?? '').split(', ').map(Number);
 
 const run = (
   generateJson: TGenerateJson,
