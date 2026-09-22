@@ -15,8 +15,11 @@ export interface TGenerateJsonResult {
 }
 
 // Значение по умолчанию — конкретная модель, а не провайдер: сам провайдер задаётся
-// маршрутизацией OpenRouter
-const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash';
+// маршрутизацией OpenRouter. Суффикс :nitro направляет запрос на быстрые эндпоинты
+// OpenRouter — партия собирается за 1-2 минуты вместо ~6 на той же модели без
+// суффикса, содержание то же (замеры — docs/lucid/MODELS.md). LUCID_MODEL в
+// server/.env по-прежнему её переопределяет
+const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash:nitro';
 
 // OpenRouter умеет структурированный вывод по json_schema, но гарантия провайдера —
 // только про форму ответа. Допустимые диапазоны значений и существующие номера клеток
