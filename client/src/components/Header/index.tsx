@@ -50,7 +50,9 @@ export const Header = observer(function Header() {
           {' '}
           <span className="hidden font-bold lg:inline-block">TRGames</span>
         </Link>
-        <NavigationMenu>
+        {/* Ниже sm подписи навигации не помещаются в полосу и уводят страницу
+            вбок: там эти же пункты живут во всплывающем меню справа */}
+        <NavigationMenu className="hidden sm:flex">
           <NavigationMenuList>
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={buttonVariants({ variant: 'ghost' })}>
@@ -85,6 +87,18 @@ export const Header = observer(function Header() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
+              <DropdownMenuItem asChild className="cursor-pointer sm:hidden">
+                <Link to="/">
+                  Список игр
+                </Link>
+              </DropdownMenuItem>
+              {gameName && !isRoomsPage && (
+                <DropdownMenuItem asChild className="cursor-pointer sm:hidden">
+                  <Link to={`/game/${gameName}`}>
+                    {gamePageLabel}
+                  </Link>
+                </DropdownMenuItem>
+              )}
               {gameName && (
                 <>
                   {!isRulesPage && (
