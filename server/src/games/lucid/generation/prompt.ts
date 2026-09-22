@@ -44,11 +44,13 @@ export const buildWorldPrompt = (theme: string, nicknames: string[]): string => 
 Имена игроков: ${nicknames.join(', ')}.
 
 Верни JSON строго такого вида, без пояснений:
-{"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...]}}
+{"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...],"mood":"DARK"}}
 
 name — название мира в духе темы, до 80 символов.
 resourceName — как в этом мире называются монеты, до 40 символов.
 palette — от 3 до 6 цветов в формате #rrggbb, сочетающихся между собой.
+mood — DARK, если мир мрачный, тревожный или опасный, LIGHT, если светлый,
+тёплый или задорный. Яркость палитры тут ни при чём, важен тон мира.
 `.trim();
 
 export const buildEventsPrompt = (

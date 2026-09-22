@@ -110,6 +110,32 @@ describe('worldSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('принимает тему с настроением', () => {
+    const result = worldSchema.safeParse({
+      theme: {
+        name: 'Жуткий цирк',
+        resourceName: 'жетоны',
+        palette: ['#f0e8e0', '#e8d8c8', '#d8c0a8'],
+        mood: LucidShared.EThemeMood.DARK,
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('отклоняет неизвестное настроение', () => {
+    const result = worldSchema.safeParse({
+      theme: {
+        name: 'Пираты',
+        resourceName: 'дублоны',
+        palette: ['#102030', '#405060', '#708090'],
+        mood: 'SPOOKY',
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it('отклоняет палитру неверного формата', () => {
     const result = worldSchema.safeParse({
       theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['красный'] },

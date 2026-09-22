@@ -57,6 +57,8 @@ export const worldSchema = z.strictObject({
     name: z.string().min(1).max(80),
     resourceName: z.string().min(1).max(40),
     palette: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).min(3).max(6),
+    // Необязательное: модель может его не прислать, отсутствие обрабатывает клиент
+    mood: z.enum(LucidShared.EThemeMood).optional(),
   }),
 });
 

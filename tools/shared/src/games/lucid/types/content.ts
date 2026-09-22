@@ -1,9 +1,20 @@
 import type { TOption } from './effect';
 
+// Настроение мира. Поле решает сразу две задачи: светлая партия или тёмная
+// по палитре и какая играет музыка. Вывести настроение из средней светлоты
+// палитры было бы бесплатно, но для музыки светлота — плохой признак:
+// бледный мир жуткого цирка получил бы бодрую дорожку
+export enum EThemeMood {
+  DARK = 'DARK',
+  LIGHT = 'LIGHT',
+}
+
 export interface TTheme {
   name: string;
   resourceName: string;
   palette: string[];
+  // Необязательное: модель может его не прислать, и клиент обходится без него
+  mood?: EThemeMood;
 }
 
 export interface TEvent {
