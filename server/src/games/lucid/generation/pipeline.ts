@@ -7,6 +7,7 @@ import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model
 
 import { eventBatchSchema, worldSchema } from '@/games/lucid/generation/schema';
 import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
+import { MODEL_ID } from '@/games/lucid/generation/model';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
 
 export type TGenerateJson = (
@@ -27,6 +28,24 @@ export const MAX_ATTEMPTS = 3;
 // на быстрый эндпоинт
 export const EVENTS_CHUNK_SIZE = 6;
 
+export type TCallStage = 'events' | 'world';
+export type TCallOutcome = 'error' | 'invalid' | 'ok';
+
+// Один вызов модели. Пишется в хранилище сразу же, как только вызов завершился
+// (см. onCall ниже) — независимо от того, чем в итоге закончилась вся генерация
+export interface TGenerationCallInfo {
+  stage: TCallStage;
+  model: string;
+  // Номер попытки внутри своего запроса (мира или одного куска событий), с 1
+  attempt: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  durationMs: number;
+  outcome: TCallOutcome;
+  errorMessage?: string;
+}
+
 interface TGenerateContentParams {
   generateJson: TGenerateJson;
   theme: string;
@@ -38,12 +57,25 @@ interface TGenerateContentParams {
   // Вызывается, как только готова стадия «Мир»: тема перекрашивает экран,
   // пока события ещё генерируются
   onWorld?: (theme: LucidShared.TTheme) => void;
+  // Зовётся сразу после каждого вызова модели, успешного или нет — в том числе
+  // для куска, который долетел уже после того, как вся генерация ушла на
+  // запасную партию. Собственно запись в хранилище — забота вызывающего кода
+  onCall?: (call: TGenerationCallInfo) => void;
+}
+
+export interface TGenerateStats {
+  durationMs: number;
+  requestedEvents: number;
+  // Сколько вызовов модели сделано всего
+  callsCount: number;
+  // Вызовы сверх одного на запрос (мир и каждый кусок событий — свой запрос)
+  retriesCount: number;
 }
 
 export interface TGenerateContentResult {
   content: LucidShared.TPartyContent;
-  usage: TUsage;
   usedFallback: boolean;
+  stats: TGenerateStats;
 }
 
 export const generateContent = async ({
@@ -54,8 +86,11 @@ export const generateContent = async ({
   deadlineMs,
   seed,
   onWorld,
+  onCall,
 }: TGenerateContentParams): Promise<TGenerateContentResult> => {
-  let usage: TUsage = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  const startedAt = Date.now();
+  let callsCount = 0;
+  let retriesCount = 0;
 
   // Проверкой перед попыткой бюджет не удержать: уже летящий запрос ею не
   // оборвать, и ждать его можно сколько угодно. Сигнал обрывает и его,
@@ -63,40 +98,68 @@ export const generateContent = async ({
   const budget = new AbortController();
   const budgetTimer = setTimeout(() => budget.abort(), Math.max(deadlineMs - Date.now(), 0));
 
-  const addUsage = (delta: TUsage): void => {
-    usage = {
-      inputTokens: usage.inputTokens + delta.inputTokens,
-      outputTokens: usage.outputTokens + delta.outputTokens,
-      costUsd: usage.costUsd + delta.costUsd,
-    };
-  };
+  const stats = (): TGenerateStats => ({
+    durationMs: Date.now() - startedAt,
+    requestedEvents: eventCellIds.length,
+    callsCount,
+    retriesCount,
+  });
 
   // Разбор возвращает null, если ответ не годится. Тогда запрос повторяется
   const request = async <T>(
+    stage: TCallStage,
     prompt: string,
     schema: z.ZodType,
     parse: (data: unknown) => T | null,
   ): Promise<T | null> => {
     for (let attempt = 0; attempt < MAX_ATTEMPTS && Date.now() < deadlineMs; attempt++) {
+      const calledAt = Date.now();
+
       try {
         const result = await generateJson(prompt, schema, budget.signal);
-
-        addUsage(result.usage);
-
         const parsed = parse(result.data);
+
+        callsCount++;
+        if (attempt > 0) {
+          retriesCount++;
+        }
+
+        onCall?.({
+          stage,
+          model: MODEL_ID,
+          attempt: attempt + 1,
+          inputTokens: result.usage.inputTokens,
+          outputTokens: result.usage.outputTokens,
+          costUsd: result.usage.costUsd,
+          durationMs: Date.now() - calledAt,
+          outcome: parsed ? 'ok' : 'invalid',
+        });
 
         if (parsed) {
           return parsed;
         }
       } catch (error) {
         // Ответ мог прийти и быть учтён провайдером, даже если сам вызов
-        // упал (например, обрезан по лимиту токенов) — досчитываем и только
-        // потом прерываем генерацию тем же способом, что и раньше
+        // упал (например, обрезан по лимиту токенов) — учитываем его в строке
+        // вызова и только потом прерываем генерацию тем же способом, что и раньше
         const spent = error instanceof Error ? (error as { usage?: TUsage } & Error).usage : undefined;
 
-        if (spent) {
-          addUsage(spent);
+        callsCount++;
+        if (attempt > 0) {
+          retriesCount++;
         }
+
+        onCall?.({
+          stage,
+          model: MODEL_ID,
+          attempt: attempt + 1,
+          inputTokens: spent?.inputTokens ?? 0,
+          outputTokens: spent?.outputTokens ?? 0,
+          costUsd: spent?.costUsd ?? 0,
+          durationMs: Date.now() - calledAt,
+          outcome: 'error',
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
 
         throw error;
       }
@@ -135,12 +198,12 @@ export const generateContent = async ({
 
   const withFallback = (): TGenerateContentResult => ({
     content: loadFallbackContent(eventCellIds, seed),
-    usage,
     usedFallback: true,
+    stats: stats(),
   });
 
   try {
-    const world = await request(buildWorldPrompt(theme, nicknames), worldSchema, data => {
+    const world = await request('world', buildWorldPrompt(theme, nicknames), worldSchema, data => {
       const parsed = worldSchema.safeParse(data);
 
       return parsed.success ? parsed.data : null;
@@ -154,6 +217,7 @@ export const generateContent = async ({
 
     // У каждого куска своя валидация и свои попытки, но идут они разом
     const batches = await Promise.all(chunk(eventCellIds, EVENTS_CHUNK_SIZE).map(chunkIds => request(
+      'events',
       buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkIds, world.roles ?? []),
       eventBatchSchema,
       parseEvents(chunkIds),
@@ -176,8 +240,8 @@ export const generateContent = async ({
         // Сопоставление с конкретными игроками — забота setupParty, здесь только сырой ответ модели
         roles: world.roles,
       },
-      usage,
       usedFallback: false,
+      stats: stats(),
     };
   } catch {
     // Модель недоступна или бюджет вышел — вечер не должен на этом заканчиваться

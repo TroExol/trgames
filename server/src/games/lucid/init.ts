@@ -3,6 +3,7 @@ import type { Namespace, Server } from 'socket.io';
 import { uid } from 'uid';
 import { LucidShared } from '@trgames/shared';
 
+import type { TStorage } from '@/games/lucid/storage/db';
 import type { TPartyGroup } from '@/games/lucid/room/PartyGroup';
 import type { Party, TPartySnapshot } from '@/games/lucid/room/Party';
 import type { TAutopilot } from '@/games/lucid/room/autopilot';
@@ -13,7 +14,8 @@ import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
 import { createCleanup } from '@/games/lucid/room/cleanup';
 import { createAutopilot } from '@/games/lucid/room/autopilot';
 import { generateContent } from '@/games/lucid/generation/pipeline';
-import { generateJson } from '@/games/lucid/generation/model';
+import { generateJson, MODEL_ID } from '@/games/lucid/generation/model';
+import { computeContentMetrics } from '@/games/lucid/generation/contentMetrics';
 import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 
 // Сколько ждём генерацию, прежде чем сесть за запасную партию. Это потолок,
@@ -23,8 +25,9 @@ import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 // запросе ценой чуть более частой запасной партии
 const GENERATION_BUDGET_MS = 180_000;
 
-// В тестах база живёт в памяти, в бою — файлом рядом с сервером
-const STORAGE_PATH = process.env.LUCID_DB_PATH ?? 'lucid.db';
+// В тестах база живёт в памяти, в бою — файлом рядом с сервером.
+// Экспортируется, чтобы команда отчёта (lucid:usage) открывала тот же файл
+export const STORAGE_PATH = process.env.LUCID_DB_PATH ?? 'lucid.db';
 
 // Комната личного вида — на партию, а не на игрока: один и тот же человек
 // держит открытыми две партии подряд, и комната только по playerId общая
@@ -52,6 +55,7 @@ interface THandlerContext {
 
 interface TCreateHandlersParams {
   group: TPartyGroup;
+  storage: TStorage<TPartySnapshot>;
   broadcast: (party: Party) => void;
   fail: (party: Party, playerId: LucidShared.TPlayerId, message: string) => void;
   // Новая партия из «сыграть ещё» рождается пустой: срок удаления ей нужен
@@ -95,7 +99,7 @@ export const createParty = (
   }
 };
 
-export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlersParams) => {
+export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreateHandlersParams) => {
   // Обёртка вместо повторяющегося try/catch в каждом обработчике.
   // Сохранение здесь, а не в отдельных обработчиках: иначе партия, которая
   // набрала состав и запустила генерацию, но не получила ни одного хода,
@@ -138,6 +142,25 @@ export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlers
           },
           generateJson,
           deadlineMs: Date.now() + GENERATION_BUDGET_MS,
+          // Пишется сразу на каждый вызов модели — в том числе на кусок,
+          // долетевший уже после того, как вся генерация ушла на запасную партию
+          onCall: call => storage.saveGenerationCall({ partyUuid: party.uuid, ...call }),
+        }).then(result => {
+          // Итоговая строка — один раз на генерацию, и для удачной, и для
+          // запасной партии. Метрики считаются по содержимому, которое
+          // реально досталось игрокам, а не по тому, что просили у модели
+          storage.saveGeneration({
+            partyUuid: party.uuid,
+            model: MODEL_ID,
+            usedFallback: result.usedFallback,
+            durationMs: result.stats.durationMs,
+            requestedEvents: result.stats.requestedEvents,
+            callsCount: result.stats.callsCount,
+            retriesCount: result.stats.retriesCount,
+            ...computeContentMetrics(result.content),
+          });
+
+          return result;
         }),
       }).then(() => {
         if (party.view(playerId).usedFallback) {
@@ -214,7 +237,8 @@ export const createHandlers = ({ group, broadcast, fail, sync }: TCreateHandlers
 };
 
 export const init = (io: Server): void => {
-  const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(STORAGE_PATH) });
+  const storage = createStorage<TPartySnapshot>(STORAGE_PATH);
+  const group = createPartyGroup({ storage });
 
   // Один автопилот на партию, а не на подключение: иначе таймер, заведённый
   // прежним соединением, остался бы в объекте, до которого новое не дотянется
@@ -350,6 +374,7 @@ export const init = (io: Server): void => {
 
   const handlers = createHandlers({
     group,
+    storage,
     broadcast: party => broadcast(party),
     fail,
     sync: cleanup.sync,

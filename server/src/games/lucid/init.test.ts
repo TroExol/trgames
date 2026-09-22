@@ -18,7 +18,8 @@ import { generateContent } from '@/games/lucid/generation/pipeline';
 vi.mock('@/games/lucid/generation/pipeline', () => ({ generateContent: vi.fn() }));
 
 const setup = () => {
-  const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
+  const storage = createStorage<TPartySnapshot>(':memory:');
+  const group = createPartyGroup({ storage });
   const party = group.create({ uuid: 'p1', ownerId: 'a' });
   party.join({ playerId: 'a', nickname: 'Аня' });
   party.join({ playerId: 'b', nickname: 'Боря' });
@@ -28,6 +29,7 @@ const setup = () => {
   const sync = vi.fn();
   const handlers = createHandlers({
     group,
+    storage,
     broadcast,
     fail,
     sync,
@@ -35,6 +37,7 @@ const setup = () => {
 
   return {
     group,
+    storage,
     party,
     broadcast,
     fail,
@@ -42,6 +45,11 @@ const setup = () => {
     handlers,
   };
 };
+
+const emptyContent = (): LucidShared.TPartyContent => ({
+  theme: { name: 'Мир', resourceName: 'ресурс', palette: ['#111111'] },
+  events: {},
+});
 
 describe('обработчики', () => {
   it('предложенная тема расходится всем', () => {
@@ -86,6 +94,71 @@ describe('обработчики', () => {
     expect(party.view('a').phase).toBe(LucidShared.EPartyPhase.LOBBY);
     expect(party.canStart).toBe(true);
     expect(party.takeRibbonDelta()).toContain('Не получилось собрать партию — запустите ещё раз');
+  });
+
+  it('удачная генерация пишет строку вызова и итоговую строку в хранилище', async () => {
+    const { handlers, party, storage } = setup();
+
+    vi.mocked(generateContent).mockImplementationOnce(({ onCall }) => {
+      onCall?.({
+        stage: 'world',
+        model: 'test/model',
+        attempt: 1,
+        inputTokens: 10,
+        outputTokens: 20,
+        costUsd: 0.01,
+        durationMs: 500,
+        outcome: 'ok',
+      });
+
+      return Promise.resolve({
+        content: emptyContent(),
+        usedFallback: false,
+        stats: {
+          durationMs: 1_000,
+          requestedEvents: 0,
+          callsCount: 1,
+          retriesCount: 0,
+        },
+      });
+    });
+
+    handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'a' });
+
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+
+    const report = storage.usageReport();
+
+    expect(report.totals).toEqual(expect.objectContaining({ generations: 1, calls: 1, costUsd: 0.01 }));
+    expect(report.recent[0]).toEqual(expect.objectContaining({ usedFallback: false }));
+  });
+
+  it('генерация на запасной партии тоже пишет итоговую строку', async () => {
+    const { handlers, party, storage } = setup();
+
+    vi.mocked(generateContent).mockResolvedValueOnce({
+      content: emptyContent(),
+      usedFallback: true,
+      stats: {
+        durationMs: 2_000,
+        requestedEvents: 3,
+        callsCount: 4,
+        retriesCount: 1,
+      },
+    });
+
+    handlers[LucidShared.ELucidEvent.startParty]({ party, playerId: 'a' });
+
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
+
+    const report = storage.usageReport();
+
+    expect(report.totals).toEqual(expect.objectContaining({ generations: 1, fallbackShare: 1, retries: 1 }));
+    expect(report.recent[0]).toEqual(expect.objectContaining({ usedFallback: true, retriesCount: 1 }));
   });
 
   it('номер повторной партии уезжает видом, а не строкой ленты', () => {

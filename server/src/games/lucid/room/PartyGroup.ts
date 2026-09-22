@@ -32,21 +32,6 @@ export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
       theme: snapshot.theme?.name ?? '',
       document: snapshot,
     });
-
-    // Появляется только сразу после генерации и берётся ровно один раз:
-    // на каждый persist без новой генерации usage не будет, и повторной
-    // записи не случится
-    const usage = party.takeUsage();
-
-    if (usage) {
-      storage.saveUsage({
-        partyUuid: party.uuid,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        costUsd: usage.costUsd,
-        usedFallback: snapshot.usedFallback,
-      });
-    }
   };
 
   return {

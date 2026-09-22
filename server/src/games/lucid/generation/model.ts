@@ -21,6 +21,10 @@ export interface TGenerateJsonResult {
 // server/.env по-прежнему её переопределяет
 const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash:nitro';
 
+// Запрошенный id модели. Читается один раз при загрузке модуля — тот же id
+// нужен и запросу к OpenRouter, и строке учёта расходов на каждый вызов
+export const MODEL_ID = process.env.LUCID_MODEL ?? DEFAULT_MODEL;
+
 // OpenRouter умеет структурированный вывод по json_schema, но гарантия провайдера —
 // только про форму ответа. Допустимые диапазоны значений и существующие номера клеток
 // эта схема не знает, поэтому собственная валидация (@/games/lucid/generation/schema)
@@ -39,7 +43,7 @@ export const generateJson = async (
   try {
     const response = await client.chat.send({
       chatRequest: {
-        model: process.env.LUCID_MODEL ?? DEFAULT_MODEL,
+        model: MODEL_ID,
         messages: [{ role: 'user' as const, content: prompt }],
         stream: false,
         responseFormat: schema

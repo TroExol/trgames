@@ -73,24 +73,37 @@ describe('generateContent', () => {
     expect(result.usedFallback).toBe(false);
   });
 
-  it('суммирует расход токенов по всем вызовам', async () => {
+  it('итог содержит число вызовов и запрошенных событий', async () => {
     const generateJson: TGenerateJson = vi.fn()
       .mockResolvedValueOnce({ data: validWorld, usage })
       .mockResolvedValue({ data: eventsFor([1]), usage });
 
-    expect((await run(generateJson)).usage).toEqual({ inputTokens: 20, outputTokens: 40, costUsd: 0.002 });
+    const result = await run(generateJson, 10_000, [1]);
+
+    expect(result.stats).toEqual({
+      durationMs: 0,
+      requestedEvents: 1,
+      callsCount: 2,
+      retriesCount: 0,
+    });
   });
 
-  it('при невалидном ответе повторяет запрос', async () => {
+  it('при невалидном ответе повторяет запрос, и это считается перегенерацией', async () => {
     const generateJson: TGenerateJson = vi.fn()
       .mockResolvedValueOnce({ data: { theme: { name: '' } }, usage })
       .mockResolvedValueOnce({ data: validWorld, usage })
       .mockResolvedValue({ data: eventsFor([1]), usage });
 
-    const result = await run(generateJson);
+    const result = await run(generateJson, 10_000, [1]);
 
     expect(result.usedFallback).toBe(false);
     expect(generateJson).toHaveBeenCalledTimes(3);
+    expect(result.stats).toEqual({
+      durationMs: 0,
+      requestedEvents: 1,
+      callsCount: 3,
+      retriesCount: 1,
+    });
   });
 
   it('выбрасывает события для клеток, которых нет в треке', async () => {
@@ -180,17 +193,67 @@ describe('generateContent', () => {
     expect(result.content.theme.name).toBe(loadFallbackContent([1, 2], SEED).theme.name);
   });
 
-  it('токены не теряются, если ответ пришёл, но упал уже после него', async () => {
+  it('токены вызова, упавшего уже после ответа, всё равно уходят в onCall', async () => {
     // Например, ответ обрезан по лимиту токенов и не распарсился — провайдер
     // всё равно посчитал их и вернул в самой ошибке
     const spent = { inputTokens: 5, outputTokens: 7, costUsd: 0.0003 };
+    const onCall = vi.fn();
     const generateJson: TGenerateJson = vi.fn()
       .mockRejectedValue(Object.assign(new Error('невалидный JSON'), { usage: spent }));
 
-    const result = await run(generateJson);
+    const result = await generateContent({
+      generateJson,
+      theme: 'пираты',
+      nicknames: ['Аня', 'Боря'],
+      eventCellIds: [1, 2],
+      deadlineMs: Date.now() + 10_000,
+      seed: SEED,
+      onCall,
+    });
 
     expect(result.usedFallback).toBe(true);
-    expect(result.usage).toEqual(spent);
+    expect(onCall).toHaveBeenCalledWith(expect.objectContaining({
+      stage: 'world',
+      outcome: 'error',
+      errorMessage: 'невалидный JSON',
+      inputTokens: spent.inputTokens,
+      outputTokens: spent.outputTokens,
+      costUsd: spent.costUsd,
+    }));
+  });
+
+  it('кусок, долетевший уже после того, как генерация ушла на запасную партию, тоже попадает в onCall', async () => {
+    const onCall = vi.fn();
+    // Мир и два куска (MANY_CELLS длиннее одного чанка): первый кусок падает
+    // сразу, второй специально держим висящим, чтобы имитировать поздний ответ
+    let resolveStray: ((value: { data: unknown; usage: typeof usage }) => void) | undefined;
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockImplementationOnce(() => Promise.reject(new Error('чанк недоступен')))
+      .mockImplementationOnce(() => new Promise(resolve => {
+        resolveStray = resolve;
+      }));
+
+    const result = await generateContent({
+      generateJson,
+      theme: 'пираты',
+      nicknames: ['Аня'],
+      eventCellIds: MANY_CELLS,
+      deadlineMs: Date.now() + 10_000,
+      seed: SEED,
+      onCall,
+    });
+
+    // Генерация уже вернула запасную партию — второй кусок ещё не ответил
+    expect(result.usedFallback).toBe(true);
+    expect(onCall).toHaveBeenCalledWith(expect.objectContaining({ stage: 'events', outcome: 'error' }));
+    expect(onCall).not.toHaveBeenCalledWith(expect.objectContaining({ stage: 'events', outcome: 'ok' }));
+
+    // Поздний ответ долетает уже после того, как generateContent вернул результат
+    resolveStray!({ data: eventsFor(MANY_CELLS.slice(EVENTS_CHUNK_SIZE)), usage });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(onCall).toHaveBeenCalledWith(expect.objectContaining({ stage: 'events', outcome: 'ok' }));
   });
 
   it('сообщает о готовности мира до того, как готовы события', async () => {
