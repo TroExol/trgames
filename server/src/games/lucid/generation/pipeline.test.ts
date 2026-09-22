@@ -180,6 +180,19 @@ describe('generateContent', () => {
     expect(result.content.theme.name).toBe(loadFallbackContent([1, 2], SEED).theme.name);
   });
 
+  it('токены не теряются, если ответ пришёл, но упал уже после него', async () => {
+    // Например, ответ обрезан по лимиту токенов и не распарсился — провайдер
+    // всё равно посчитал их и вернул в самой ошибке
+    const spent = { inputTokens: 5, outputTokens: 7, costUsd: 0.0003 };
+    const generateJson: TGenerateJson = vi.fn()
+      .mockRejectedValue(Object.assign(new Error('невалидный JSON'), { usage: spent }));
+
+    const result = await run(generateJson);
+
+    expect(result.usedFallback).toBe(true);
+    expect(result.usage).toEqual(spent);
+  });
+
   it('сообщает о готовности мира до того, как готовы события', async () => {
     const seen: string[] = [];
     const generateJson: TGenerateJson = vi.fn()

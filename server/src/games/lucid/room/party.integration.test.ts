@@ -118,4 +118,24 @@ describe('партия через комнату', () => {
 
     expect(requested).toEqual(eventCellIds(party.rawState()!.G.track));
   });
+
+  it('после генерации потраченное на неё usage сохраняется в базу', async () => {
+    const storage = createStorage<TPartySnapshot>(':memory:');
+    const group = createPartyGroup({ storage });
+    const party = readyParty(group, 'usage', 2);
+    const usage = { inputTokens: 120, outputTokens: 340, costUsd: 0.045 };
+
+    await party.start({
+      generate: ({ eventCellIds: cells, seed }) => Promise.resolve({
+        content: loadFallbackContent(cells, seed),
+        usage,
+        usedFallback: true,
+      }),
+    });
+    // В init.ts персист после генерации тоже приходит отдельным вызовом,
+    // уже после того, как start разрешился — здесь тот же порядок
+    group.persist(party);
+
+    expect(storage.totalUsage(party.uuid)).toEqual(usage);
+  });
 });

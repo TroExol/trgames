@@ -1,5 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
+import type { TUsage } from '@/games/lucid/generation/model';
+
 import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove as applyMoveToState } from '@/games/lucid/core/reducer';
@@ -47,6 +49,10 @@ interface TGenerateParams {
 
 interface TGenerateResult {
   content: LucidShared.TPartyContent;
+  // Необязателен ради существующих тестовых заглушек generate: настоящий
+  // pipeline отдаёт usage всегда, а без него ноль — честная сумма для того,
+  // что в тесте не потратили
+  usage?: TUsage;
   usedFallback: boolean;
 }
 
@@ -75,6 +81,10 @@ export class Party {
   private theme?: LucidShared.TTheme;
   private state?: LucidShared.TState;
   private usedFallback = false;
+  // Usage последней генерации, до того как его заберёт группа для сохранения
+  // в базу. Забрать можно только раз — иначе сохранение при каждом persist
+  // задвоило бы токены
+  private usage?: TUsage;
   // Сколько строк журнала уже разослано. Лента — это его прирост,
   // а не журнал целиком: за сорок минут в нём накапливаются сотни строк
   private sentRibbonLines = 0;
@@ -199,7 +209,7 @@ export class Party {
       playerCount: players.length,
     });
 
-    const { content, usedFallback } = await generate({
+    const { content, usage, usedFallback } = await generate({
       theme: this.drawTheme(),
       nicknames: players.map(player => player.nickname),
       eventCellIds: eventCellIds(track),
@@ -210,6 +220,7 @@ export class Party {
     });
 
     this.theme = content.theme;
+    this.usage = usage ?? { inputTokens: 0, outputTokens: 0, costUsd: 0 };
     this.usedFallback = usedFallback;
     this.state = setupParty({ seed: this.uuid, players, content });
     this.phase = LucidShared.EPartyPhase.PLAYING;
@@ -265,6 +276,16 @@ export class Party {
     this.extraRibbonLines.length = 0;
 
     return delta;
+  };
+
+  // Usage свежей генерации, ровно один раз: второй вызов подряд вернёт
+  // undefined, пока не пройдёт следующая генерация
+  public takeUsage = (): TUsage | undefined => {
+    const usage = this.usage;
+
+    this.usage = undefined;
+
+    return usage;
   };
 
   // Снимок — это обычные данные: состояние партии проектировалось

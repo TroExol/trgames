@@ -28,6 +28,10 @@ export const generateJson = async (
   signal?: AbortSignal,
 ): Promise<TGenerateJsonResult> => {
   const client = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY ?? '' });
+  // Известен, как только пришёл ответ: провайдер считает токены независимо от
+  // того, распарсится ли содержимое. Присоединяем к ошибке ниже, чтобы пайплайн
+  // не терял молча уже потраченное, если ответ, например, обрезан по лимиту
+  let usage: TUsage | undefined;
 
   try {
     const response = await client.chat.send({
@@ -53,23 +57,23 @@ export const generateJson = async (
       // Сама SDK-перегрузка это не выводит из инлайн-литерала — уточняем явно
     }, { signal }) as ChatResult;
 
+    usage = {
+      inputTokens: response.usage?.promptTokens ?? 0,
+      outputTokens: response.usage?.completionTokens ?? 0,
+      costUsd: response.usage?.cost ?? 0,
+    };
+
     const content = response.choices[0]?.message.content;
 
     if (typeof content !== 'string') {
       throw new Error('ответ модели пуст или имеет неожиданный формат');
     }
 
-    return {
-      data: JSON.parse(content) as unknown,
-      usage: {
-        inputTokens: response.usage?.promptTokens ?? 0,
-        outputTokens: response.usage?.completionTokens ?? 0,
-        costUsd: response.usage?.cost ?? 0,
-      },
-    };
+    return { data: JSON.parse(content) as unknown, usage };
   } catch (error) {
-    throw new Error(
-      `OpenRouter не смог сгенерировать ответ: ${error instanceof Error ? error.message : String(error)}`,
+    throw Object.assign(
+      new Error(`OpenRouter не смог сгенерировать ответ: ${error instanceof Error ? error.message : String(error)}`),
+      { usage },
     );
   }
 };

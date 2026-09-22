@@ -63,6 +63,14 @@ export const generateContent = async ({
   const budget = new AbortController();
   const budgetTimer = setTimeout(() => budget.abort(), Math.max(deadlineMs - Date.now(), 0));
 
+  const addUsage = (delta: TUsage): void => {
+    usage = {
+      inputTokens: usage.inputTokens + delta.inputTokens,
+      outputTokens: usage.outputTokens + delta.outputTokens,
+      costUsd: usage.costUsd + delta.costUsd,
+    };
+  };
+
   // Разбор возвращает null, если ответ не годится. Тогда запрос повторяется
   const request = async <T>(
     prompt: string,
@@ -70,18 +78,27 @@ export const generateContent = async ({
     parse: (data: unknown) => T | null,
   ): Promise<T | null> => {
     for (let attempt = 0; attempt < MAX_ATTEMPTS && Date.now() < deadlineMs; attempt++) {
-      const result = await generateJson(prompt, schema, budget.signal);
+      try {
+        const result = await generateJson(prompt, schema, budget.signal);
 
-      usage = {
-        inputTokens: usage.inputTokens + result.usage.inputTokens,
-        outputTokens: usage.outputTokens + result.usage.outputTokens,
-        costUsd: usage.costUsd + result.usage.costUsd,
-      };
+        addUsage(result.usage);
 
-      const parsed = parse(result.data);
+        const parsed = parse(result.data);
 
-      if (parsed) {
-        return parsed;
+        if (parsed) {
+          return parsed;
+        }
+      } catch (error) {
+        // Ответ мог прийти и быть учтён провайдером, даже если сам вызов
+        // упал (например, обрезан по лимиту токенов) — досчитываем и только
+        // потом прерываем генерацию тем же способом, что и раньше
+        const spent = error instanceof Error ? (error as { usage?: TUsage } & Error).usage : undefined;
+
+        if (spent) {
+          addUsage(spent);
+        }
+
+        throw error;
       }
     }
 
