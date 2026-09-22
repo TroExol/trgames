@@ -2,7 +2,12 @@ import { makeAutoObservable } from 'mobx';
 
 import type { LocalStorageService } from '@/services/LocalStorageService';
 
-type TGeneralSettings = Record<string, never>;
+interface TGeneralSettings {
+  // Громкость одна на все игры. Музыка звучит сразу, но негромко: играют
+  // в голосовом чате, где фон конкурирует с речью, и её чаще убавляют,
+  // чем выключают
+  volume: number;
+}
 
 type TCryptozSettings = {
   showFullHandCards: boolean;
@@ -19,7 +24,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export class SettingsStore {
-  public general: TGeneralSettings = {};
+  public general: TGeneralSettings = {
+    volume: 0.35,
+  };
 
   public cryptoz: TCryptozSettings = {
     showFullHandCards: false,
@@ -28,6 +35,11 @@ export class SettingsStore {
   constructor(private readonly localStorageService: LocalStorageService) {
     makeAutoObservable(this, {}, { autoBind: true });
     this.loadFromStorage();
+  }
+
+  public setVolume(value: number): void {
+    this.general.volume = Math.min(Math.max(value, 0), 1);
+    this.saveToStorage();
   }
 
   public setCryptozShowFullHandCards(value: boolean): void {
@@ -51,7 +63,11 @@ export class SettingsStore {
       const { general, cryptoz } = parsed;
 
       if (isRecord(general)) {
-        this.general = { ...this.general, ...general } as TGeneralSettings;
+        const { volume } = general;
+
+        if (typeof volume === 'number' && Number.isFinite(volume)) {
+          this.general.volume = Math.min(Math.max(volume, 0), 1);
+        }
       }
 
       if (isRecord(cryptoz)) {
@@ -68,7 +84,9 @@ export class SettingsStore {
 
   private saveToStorage(): void {
     const payload: TStoredSettings = {
-      general: this.general,
+      general: {
+        volume: this.general.volume,
+      },
       cryptoz: {
         showFullHandCards: this.cryptoz.showFullHandCards,
       },

@@ -4,13 +4,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
+import type { TLucidSound } from '@/services/LucidSoundService';
 import type { TMood } from '@/lib/lucid/colors';
 
+import { lucidSoundService } from '@/services/LucidSoundService';
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Lobby } from '@/routes/games/lucid/PartyPage/components/Lobby';
@@ -25,12 +28,26 @@ import { useNickname } from '@/hooks/useNickname';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
+// Звуки идут подряд, а не разом: бросок, шаг и открытие события случаются
+// в одном присланном состоянии, и вместе они слились бы в кашу
+const SOUND_GAP_MS = 280;
+
+interface TSoundSnapshot {
+  phase: LucidShared.EPhase;
+  positions: string;
+  resource: number;
+  roll: string;
+  stateId: number;
+  winner?: string;
+}
+
 export const Component = observer(function LucidPartyPage() {
   const { partyId } = useParams();
   const navigate = useNavigate();
   const playerId = usePlayerId();
   const [nickname, setNickname] = useNickname();
   const [nicknameDraft, setNicknameDraft] = useState('');
+  const previousSound = useRef<TSoundSnapshot>();
   const theme = partyStore.view?.theme;
   // Оформление считается один раз на изменение темы и вешается на корень
   // экрана партии, а не на отдельный экран: смена фазы не должна сбрасывать
@@ -72,6 +89,79 @@ export const Component = observer(function LucidPartyPage() {
       navigate(`/game/lucid/party/${nextPartyId}`);
     }
   }, [navigate, nextPartyId]);
+
+  // Звуки короткие и понадобятся в первые же минуты: грузятся, как только
+  // партия началась. Музыка при этом молчит до темы
+  const hasState = Boolean(partyStore.state);
+
+  useEffect(() => {
+    if (hasState) {
+      lucidSoundService.preload();
+    }
+  }, [hasState]);
+
+  // Дорожка грузится лениво и только одна: настроение темы известно, вес
+  // файла — четыре с лишним мегабайта, и партия его не ждёт
+  const isDark = theme ? roles.isDark : undefined;
+
+  useEffect(() => {
+    if (isDark !== undefined) {
+      lucidSoundService.playMusic(isDark ? 'dark' : 'light');
+    }
+  }, [isDark]);
+
+  useEffect(() => () => lucidSoundService.stopMusic(), []);
+
+  // Звук привязан к изменению присланного состояния, а не к нажатию кнопки:
+  // ходы бывают и чужие, и автопилота
+  const { state: partyState } = partyStore;
+
+  useEffect(() => {
+    if (!partyState) {
+      previousSound.current = undefined;
+
+      return undefined;
+    }
+
+    const snapshot: TSoundSnapshot = {
+      phase: partyState.ctx.phase,
+      positions: partyState.G.order.map(id => partyState.G.players[id].position).join(','),
+      resource: partyState.G.players[partyState.you].resource,
+      // Подпись броска: у одного и того же игрока два одинаковых броска подряд
+      // прозвучат один раз — редкий случай, ради которого не стоит заводить
+      // в состоянии счётчик бросков
+      roll: JSON.stringify(partyState.G.lastRoll ?? null),
+      stateId: partyState.stateId,
+      winner: partyState.G.winner,
+    };
+    const before = previousSound.current;
+
+    previousSound.current = snapshot;
+
+    if (!before || before.stateId === snapshot.stateId) {
+      return undefined;
+    }
+
+    const EPhase = LucidShared.EPhase;
+    const queue: TLucidSound[] = [
+      snapshot.roll !== before.roll ? 'dice' : undefined,
+      snapshot.positions !== before.positions ? 'step' : undefined,
+      before.phase === EPhase.BRANCH && snapshot.phase !== EPhase.BRANCH ? 'branch' : undefined,
+      snapshot.resource > before.resource ? 'resourceUp' : undefined,
+      snapshot.resource < before.resource ? 'resourceDown' : undefined,
+      before.phase !== EPhase.CHOICE && snapshot.phase === EPhase.CHOICE ? 'event' : undefined,
+      snapshot.winner && !before.winner ? 'win' : undefined,
+    ].filter((name): name is TLucidSound => name !== undefined);
+
+    const timers = queue.slice(1).map((name, index) =>
+      window.setTimeout(() => lucidSoundService.play(name), (index + 1) * SOUND_GAP_MS));
+
+    if (queue[0]) {
+      lucidSoundService.play(queue[0]);
+    }
+
+    return () => timers.forEach(timer => window.clearTimeout(timer));
+  }, [partyState]);
 
   const handleSubmitNickname = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
