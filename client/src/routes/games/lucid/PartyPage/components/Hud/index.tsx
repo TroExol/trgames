@@ -194,10 +194,14 @@ export const Hud = observer(function Hud() {
               <span>{state.G.players[playerId].nickname}</span>
               {/* Роль — не секрет, но и не главное: всегда приглушена, даже у текущего
                   игрока, хотя кегль (text-xs) тот же — меньше 12px уже неразборчиво.
-                  На узком экране режется многоточием, а не ломает строку */}
+                  На узком экране режется многоточием, а не ломает строку.
+                  max-w вместо фикс. 96px: при 2-3 игроках в строке остаётся
+                  свободное место — отдаём его роли; 120px — потолок, выше
+                  которого при 6 игроках и длинных ролях строка перестаёт
+                  умещаться в те же 3 строки, что и раньше (замерено в Storybook) */}
               {state.G.players[playerId].role && (
                 <span
-                  className="max-w-24 truncate text-xs"
+                  className="max-w-[7.5rem] truncate text-xs"
                   style={{ color: 'var(--lucid-muted)' }}
                   title={state.G.players[playerId].role}
                 >
