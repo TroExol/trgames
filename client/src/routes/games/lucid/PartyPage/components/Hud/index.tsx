@@ -56,6 +56,10 @@ export const Hud = observer(function Hud() {
   const isMyTurn = state.ctx.currentPlayer === state.you;
   const isSent = sentStateId === state.stateId;
   const offline = new Set(view.members.filter(member => !member.isConnected).map(member => member.playerId));
+  // Без единой роли (запасная партия, 4.7) колонки грида ниже ни на что не
+  // тратятся — нечего обрезать. Тогда строке выгоднее обычный flex-wrap:
+  // он пакует короткие ники по факту их ширины, а не по минимуму колонки
+  const hasAnyRole = state.G.order.some(playerId => Boolean(state.G.players[playerId].role));
   const { volume } = settingsStore.general;
   // Событие берётся по клетке ходящего игрока: его читают все, а не только тот,
   // чей ход
@@ -177,38 +181,49 @@ export const Hud = observer(function Hud() {
 
         {/* Пока за отвалившегося ходит автопилот, это видно всем: иначе
             остальные обсуждают решения, которых человек не принимал */}
-        <ul className="flex flex-wrap gap-x-3 text-xs" style={{ color: 'var(--lucid-muted)' }}>
+        {/* grid вместо flex-wrap: ширина колонки не зависит от длины роли, а
+            auto-fit схлопывает пустые колонки — при 2 игроках им достаётся вся
+            строка, при 6 на 360-390px колонок ровно две (см. комментарий у
+            роли), как и раньше */}
+        <ul
+          className={
+            hasAnyRole
+              ? 'grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-x-3 text-xs'
+              : 'flex flex-wrap gap-x-3 text-xs'
+          }
+          style={{ color: 'var(--lucid-muted)' }}
+        >
           {state.G.order.map(playerId => (
             <li
-              className="flex items-center gap-1"
+              className="flex min-w-0 items-center gap-1"
               key={playerId}
               style={playerId === state.ctx.currentPlayer ? { color: 'var(--lucid-text)' } : undefined}
             >
               {playerId === state.ctx.currentPlayer && (
                 <span
                   aria-hidden
-                  className="size-1.5 rounded-full"
+                  className="size-1.5 shrink-0 rounded-full"
                   style={{ backgroundColor: 'var(--lucid-accent)' }}
                 />
               )}
-              <span>{state.G.players[playerId].nickname}</span>
+              <span className="shrink-0">{state.G.players[playerId].nickname}</span>
               {/* Роль — не секрет, но и не главное: всегда приглушена, даже у текущего
                   игрока, хотя кегль (text-xs) тот же — меньше 12px уже неразборчиво.
-                  На узком экране режется многоточием, а не ломает строку.
-                  max-w вместо фикс. 96px: при 2-3 игроках в строке остаётся
-                  свободное место — отдаём его роли; 120px — потолок, выше
-                  которого при 6 игроках и длинных ролях строка перестаёт
-                  умещаться в те же 3 строки, что и раньше (замерено в Storybook) */}
+                  Без max-w: ширину задаёт колонка грида, а не сама роль, поэтому
+                  свободное место в строке достаётся роли честно, а не по фикс.
+                  потолку. minmax(9rem,...) — 9rem подобран под 360/390px: при
+                  шести игроках колонок ровно две (floor(336/(144+12))=2), строка
+                  остаётся в 3 ряда, как и раньше (замерено в Storybook) */}
               {state.G.players[playerId].role && (
                 <span
-                  className="max-w-[7.5rem] truncate text-xs"
+                  className="min-w-0 truncate text-xs"
                   style={{ color: 'var(--lucid-muted)' }}
                   title={state.G.players[playerId].role}
                 >
                   {`— ${state.G.players[playerId].role}`}
                 </span>
               )}
-              {offline.has(playerId) && <span>· связь потеряна</span>}
+              {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
             </li>
           ))}
         </ul>
