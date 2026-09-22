@@ -39,6 +39,8 @@ export const Header = observer(function Header() {
   const gamePageLabel = gameName === 'lucid' ? 'Новая партия' : 'Список комнат';
   const isRulesPage = location.pathname === `/game/${gameName}/rules`;
   const isUpdatesPage = location.pathname === `/game/${gameName}/updates`;
+  // Правила и обновления написаны только для Криптоза, маршрутов lucid под них нет
+  const hasStaticPages = Boolean(gameName) && gameName !== 'lucid';
 
   return (
     <header
@@ -99,7 +101,9 @@ export const Header = observer(function Header() {
                   </Link>
                 </DropdownMenuItem>
               )}
-              {gameName && (
+              {/* Страницы правил и обновлений есть не у всякой игры: в lucid
+                  их нет, и пункты вели бы в никуда */}
+              {hasStaticPages && (
                 <>
                   {!isRulesPage && (
                     <DropdownMenuItem>
