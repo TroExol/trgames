@@ -80,6 +80,12 @@ export const buildEventsPrompt = (
 вариант удаётся. У гарантированного может быть cost — цена в ресурсе от
 ${COST_RANGE.min} до ${COST_RANGE.max}.
 
+Примерно у трети событий один из вариантов должен стоить ресурса: поле cost
+и никакого threshold. Ресурс игрок копит весь вечер ради выбора «заплатить
+и пройти наверняка или рискнуть кубиком»; если платить негде, запас
+превращается в бесполезное число, а половина игры пропадает. Платный вариант
+ставь рядом с рискованным, тогда выбор настоящий.
+
 Механику можно выражать ТОЛЬКО такими атомами:
 ${describeAtoms()}
 
@@ -92,6 +98,7 @@ ${describeTargets()}
 Верни JSON строго такого вида, без пояснений:
 {"events":[{"cellId":1,"title":"...","text":"...","options":[
   {"text":"...","threshold":4,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]},
-   "failure":{"atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}}
+   "failure":{"atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}},
+  {"text":"...","cost":2,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
 ]}]}
 `.trim();
