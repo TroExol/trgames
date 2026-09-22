@@ -30,7 +30,7 @@ import { SettingsDialog } from './SettingsDialog';
 import Logo from '/icon.svg';
 
 export const Header = observer(function Header() {
-  const { roomUuid } = useParams<{ roomUuid: string }>();
+  const { roomUuid, partyId } = useParams<{ roomUuid?: string; partyId?: string }>();
   const { gameName } = useGameName();
   const { gameTheme } = useGameTheme();
   const isRoomsPage = location.pathname === `/game/${gameName}`;
@@ -44,7 +44,7 @@ export const Header = observer(function Header() {
 
   return (
     <header
-      className={cn('flex h-14 w-full shrink-0 items-center p-2 sm:px-4', roomUuid && '[@media(max-height:620px)]:hidden')}
+      className={cn('flex h-14 w-full shrink-0 items-center p-2 sm:px-4', (roomUuid || partyId) && '[@media(max-height:620px)]:hidden')}
     >
       <div className="mr-4 flex">
         <Link className="mr-4 flex items-center space-x-2 pr-1 lg:mr-5" to="/">
