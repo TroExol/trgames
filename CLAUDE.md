@@ -55,7 +55,7 @@ prompts/         — Промпты для генерации контента (
 
 ## Тестирование
 
-- Фреймворк: Vitest (только server)
+- Фреймворк: Vitest (сервер и клиент)
 - Файлы тестов: `*.test.ts` рядом с тестируемым файлом
 - Пример: `server/src/games/cryptoz/entities/Cards/customCards/CardName.test.ts`
 
@@ -93,7 +93,13 @@ prompts/         — Промпты для генерации контента (
 - Файл переводов: `server/src/i18n/translations/ru.ts`
 - ESLint: описания карт без точки в конце, переводы с заглавной буквы
 
+## Lucid
+
+- Перед любой задачей по lucid читать `docs/lucid/PRD.md` — единая точка входа в игру.
+- Меняешь поведение lucid — правь `docs/lucid/PRD.md` в том же коммите.
+
 ## Переменные окружения
 
 - Client: `VITE_API_BASE_URL` в `client/.env` (инжектится как `__API_BASE_URL__`)
-- Server: CLI аргументы `--local true` (CORS *) и `--debug true` (подробные логи)
+- Server: CLI аргументы `--local true` (CORS *) и `--debug true` (передаётся в
+  `start:dev`, сейчас ни на что не влияет — `getProcessArg('--debug')` нигде не вызывается)
