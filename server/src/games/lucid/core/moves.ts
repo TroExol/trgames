@@ -32,7 +32,7 @@ export const rollAndMove = (
     walkForward(G.track, player.position, roll.value),
   );
 
-  return { ...moved, log: [...moved.log, `${player.nickname} выбросил ${roll.value}`] };
+  return { ...moved, log: [...moved.log, `${player.nickname} выбрасывает ${roll.value}`] };
 };
 
 // Шаг на выбранную ветку тратит один шаг, остаток дохаживается.

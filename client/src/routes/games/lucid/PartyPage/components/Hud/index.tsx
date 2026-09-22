@@ -105,7 +105,7 @@ export const Hud = observer(function Hud() {
     if (state.ctx.phase === EPhase.ENDED) {
       const winner = state.G.winner && state.G.players[state.G.winner];
 
-      return <p className="font-unbounded text-base">{winner ? `Победил ${winner.nickname}` : 'Партия окончена'}</p>;
+      return <p className="font-unbounded text-base">{winner ? `Побеждает ${winner.nickname}` : 'Партия окончена'}</p>;
     }
 
     if (!isMyTurn) {
