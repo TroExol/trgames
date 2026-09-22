@@ -2,7 +2,10 @@ import type { LucidShared } from '@trgames/shared';
 
 import { createRandom, shuffle } from '@/games/lucid/core/random';
 
-import fallback from './fallback.json';
+// Имя файла не повторяет имя модуля намеренно: ts-node разрешает
+// расширения в порядке .js, .json, .node и только потом .ts, и импорт
+// './fallback' из соседних модулей приводил бы к JSON вместо этого кода
+import fallback from './fallbackContent.json';
 
 const POOL = fallback.events as LucidShared.TEvent[];
 
