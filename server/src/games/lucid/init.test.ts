@@ -64,7 +64,7 @@ describe('создание партии', () => {
     const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
     const callback = vi.fn();
 
-    createParty({ group, ownerId: 'a' }, callback);
+    createParty({ group, ownerId: 'a', sync: vi.fn() }, callback);
 
     const [result] = callback.mock.calls[0] as [{ status: string; partyId: string }];
 
@@ -76,7 +76,7 @@ describe('создание партии', () => {
     const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
     const callback = vi.fn();
 
-    createParty({ group, ownerId: 'a' }, callback);
+    createParty({ group, ownerId: 'a', sync: vi.fn() }, callback);
 
     const [result] = callback.mock.calls[0] as [{ partyId: string }];
     const party = group.get(result.partyId)!;

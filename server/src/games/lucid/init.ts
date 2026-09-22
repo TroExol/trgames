@@ -10,6 +10,7 @@ import type { TAutopilot } from '@/games/lucid/room/autopilot';
 import { t } from '@/i18n';
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
+import { createCleanup } from '@/games/lucid/room/cleanup';
 import { createAutopilot } from '@/games/lucid/room/autopilot';
 import { generateContent } from '@/games/lucid/generation/pipeline';
 import { generateJson } from '@/games/lucid/generation/model';
@@ -53,6 +54,10 @@ export const messageForError = (error: unknown): string => {
 interface TCreatePartyContext {
   group: TPartyGroup;
   ownerId: LucidShared.TPlayerId;
+  // Созданная партия пуста, пока создатель не вошёл по ссылке: отсрочка до
+  // удаления должна пойти прямо отсюда, иначе брошенное лобби осталось бы
+  // в базе навсегда
+  sync: (party: Party) => void;
 }
 
 type TCreatePartyCallback = (
@@ -63,12 +68,13 @@ type TCreatePartyCallback = (
 // не может, партии-то ещё нет, а идентификатор у создателя уже есть — выдан
 // браузером при первом заходе
 export const createParty = (
-  { group, ownerId }: TCreatePartyContext,
+  { group, ownerId, sync }: TCreatePartyContext,
   callback: TCreatePartyCallback,
 ): void => {
   try {
     const party = group.create({ uuid: uid(), ownerId });
 
+    sync(party);
     callback({ status: 'ok', partyId: party.uuid });
   } catch (error) {
     callback({ status: 'error', message: messageForError(error) });
@@ -154,6 +160,21 @@ export const createHandlers = ({ group, broadcast, fail }: TCreateHandlersParams
 export const init = (io: Server): void => {
   const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(STORAGE_PATH) });
 
+  // Один автопилот на партию, а не на подключение: иначе таймер, заведённый
+  // прежним соединением, остался бы в объекте, до которого новое не дотянется
+  const autopilots = new Map<string, TAutopilot>();
+  // Партия живёт один вечер: опустела и выждала отсрочку — удаляется и из
+  // памяти, и из базы
+  const cleanup = createCleanup({
+    remove: uuid => {
+      // Автопилот держит ссылку на партию и сам её сохраняет: не остановив
+      // его, мы вернули бы удалённую партию в базу следующим же ходом
+      autopilots.get(uuid)?.stop();
+      autopilots.delete(uuid);
+      group.remove(uuid);
+    },
+  });
+
   // Общий неймспейс игры: единственное, что он умеет, — создать партию.
   // Через неймспейс партии это невозможно, потому что рукопожатие там
   // требует уже существующий идентификатор
@@ -172,7 +193,7 @@ export const init = (io: Server): void => {
         return;
       }
 
-      createParty({ group, ownerId }, callback);
+      createParty({ group, ownerId, sync: cleanup.sync }, callback);
     });
 
     socket.on('error', error => console.error(error));
@@ -182,9 +203,6 @@ export const init = (io: Server): void => {
     LucidShared.TLucidClientToServerEvents,
     LucidShared.TLucidServerToClientEvents
   >;
-  // Один автопилот на партию, а не на подключение: иначе таймер, заведённый
-  // прежним соединением, остался бы в объекте, до которого новое не дотянется
-  const autopilots = new Map<string, TAutopilot>();
 
   const fail = (playerId: LucidShared.TPlayerId, message: string): void => {
     namespace.to(`player:${playerId}`).emit(LucidShared.ELucidEvent.showError, { message });
@@ -271,6 +289,7 @@ export const init = (io: Server): void => {
     }
 
     syncAutopilot(party);
+    cleanup.sync(party);
   };
 
   const handlers = createHandlers({ group, broadcast: party => broadcast(party), fail });

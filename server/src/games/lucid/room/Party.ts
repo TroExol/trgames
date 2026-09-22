@@ -237,6 +237,12 @@ export class Party {
     return this.members.get(playerId)?.isConnected ?? false;
   };
 
+  // Партия опустела, когда на связи нет никого. Пустое лобби, куда никто не
+  // зашёл, пусто с рождения — и попадает под то же правило
+  public get hasConnected(): boolean {
+    return [...this.members.values()].some(member => member.isConnected);
+  }
+
   // Строка от самой игры, а не от движка: например, честное признание,
   // что придумать мир не получилось
   public addRibbonLine = (line: string): void => {
