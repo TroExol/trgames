@@ -56,6 +56,20 @@ export const toHex = ({ r, g, b }: TRgb): string => {
   return `#${channel(r)}${channel(g)}${channel(b)}`;
 };
 
+// Наложение цвета на основу с прозрачностью. Нужен именно цвет, а не
+// rgba-строка: порог контраста проверяется на том, что видно на экране,
+// а приглушённая прозрачностью лента — это уже другой цвет
+export const blend = (color: TRgb, base: TRgb, alpha: number): TRgb => {
+  const channel = (value: number, under: number): number =>
+    under + (value - under) * clamp01(alpha);
+
+  return {
+    r: channel(color.r, base.r),
+    g: channel(color.g, base.g),
+    b: channel(color.b, base.b),
+  };
+};
+
 const toLinear = (value: number): number =>
   value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
 

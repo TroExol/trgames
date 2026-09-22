@@ -80,11 +80,20 @@ interface TPartyParams {
   world: string;
   resource: string;
   palette: string[];
+  // Необязательные: партия из базы, сгенерированная до краёв, их не имеет
+  regions?: LucidShared.TRegion[];
 }
 
 // Расстановка нарочно неудобная: один игрок на старте, двое на одной клетке,
 // ходящий — на развилке с подсвеченными ветками
-const makeParty = ({ track, nicknames, world, resource, palette }: TPartyParams): LucidShared.TStateForPlayer => {
+const makeParty = ({
+  track,
+  nicknames,
+  world,
+  resource,
+  palette,
+  regions,
+}: TPartyParams): LucidShared.TStateForPlayer => {
   const forkCell = track.cells.find(cell => cell.next.length > 1) ?? track.cells[0];
   const middleId = track.cells[Math.floor(track.cells.length / 2)].id;
   const spots = [track.startId, middleId, middleId, forkCell.id];
@@ -104,7 +113,7 @@ const makeParty = ({ track, nicknames, world, resource, palette }: TPartyParams)
       order,
       track,
       events: {},
-      theme: { name: world, resourceName: resource, palette },
+      theme: { name: world, resourceName: resource, palette, regions },
       visited: track.cells.filter(cell => cell.id <= forkCell.id).map(cell => cell.id),
       branchChoices: forkCell.next,
       pendingSteps: 2,
@@ -123,6 +132,12 @@ const makeParty = ({ track, nicknames, world, resource, palette }: TPartyParams)
 };
 
 const STATION_PALETTE = ['#0d1b2a', '#1b263b', '#415a77', '#778da9', '#e0e1dd'];
+// Края описывают места, а не события: содержимое клетки — секрет до посещения
+const STATION_REGIONS = [
+  { name: 'Машинный зал', color: '#415a77' },
+  { name: 'Оранжерея', color: '#4f7942' },
+  { name: 'Соляные пустоши', color: '#c9b79c' },
+];
 const FOUR = ['Аня', 'Борис', 'Вика', 'Гриша'];
 const SIX = [...FOUR, 'Даша', 'Егор'];
 
@@ -133,14 +148,19 @@ const withTheme: Decorator = (Story, context) => {
   const roles = deriveRoles(theme.palette);
 
   // Отрицательные поля гасят отступ общей обёртки Storybook: тема партии
-  // занимает весь экран, как и на самом экране партии
+  // занимает весь экран, как и на самом экране партии. Высота задана точно,
+  // а не минимумом: поле тянется по высоте контейнера, а min-height оставляет
+  // высоту неопределённой, и поле вернулось бы к своим пропорциям
   return (
-    <div className="-m-6 flex min-h-dvh flex-col p-4 font-golos" style={themeStyle(roles, theme.name)}>
+    <div
+      className="-m-6 flex h-dvh flex-col overflow-hidden p-4 font-golos"
+      style={themeStyle(roles, theme.name)}
+    >
       <p className="font-unbounded text-lg">{theme.name}</p>
       <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{theme.resourceName}</p>
 
       {/* Поле занимает собой всё, что осталось от полос: так оно и будет жить */}
-      <div className="flex grow items-center">
+      <div className="flex min-h-0 grow">
         <Story />
       </div>
     </div>
@@ -171,6 +191,7 @@ export const Station: Story = {
       world: 'Заброшенная станция',
       resource: 'заряды',
       palette: STATION_PALETTE,
+      regions: STATION_REGIONS,
     }),
   },
 };
@@ -184,6 +205,11 @@ export const LongTrack: Story = {
       world: 'Заброшенная станция',
       resource: 'заряды',
       palette: STATION_PALETTE,
+      regions: [
+        ...STATION_REGIONS,
+        { name: 'Реакторный блок', color: '#f4a259' },
+        { name: 'Шлюзовой отсек', color: '#778da9' },
+      ],
     }),
   },
 };
@@ -197,6 +223,11 @@ export const Pirates: Story = {
       world: 'Пираты Карибского моря',
       resource: 'дублоны',
       palette: ['#f6f4ef', '#e8dcc8', '#c0a080', '#1b2a41'],
+      regions: [
+        { name: 'Пальмовый берег', color: '#c0a080' },
+        { name: 'Бухта висельников', color: '#1b2a41' },
+        { name: 'Пороховой трюм', color: '#8a5a3a' },
+      ],
     }),
   },
 };
@@ -210,6 +241,11 @@ export const HostilePalette: Story = {
       world: 'Пыльный чердак',
       resource: 'находки',
       palette: ['#7a6f63', '#7b7064', '#796e62', '#7a7165', '#7d7266'],
+      regions: [
+        { name: 'Стопки газет', color: '#7b7064' },
+        { name: 'Сундук с тряпьём', color: '#8a7a6a' },
+        { name: 'Слуховое окно', color: '#6d6357' },
+      ],
     }),
   },
 };
@@ -223,11 +259,44 @@ export const Phone: Story = {
       world: 'Заброшенная станция',
       resource: 'заряды',
       palette: STATION_PALETTE,
+      regions: STATION_REGIONS,
     }),
   },
   decorators: [Story => (
-    <div className="w-[360px] border border-dashed" style={{ borderColor: 'var(--lucid-muted)' }}>
+    <div className="h-[600px] w-[360px] border border-dashed" style={{ borderColor: 'var(--lucid-muted)' }}>
       <Story />
     </div>
   )],
+};
+
+// Партия из базы, сгенерированная до краёв: поле обязано рисоваться и без них
+export const NoRegions: Story = {
+  args: {
+    state: makeParty({
+      track: buildTrack([3, 3, 3]),
+      nicknames: FOUR,
+      world: 'Заброшенная станция',
+      resource: 'заряды',
+      palette: STATION_PALETTE,
+    }),
+  },
+};
+
+// Цвета краёв приходят от модели: тут они совпали с основой и друг с другом.
+// Поле обязано читаться — обработка цвета дотягивает края до порогов
+export const HostileRegions: Story = {
+  args: {
+    state: makeParty({
+      track: buildTrack([3, 3, 3]),
+      nicknames: FOUR,
+      world: 'Соляные копи',
+      resource: 'кристаллы',
+      palette: ['#0d1b2a', '#0e1c2b', '#101e2d', '#122030'],
+      regions: [
+        { name: 'Затопленный штрек', color: '#0d1b2a' },
+        { name: 'Соляной купол', color: '#0d1b2a' },
+        { name: 'Вентиляционный ствол', color: '#0e1c2b' },
+      ],
+    }),
+  },
 };

@@ -1,10 +1,12 @@
 import type { LucidShared } from '@trgames/shared';
 
 // Условные единицы: реальный размер задаётся масштабом SVG
-export const CELL_STEP = 100;
-export const ROW_STEP = 120;
+export const CELL_STEP = 132;
+export const ROW_STEP = 150;
 // Насколько прядь развилки отходит от общей линии
-export const STRAND_OFFSET = 34;
+export const STRAND_OFFSET = 40;
+// Размах изгиба: заметно глазу и не съедает зазор между рядами
+const MEANDER_AMPLITUDE = 26;
 
 export interface TLaidCell {
   id: number;
@@ -17,6 +19,8 @@ export interface TLaidCell {
   col: number;
   x: number;
   y: number;
+  // Наклон пути в этой точке, радианы: по нему поворачивается плитка
+  angle: number;
 }
 
 export interface TTrackLink {
@@ -32,14 +36,38 @@ export interface TTrackLayout {
   perRow: number;
   width: number;
   height: number;
+  maxDepth: number;
 }
 
-// Сколько клеток помещается в ряд при данной ширине. На телефоне рядов много
-// и они короткие, на десктопе наоборот — макет при этом один
-export const cellsPerRow = (widthPx: number): number => {
-  const MIN_CELL_PX = 56;
+// Перебор дешевле любой формулы: вариантов меньше десятка, а формула
+// промахивается на округлении числа рядов
+export const cellsPerRowFor = (width: number, height: number, depth: number): number => {
+  const MIN = 4;
+  const MAX = 14;
+  const target = width / Math.max(height, 1);
+  let best = MIN;
+  let bestDistance = Infinity;
 
-  return Math.min(Math.max(Math.floor(widthPx / MIN_CELL_PX), 4), 12);
+  for (let perRow = MIN; perRow <= MAX; perRow++) {
+    const rows = Math.max(Math.ceil(depth / perRow), 1);
+    const distance = Math.abs((perRow * CELL_STEP) / (rows * ROW_STEP) - target);
+
+    if (distance < bestDistance) {
+      best = perRow;
+      bestDistance = distance;
+    }
+  }
+
+  return best;
+};
+
+// Изгиб свой у каждой партии, но одинаковый у всех игроков: считается
+// из названия мира, а не из случайного числа
+const meander = (depth: number, seed: number): number => {
+  const phase = (seed % 360) * (Math.PI / 180);
+  const frequency = 0.55 + ((seed >> 8) % 5) / 10;
+
+  return Math.sin(depth * frequency + phase) * MEANDER_AMPLITUDE;
 };
 
 const depthsFromStart = (track: LucidShared.TTrack): Record<number, number> => {
@@ -61,7 +89,34 @@ const depthsFromStart = (track: LucidShared.TTrack): Record<number, number> => {
   return depths;
 };
 
-export const layoutTrack = (track: LucidShared.TTrack, perRow: number): TTrackLayout => {
+// Сколько позиций по длине пути: клеток больше, потому что пряди развилки
+// делят одну глубину. Нужно до укладки — по этому числу подбирается ряд
+export const depthCount = (track: LucidShared.TTrack): number => {
+  return Math.max(...Object.values(depthsFromStart(track))) + 1;
+};
+
+// Наклон пути в клетке: по соседям, а не по одной из связей. У развилки
+// соседей двое, и середина между ними держит плитку симметрично
+const angleAt = (cell: TLaidCell, previous: TLaidCell[], next: TLaidCell[]): number => {
+  const middle = (group: TLaidCell[], fallback: TLaidCell): { x: number; y: number } =>
+    (group.length === 0
+      ? fallback
+      : {
+          x: group.reduce((sum, item) => sum + item.x, 0) / group.length,
+          y: group.reduce((sum, item) => sum + item.y, 0) / group.length,
+        });
+
+  const from = middle(previous, cell);
+  const to = middle(next, cell);
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+
+  // Старт без соседей или клетка, у которой соседи совпали: наклон не из чего
+  // вывести, плитка остаётся прямой
+  return dx === 0 && dy === 0 ? 0 : Math.atan2(dy, dx);
+};
+
+export const layoutTrack = (track: LucidShared.TTrack, perRow: number, seed = 0): TTrackLayout => {
   const depths = depthsFromStart(track);
   const byDepth = new Map<number, LucidShared.TCell[]>();
 
@@ -95,7 +150,8 @@ export const layoutTrack = (track: LucidShared.TTrack, perRow: number): TTrackLa
         row,
         col,
         x: col * CELL_STEP + CELL_STEP / 2,
-        y: row * ROW_STEP + ROW_STEP / 2 + strand * STRAND_OFFSET,
+        y: row * ROW_STEP + ROW_STEP / 2 + meander(depth, seed) + strand * STRAND_OFFSET,
+        angle: 0,
       });
     });
   });
@@ -107,6 +163,14 @@ export const layoutTrack = (track: LucidShared.TTrack, perRow: number): TTrackLa
       .map(nextId => ({ from: cell.id, to: nextId })));
   const rows = Math.max(...cells.map(cell => cell.row)) + 1;
 
+  cells.forEach(cell => {
+    cell.angle = angleAt(
+      cell,
+      links.filter(link => link.to === cell.id).map(link => byId[link.from]),
+      links.filter(link => link.from === cell.id).map(link => byId[link.to]),
+    );
+  });
+
   return {
     cells,
     byId,
@@ -115,5 +179,6 @@ export const layoutTrack = (track: LucidShared.TTrack, perRow: number): TTrackLa
     perRow,
     width: perRow * CELL_STEP,
     height: rows * ROW_STEP,
+    maxDepth: Math.max(...cells.map(cell => cell.depth)),
   };
 };

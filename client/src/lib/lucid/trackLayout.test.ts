@@ -6,7 +6,11 @@ import {
   it,
 } from 'vitest';
 
-import { layoutTrack } from '@/lib/lucid/trackLayout';
+import {
+  cellsPerRowFor,
+  depthCount,
+  layoutTrack,
+} from '@/lib/lucid/trackLayout';
 
 const START = 'START' as LucidShared.ECellType;
 const EVENT = 'EVENT' as LucidShared.ECellType;
@@ -89,5 +93,58 @@ describe('укладка трека', () => {
   it('число рядов растёт при узкой раскладке', () => {
     expect(layoutTrack(lineTrack(30), 4).rows)
       .toBeGreaterThan(layoutTrack(lineTrack(30), 10).rows);
+  });
+
+  it('считает глубину пути: пряди развилки делят одну глубину', () => {
+    expect(depthCount(lineTrack(30))).toBe(30);
+    expect(depthCount(forkTrack())).toBe(5);
+  });
+});
+
+describe('изгиб пути', () => {
+  it('уводит клетки ряда с одной прямой', () => {
+    const { cells } = layoutTrack(lineTrack(10), 5, 12345);
+    const firstRow = cells.filter(cell => cell.row === 0);
+
+    expect(new Set(firstRow.map(cell => cell.y)).size).toBeGreaterThan(1);
+  });
+
+  it('одинаков при одном сиде и разный при разных: изгиб от названия мира', () => {
+    const ys = (seed: number) => layoutTrack(lineTrack(10), 5, seed).cells.map(cell => cell.y);
+
+    expect(ys(12345)).toEqual(ys(12345));
+    expect(ys(12345)).not.toEqual(ys(777));
+  });
+
+  it('поворачивает плитку по ходу пути', () => {
+    const { byId } = layoutTrack(lineTrack(10), 5, 12345);
+
+    // Внутри ряда путь идёт слева направо с наклоном, на развороте — вниз
+    expect(Math.abs(byId[1].angle)).toBeGreaterThan(0);
+    expect(Math.abs(byId[1].angle)).toBeLessThan(Math.PI / 4);
+    expect(byId[4].angle).toBeGreaterThan(Math.PI / 4);
+  });
+});
+
+describe('подбор числа клеток в ряду', () => {
+  it('держится в пределах от четырёх до четырнадцати', () => {
+    [[320, 2000], [4000, 200], [0, 0], [360, 640]].forEach(([width, height]) => {
+      const perRow = cellsPerRowFor(width, height, 40);
+
+      expect(perRow).toBeGreaterThanOrEqual(4);
+      expect(perRow).toBeLessThanOrEqual(14);
+    });
+  });
+
+  it('на узком высоком контейнере рядов больше, чем на широком низком', () => {
+    const narrow = cellsPerRowFor(360, 900, 40);
+    const wide = cellsPerRowFor(1440, 700, 40);
+
+    expect(Math.ceil(40 / narrow)).toBeGreaterThan(Math.ceil(40 / wide));
+  });
+
+  it('не делит на ноль на коротком пути и пустом контейнере', () => {
+    expect(Number.isFinite(cellsPerRowFor(0, 0, 1))).toBe(true);
+    expect(Number.isFinite(cellsPerRowFor(1440, 0, 0))).toBe(true);
   });
 });
