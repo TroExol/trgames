@@ -22,9 +22,11 @@ yarn workspace @trgames/client storybook    # Storybook (порт 6006)
 ```bash
 yarn workspace @trgames/server start:dev    # Nodemon watch mode (порт 4001)
 yarn workspace @trgames/server test         # Vitest (все тесты)
-yarn workspace @trgames/server test src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест
+yarn workspace @trgames/server test --run src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест (флаг --run обязателен)
 yarn workspace @trgames/server lint         # typecheck + eslint + тесты
 ```
+
+Флаг `--run` для запуска одного файла обязателен: скрипт `test` заканчивается флагом `--silent`, и без `--run` путь приклеивается к нему как значение — vitest падает с `Unexpected value "--silent=<путь>"`, не начав работу.
 
 ### Shared (@trgames/shared)
 ```bash
@@ -53,7 +55,7 @@ prompts/         — Промпты для генерации контента (
 
 ## Тестирование
 
-- Фреймворк: Vitest (только server)
+- Фреймворк: Vitest (сервер и клиент)
 - Файлы тестов: `*.test.ts` рядом с тестируемым файлом
 - Пример: `server/src/games/cryptoz/entities/Cards/customCards/CardName.test.ts`
 
@@ -91,7 +93,18 @@ prompts/         — Промпты для генерации контента (
 - Файл переводов: `server/src/i18n/translations/ru.ts`
 - ESLint: описания карт без точки в конце, переводы с заглавной буквы
 
+## Lucid
+
+- Перед любой задачей по lucid читать `docs/lucid/PRD.md` — единая точка входа в игру.
+- Меняешь поведение lucid — правь `docs/lucid/PRD.md` в том же коммите.
+- Открытые вопросы, хвосты и решения со статусом апрува — `docs/lucid/OPEN-QUESTIONS.md`. При старте сессии сверить его с `git log`.
+- Решения о продукте, UI, UX и архитектуре записывать в `OPEN-QUESTIONS.md` со статусом «ждёт апрува». Их утверждает владелец. Чисто технические решения туда не писать, их объясняет коммит. Некритичное решать самостоятельно и не блокироваться. Критичное откладывать: вливание в master, деньги, удаление данных, объём версии.
+- Главная сессия ставит задачи и принимает работу. Код пишут сабагенты на Sonnet или Haiku. Отчёту не верить: читать дифф и тесты. В одном дереве одновременно пишет только один агент.
+- Замеры моделей — `docs/lucid/MODELS.md`. OpenRouter присылает заголовки ответа сразу, поэтому время засекать после чтения тела.
+- `feat/lucid` в master не вливать, пока владелец не скажет (PR #14).
+
 ## Переменные окружения
 
 - Client: `VITE_API_BASE_URL` в `client/.env` (инжектится как `__API_BASE_URL__`)
-- Server: CLI аргументы `--local true` (CORS *) и `--debug true` (подробные логи)
+- Server: CLI аргументы `--local true` (CORS *) и `--debug true` (передаётся в
+  `start:dev`, сейчас ни на что не влияет — `getProcessArg('--debug')` нигде не вызывается)

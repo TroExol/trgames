@@ -1,7 +1,13 @@
 import { Server } from 'socket.io';
 
 import { getProcessArg } from '@/helpers/utils';
+import { loadEnv } from '@/helpers/loadEnv';
+import { Lucid } from '@/games/lucid';
 import { Cryptoz } from '@/games/cryptoz';
+
+// До первого обращения к process.env: ключ провайдера читается при создании
+// клиента модели
+loadEnv();
 
 const localhost = getProcessArg('--local') === 'true';
 
@@ -24,6 +30,7 @@ io.on('connection', socket => {
 });
 
 Cryptoz.init(io);
+Lucid.init(io);
 
 io.listen(4001);
 

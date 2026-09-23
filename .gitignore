@@ -12,3 +12,6 @@ nohup.out
 
 *storybook.log
 storybook-static
+
+# База данных партий lucid
+*.db

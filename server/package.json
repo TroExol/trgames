@@ -6,6 +6,7 @@
   "scripts": {
     "start:dev": "nodemon -r tsconfig-paths/register src/index.ts --local true --debug true",
     "start": "ts-node -r tsconfig-paths/register src/index.ts",
+    "lucid:usage": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runUsageReport.ts",
     "typecheck": "tsc --noEmit",
     "eslint": "eslint .",
     "eslint:fix": "eslint . --fix",
@@ -14,16 +15,18 @@
     "lint": "yarn typecheck && yarn eslint && yarn test"
   },
   "dependencies": {
+    "@openrouter/sdk": "^1.3.11",
     "@trgames/shared": "1.0.0",
     "i18n-js": "^4.5.1",
     "lodash": "^4.17.21",
     "make-plural": "^7.4.0",
     "socket.io": "^4.8.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zod": "^4"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.13",
-    "@types/node": "^20.11.10",
+    "@types/node": "^22",
     "@types/uuid": "^9.0.8",
     "memfs": "^4.14.0",
     "nodemon": "^3.1.7",
