@@ -116,6 +116,32 @@ describe('applyMove', () => {
 
     expect(roll(ended)).toBe(ended);
   });
+
+  it('свежий бросок клеймится версией состояния, в которой случился', () => {
+    const next = roll(makeParty());
+
+    expect(next.G.lastRoll?.stateId).toBe(next.stateId);
+  });
+
+  it('ход без нового броска не переклеймляет старый lastRoll', () => {
+    const state = makeParty('fork-restamp');
+    state.G.track = forkTrack();
+    state.G.players.a.position = 1;
+
+    const onFork = roll(state);
+    const stampBeforeBranch = onFork.G.lastRoll?.stateId;
+    const chosen = applyMove(onFork, {
+      type: EMoveType.CHOOSE_BRANCH,
+      playerId: 'a',
+      stateId: onFork.stateId,
+      cellId: onFork.G.branchChoices[0],
+    });
+
+    // Выбор ветки не бросает кубик — клеймо броска остаётся от ROLL,
+    // а не от свежей версии состояния после CHOOSE_BRANCH
+    expect(chosen.G.lastRoll?.stateId).toBe(stampBeforeBranch);
+    expect(chosen.stateId).not.toBe(stampBeforeBranch);
+  });
 });
 
 describe('развилки', () => {

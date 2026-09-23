@@ -69,6 +69,13 @@ const MIN_TEXT_PX = 12;
 // Предел растяжения промежутка между рядами
 const ROW_STRETCH = 1.5;
 const DRAW_MS = 1400;
+// Фишка не прыгает между клетками — плавный переход cx/cy. Раскладка не
+// меняет координаты клетки при ресайзе (масштаб — на viewBox), поэтому
+// переход срабатывает только на настоящем перемещении фишки, не на ресайзе.
+// Точный путь клетка за клеткой даёт вызывающий код (PartyStore, показ
+// броска, задача 1): он выставляет позицию игрока пошагово, а тут это
+// просто честно доезжает CSS-переходом
+const TOKEN_TRANSITION_MS = 150;
 
 // Ширина картинки известна до укладки: по ней считается растяжение рядов
 const viewWidthFor = (perRow: number): number => perRow * CELL_STEP + PAD_X * 2;
@@ -399,6 +406,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                 const x = cell.x + Math.cos(angle) * spread;
                 const y = cell.y + Math.sin(angle) * spread;
                 const isCurrent = playerId === state.ctx.currentPlayer;
+                const tokenTransition = isReducedMotion ? undefined : `cx ${TOKEN_TRANSITION_MS}ms linear, cy ${TOKEN_TRANSITION_MS}ms linear`;
 
                 return (
                   <g key={playerId}>
@@ -409,6 +417,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                       r={TOKEN_RADIUS}
                       stroke="var(--lucid-base)"
                       strokeWidth={3}
+                      style={{ transition: tokenTransition }}
                     />
 
                     {/* Чей ход: кольцо вокруг фишки, отделённое от неё зазором
@@ -423,6 +432,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                             r={TOKEN_RADIUS + 10}
                             stroke="var(--lucid-accent)"
                             strokeWidth={4}
+                            style={{ transition: tokenTransition }}
                           />
                         )
                       : null}

@@ -147,9 +147,15 @@ export const Component = observer(function LucidPartyPage() {
     }
 
     const EPhase = LucidShared.EPhase;
+    // Показ броска (PartyStore.reveal/walkSteps) уже озвучил и кубик, и шаги
+    // по клеткам сам, в реальном времени — тут они бы прозвучали только
+    // на коммите финального view, то есть с задержкой и без повтора на
+    // каждую клетку. revealedStateId отмечает такой view, чтобы не озвучить
+    // тот же переход дважды
+    const wasRevealed = partyStore.revealedStateId === snapshot.stateId;
     const queue: TLucidSound[] = [
-      snapshot.roll !== before.roll ? 'dice' : undefined,
-      snapshot.positions !== before.positions ? 'step' : undefined,
+      !wasRevealed && snapshot.roll !== before.roll ? 'dice' : undefined,
+      !wasRevealed && snapshot.positions !== before.positions ? 'step' : undefined,
       before.phase === EPhase.BRANCH && snapshot.phase !== EPhase.BRANCH ? 'branch' : undefined,
       snapshot.resource > before.resource ? 'resourceUp' : undefined,
       snapshot.resource < before.resource ? 'resourceDown' : undefined,
@@ -240,7 +246,9 @@ export const Component = observer(function LucidPartyPage() {
 
   // Ветка выбирается нажатием на само поле, и только тогда, когда выбор
   // действительно за тобой: иначе нажатие ушло бы в отказ сервера
-  const isMyBranch = state?.ctx.phase === LucidShared.EPhase.BRANCH && partyStore.isMyTurn;
+  const isMyBranch = state?.ctx.phase === LucidShared.EPhase.BRANCH
+    && partyStore.isMyTurn
+    && !partyStore.isRevealing;
 
   const handleSelectCell = (cellId: number): void => {
     if (!state) {

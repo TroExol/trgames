@@ -13,6 +13,7 @@ import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
+import { pluralizeSteps } from '@/lib/lucid/pluralize';
 import { Button } from '@/components/ui/Button';
 
 import { Outcome } from './Outcome';
@@ -77,6 +78,9 @@ export const Hud = observer(function Hud() {
   const current = state.G.players[state.ctx.currentPlayer];
   const isMyTurn = state.ctx.currentPlayer === state.you;
   const isSent = sentStateId === state.stateId;
+  // Пока кубик катится/показывает значение или фишка идёт по клеткам, view
+  // ещё не применён — нажатие ушло бы по устаревшему виду
+  const isRevealing = partyStore.isRevealing;
   const offline = new Set(view.members.filter(member => !member.isConnected).map(member => member.playerId));
   // Без единой роли (запасная партия, 4.7) колонки грида ниже ни на что не
   // тратятся — нечего обрезать. Тогда строке выгоднее обычный flex-wrap:
@@ -122,37 +126,32 @@ export const Hud = observer(function Hud() {
       return <p className="font-unbounded text-base">{winner ? `Побеждает ${winner.nickname}` : 'Партия окончена'}</p>;
     }
 
-    if (!isMyTurn) {
-      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
-    }
-
-    if (state.ctx.phase === EPhase.ROLL) {
-      return (
-        <Button
-          className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
-          disabled={isSent}
-          onClick={handleRoll}
-          style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
-          variant="outline"
-        >
-          Бросить кубик
-        </Button>
-      );
-    }
-
-    // Развилка читается геометрией, и основной способ — нажать на клетку прямо
-    // на поле. Кнопки дублируют его: пальцем в клетку попасть труднее, а
-    // телефон не получает урезанную игру
+    // Остаток шагов у развилки виден всем, не только ходящему: ждущие видят,
+    // сколько ещё до следующей клетки события (задача 2)
     if (state.ctx.phase === EPhase.BRANCH) {
+      const stepsLine = `Осталось ${pluralizeSteps(state.G.pendingSteps)}`;
+
+      if (!isMyTurn) {
+        return (
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>
+            <p className="text-xs" style={{ color: 'var(--lucid-muted)' }}>{stepsLine}</p>
+          </div>
+        );
+      }
+
+      // Развилка читается геометрией, и основной способ — нажать на клетку прямо
+      // на поле. Кнопки дублируют его: пальцем в клетку попасть труднее, а
+      // телефон не получает урезанную игру
       return (
         <div className="flex flex-col gap-1">
-          <p className="text-xs" style={{ color: 'var(--lucid-muted)' }}>Выбери, куда свернуть</p>
+          <p className="text-xs" style={{ color: 'var(--lucid-muted)' }}>{`Выбери, куда свернуть · ${stepsLine.toLowerCase()}`}</p>
 
           <div className="flex flex-wrap gap-2">
             {[...state.G.branchChoices].sort((first, second) => first - second).map((cellId, index) => (
               <Button
                 className="whitespace-normal border-2 bg-transparent hover:bg-transparent"
-                disabled={isSent}
+                disabled={isSent || isRevealing}
                 key={cellId}
                 onClick={() => handleChooseBranch(cellId)}
                 size="sm"
@@ -164,6 +163,24 @@ export const Hud = observer(function Hud() {
             ))}
           </div>
         </div>
+      );
+    }
+
+    if (!isMyTurn) {
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.ROLL) {
+      return (
+        <Button
+          className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
+          disabled={isSent || isRevealing}
+          onClick={handleRoll}
+          style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+          variant="outline"
+        >
+          Бросить кубик
+        </Button>
       );
     }
 
@@ -259,7 +276,10 @@ export const Hud = observer(function Hud() {
         <Ribbon />
 
         <div className="flex items-center gap-3">
-          <Die roll={state.G.lastRoll} />
+          <Die
+            roll={partyStore.dicePhase === 'idle' ? state.G.lastRoll : partyStore.pendingRoll}
+            spinning={partyStore.dicePhase === 'spinning'}
+          />
           <div className="min-w-0 grow">{renderAction()}</div>
         </div>
       </div>
@@ -269,7 +289,7 @@ export const Hud = observer(function Hud() {
           currentNickname={current.nickname}
           event={event}
           isMyTurn={isMyTurn}
-          isSent={isSent}
+          isSent={isSent || isRevealing}
           onChoose={handleChooseOption}
           onCollapse={() => setCollapsedCell(event.cellId)}
           resource={you.resource}

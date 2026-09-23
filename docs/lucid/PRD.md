@@ -92,6 +92,27 @@
 
 Условие: поле `POSITION`/`RESOURCE`, оператор `EQ/GT/GTE/LT/LTE`, значение 0…20, один уровень, `otherwise` необязателен (`shared/effect.ts:26-50`). Атомы исполняются подряд; условие не прошло — срабатывает `otherwise` (`core/effects.ts:6-15`).
 
+### Показ броска
+
+Сервер присылает состояние уже после броска — фишка сразу стоит на новой клетке. Клиент не применяет такое состояние мгновенно: `PartyStore.applyView` (`client/src/routes/games/lucid/PartyPage/stores/PartyStore.ts`) сравнивает `G.lastRoll` предыдущего показанного вида и нового пришедшего через `isNewRoll` (`stores/rollReveal.ts`) — по `TRoll.stateId` (версия состояния, в которой бросок случился, клеймит `applyMove` — `server/src/games/lucid/core/reducer.ts`, поле опционально в `TRoll`, `tools/shared/src/games/lucid/types/state.ts`), а не по значению: два броска подряд могут выпасть одинаковыми, и сравнение по числу ничего бы не показало. Клеймо ставится, только если `next.G.lastRoll` — новый объект (сравнение по ссылке с `state.G.lastRoll` до хода): `rollAndMove` и `resolveOption` всегда создают его заново, `takeBranch` и пропуск хода — не трогают, значит и не переклеймляют. Бросок без клейма (сделан до появления поля, партия поднята из базы) считается старым и не проигрывается: сравнение по ссылке заново показывало бы его на каждом обновлении — при пропуске хода фишка проходила по старому броску и возвращалась на место.
+
+Если новый бросок найден, `view` (то, что видят компоненты) не меняется сразу — стор ждёт: кубик 700 мс «катится» (`Die` перебирает грани локальным интервалом, `spinning=true`), затем 500 мс держит выпавшее значение (`pendingRoll`, `dicePhase='settled'`), и только потом применяет пришедшее состояние — позиции, карточка события, итог, лента читают `view`, и до этого момента видят предыдущее. `prefers-reduced-motion` сокращает это до одной паузы в 400 мс с сразу показанным числом, без перебора граней и без пошагового хода (`prefersReducedMotion()` в сторе). Первое состояние партии (подключение, восстановление после реконнекта — `view` до этого `undefined`) и ходы без нового броска (например `CHOOSE_BRANCH`) применяются сразу, без паузы.
+
+Пока идёт показ, `PartyStore.isRevealing` (`dicePhase !== 'idle'`) держит кнопки хода (`Hud`: «Бросить кубик», кнопки развилки, варианты события) и клик по клетке развилки на поле (`PartyPage/index.tsx`, `isMyBranch`) выключенными — нажатие по ещё не применённому виду не ушло бы никуда полезного.
+
+Несколько пришедших подряд состояний не копятся в очередь: `applyView` при новом вызове обрывает текущий показ (`clearTimers`) и досказывает историю от последнего реально показанного `view` к самому свежему пришедшему. Очередь честнее показала бы каждый бросок по отдельности, но при частых состояниях (автопилот на несколько игроков подряд) отставание только растёт; обрыв и пересчёт всегда возвращают к актуальному состоянию за фиксированное время — выбор в пользу этого варианта.
+
+После показа значения, если бросок — движение хода (`roll.threshold === undefined`, не проверка порога варианта), фишка идёт по клеткам пути пошагово: `walkPath` (`client/src/lib/lucid/walkPath.ts`, чистая функция, повторяет остановку `core/movement.ts::walkForward` на развилке или тупике) считает путь от текущей показанной позиции игрока на нужное число шагов, и стор выставляет позицию по одной клетке каждые 150 мс, поверх иначе неизменного `view` (карточка, итог и лента всё ещё ждут). Для всех прочих случаев — порогового броска варианта, эффекта `MOVE` (в том числе с минусом), `SWAP_WITH_FIRST` — путь неочевиден, и после паузы `view` применяется сразу целиком; плавность даёт не JS-анимация позиции, а CSS-переход `cx`/`cy` токена в `Board` (`TOKEN_TRANSITION_MS=150`, выключен при `prefers-reduced-motion`) — он же сглаживает и промежуточные шаги пошагового хода.
+
+Лента и звук синхронизированы с тем же показом, не с приходом сокет-события:
+
+- `appendRibbon` — отдельное сокет-событие, сервер шлёт его после `update-party` в одном и том же `broadcast()` (`server/src/games/lucid/init.ts:375-386`), но раньше, чем клиент применит новый `view`, потому что применение специально задержано. `PartyStore.appendRibbon` копит строки в `pendingRibbon`, пока `isRevealing`, и выпускает их в `ribbon` тем же вызовом, который коммитит `view` (мгновенно — если брос­ка не было, в конце показа — если был); при обгоне одним показом сразу нескольких пришедших состояний (см. «не копится в очередь» выше) строки всех пропущенных обновлений копятся и выходят разом с финальным `view`, тем же порядком, в котором пришли.
+- Звук 'dice' звучит в момент начала показа (`reveal()` — переход в `spinning`, а при `prefers-reduced-motion` сразу в `settled`), а не при финальном применении `view`: иначе бросок звучал бы на 1,2 с позже самого себя. Звук 'step' на пошаговом ходу звучит на каждый шаг из `walkSteps`, а не один раз на весь ход — `stateId` промежуточных `view` не меняется, и диф состояний в `PartyPage` (`services/LucidSoundService.ts` через `lucidSoundService`) его бы не увидел. Чтобы не озвучить тот же переход дважды, `PartyStore.revealedStateId` отмечает `stateId` view, для которого 'dice'/'step' уже отыграны по ходу показа — диф в `PartyPage` сверяется с этим полем и не кладёт их в очередь повторно; остальные звуки (`branch`/`resourceUp`/`resourceDown`/`event`/`win`) по-прежнему звучат диффом при коммите, показ их не трогает.
+
+### Остаток шагов у развилки
+
+Пока движение стоит на развилке и ждёт `CHOOSE_BRANCH`, `G.pendingSteps` — сколько шагов донашивается после выбора ветки. `Hud` (`renderAction`, фаза `BRANCH`) показывает это строкой «Осталось N шагов» с русским склонением (`pluralizeSteps`, `client/src/lib/lucid/pluralize.ts`, чистая функция с тестом) — видно всем игрокам, не только тому, чей ход: у ходящего строка идёт частью подсказки «Выбери, куда свернуть», у остальных — отдельной строкой под «Ходит {ник}».
+
 ### Победа, перекос в пользу отстающих, пропуск хода
 Победа — первый на `finishId`, проверка после броска, довыбора развилки и Выбора (`reducer.ts:36-48`).
 
@@ -332,7 +353,7 @@ CLI-флаги, переменные `.env`, порты — раздел 8.
 
 ### 6.2 Состояние
 
-`PartyStore` (MobX): `view?: TPartyView`; `ribbon` — последние ≤4 строки (`RIBBON_LIMIT=4`). `SocketService`: один `io(...,{query:{partyId,playerId,nickname}})`, слушает `updateParty`/`appendRibbon`/`showError`, эмитит `proposeTheme`/`declineTheme`/`startParty`/`makeMove`/`playAgain`; без оптимистичных ходов — кнопки блокируются `sentStateId===state.stateId` до нового `view`. `createParty` — короткоживущий сокет `/lobby`. `usePlayerId` (`hooks/usePlayerId.ts`) — id в `localStorage['trgames:player-id']`, не `useLocalStorage` (её сеттер падает до первого коммита), создаётся синхронно в `useState`.
+`PartyStore` (MobX): `view?: TPartyView` — не всегда последний пришедший от сервера вид: `applyView` задерживает применение состояния с новым броском на время показа кубика и пошагового хода, подробности — раздел 3 «Показ броска» (`isRevealing`, `dicePhase`, `pendingRoll`). `ribbon` — последние ≤4 строки (`RIBBON_LIMIT=4`). `SocketService`: один `io(...,{query:{partyId,playerId,nickname}})`, слушает `updateParty`/`appendRibbon`/`showError`, эмитит `proposeTheme`/`declineTheme`/`startParty`/`makeMove`/`playAgain`; без оптимистичных ходов — кнопки блокируются `sentStateId===state.stateId` до нового `view`. `createParty` — короткоживущий сокет `/lobby`. `usePlayerId` (`hooks/usePlayerId.ts`) — id в `localStorage['trgames:player-id']`, не `useLocalStorage` (её сеттер падает до первого коммита), создаётся синхронно в `useState`.
 
 `SettingsStore` — см. 6.7.
 
@@ -394,16 +415,16 @@ PartyPage (routes/games/lucid/PartyPage/index.tsx)
 
 ### 6.11 Тесты клиента
 
-Vitest, `client/vitest.config.mts`. Все тесты клиента сейчас — про lucid: `lib/lucid/colors.test.ts` (6), `regions.test.ts` (7), `theme.test.ts` (5), `trackLayout.test.ts` (14), `PartyPage/components/Board/linkPath.test.ts` (9), `stores/SettingsStore.test.ts` (6, миграция громкости и независимость каналов), `services/LucidSoundService.test.ts` (6, выключенный канал молчит, громкость 0 тоже молчит, музыка стартует/останавливается по переключателю, отклонённый браузером play() возобновляется по pointerdown).
+Vitest, `client/vitest.config.mts`. Все тесты клиента сейчас — про lucid: `lib/lucid/colors.test.ts` (6), `regions.test.ts` (7), `theme.test.ts` (5), `trackLayout.test.ts` (14), `lib/lucid/walkPath.test.ts` (5, путь пошагового хода — показ броска, раздел 3), `lib/lucid/pluralize.test.ts` (3, склонение «шаг» — остаток шагов у развилки, раздел 3), `PartyPage/components/Board/linkPath.test.ts` (9), `PartyPage/stores/rollReveal.test.ts` (5, отличение нового броска от старого), `stores/SettingsStore.test.ts` (6, миграция громкости и независимость каналов), `services/LucidSoundService.test.ts` (6, выключенный канал молчит, громкость 0 тоже молчит, музыка стартует/останавливается по переключателю, отклонённый браузером play() возобновляется по pointerdown).
 
-Прогон: 7 файлов, 73 теста — часть `it()` генерирует несколько тестов циклом по недружественным цветам. Один файл — `yarn workspace @trgames/client test --run <путь>`, `--run` обязателен, как на сервере. Вотч — `test:watch`.
+Прогон: 10 файлов, 86 тестов — часть `it()` генерирует несколько тестов циклом по недружественным цветам. Один файл — `yarn workspace @trgames/client test --run <путь>`, `--run` обязателен, как на сервере. Вотч — `test:watch`.
 
 ## 7. Качество: тесты, живая проверка, уроки
 
 | Воркспейс | Файлов | Тестов | Команда |
 |---|---|---|---|
-| `@trgames/server` (вся игра, включая соседний Cryptoz) | 201 | 1852 | `yarn workspace @trgames/server test` |
-| `@trgames/client` (весь — про lucid) | 7 | 73 | `yarn workspace @trgames/client test` |
+| `@trgames/server` (вся игра, включая соседний Cryptoz) | 201 | 1864 | `yarn workspace @trgames/server test` |
+| `@trgames/client` (весь — про lucid) | 10 | 86 | `yarn workspace @trgames/client test` |
 
 Один файл — `--run <путь>`: без него `--silent` в конце скрипта склеивается с путём, vitest падает на старте. Пример: `yarn workspace @trgames/server test --run src/games/lucid/room/Party.test.ts`. Вотч — `test:watch`.
 

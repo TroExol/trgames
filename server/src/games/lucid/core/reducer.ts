@@ -148,5 +148,18 @@ export const applyMove = (state: LucidShared.TState, move: TMove): LucidShared.T
 
   const next = HANDLERS[move.type](state, move);
 
-  return next ? { ...next, stateId: state.stateId + 1 } : state;
+  if (!next) {
+    return state;
+  }
+
+  const stateId = state.stateId + 1;
+  // Новый объект lastRoll — признак свежего броска этим ходом (rollAndMove
+  // и resolveOption всегда создают его заново, остальные пути ссылку не трогают).
+  // Клетка stateId в нём — то, по чему клиент отличает новый бросок от
+  // старого, даже если выпало то же самое число
+  const G = next.G.lastRoll && next.G.lastRoll !== state.G.lastRoll
+    ? { ...next.G, lastRoll: { ...next.G.lastRoll, stateId } }
+    : next.G;
+
+  return { ...next, G, stateId };
 };

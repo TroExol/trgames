@@ -1,10 +1,19 @@
 import type { LucidShared } from '@trgames/shared';
 
+import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
 interface TProps {
   roll?: LucidShared.TRoll;
+  // Кубик перебирает грани, пока настоящее значение ещё не должно быть видно
+  // (показ броска, docs/lucid/PRD.md — «Показ броска»). reduced-motion сюда
+  // не доходит вовсе — PartyStore для него сразу отдаёт 'settled'
+  spinning?: boolean;
 }
+
+// Перебор граней — чистая витрина, без всякой связи с настоящим броском:
+// смысл в движении, а не в правдоподобии чисел
+const SPIN_INTERVAL_MS = 80;
 
 // Точки грани по сетке 3×3. Цифра рядом дублирует их намеренно: на маленьком
 // экране точки читаются хуже
@@ -22,15 +31,30 @@ const PIP_RADIUS = 3;
 const PIP_ORIGIN = 9;
 const PIP_STEP = 9;
 
-export const Die = observer(function Die({ roll }: TProps) {
-  const pips = roll ? PIPS[roll.value] ?? [] : [];
+export const Die = observer(function Die({ roll, spinning }: TProps) {
+  // Грань во время перебора — своя, короткоживущая: не хотим гонять по кругу
+  // 1..6 предсказуемо, но и настоящее значение до конца показа не выдаём
+  const [spinFace, setSpinFace] = useState(1);
+
+  useEffect(() => {
+    if (!spinning) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => setSpinFace(face => (face % 6) + 1), SPIN_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, [spinning]);
+
+  const shownValue = spinning ? spinFace : roll?.value;
+  const pips = shownValue ? PIPS[shownValue] ?? [] : [];
 
   return (
     // Броска ещё не было — кубик погашен, но остаётся на месте: полоса не
     // должна перестраиваться от первого хода
-    <div className="flex shrink-0 items-center gap-2" style={{ opacity: roll ? 1 : 0.35 }}>
+    <div className="flex shrink-0 items-center gap-2" style={{ opacity: shownValue ? 1 : 0.35 }}>
       <svg height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} width={SIZE}>
-        <title>{roll ? `Выпало ${roll.value}` : 'Кубик ещё не бросали'}</title>
+        <title>{spinning ? 'Кубик катится' : roll ? `Выпало ${roll.value}` : 'Кубик ещё не бросали'}</title>
         <rect
           fill="none"
           height={SIZE - 4}
@@ -53,10 +77,12 @@ export const Die = observer(function Die({ roll }: TProps) {
       </svg>
 
       <div className="flex flex-col gap-0.5">
-        <span className="font-unbounded text-lg leading-none">{roll ? roll.value : '—'}</span>
+        <span className="font-unbounded text-lg leading-none">{shownValue ?? '—'}</span>
 
-        {/* Порог — часть решения, а не сноска: по нему игрок и выбирал вариант */}
-        {roll?.threshold !== undefined && (
+        {/* Порог — часть решения, а не сноска: по нему игрок и выбирал вариант.
+            Во время перебора граней порог не показываем — он ещё не относится
+            к тому, что видно на кубике */}
+        {!spinning && roll?.threshold !== undefined && (
           <span className="text-xs leading-none" style={{ color: 'var(--lucid-muted)' }}>
             {`порог ${roll.threshold} · ${roll.value >= roll.threshold ? 'взят' : 'не взят'}`}
           </span>
