@@ -55,14 +55,25 @@ export class LucidSoundService {
   private mood?: TLucidMood;
 
   constructor() {
-    // Музыка играет непрерывно, поэтому её громкость приходится обновлять
-    // на лету. Звуки действий громкость не хранят вовсе — спрашивают её
-    // в момент проигрывания
+    // Музыка играет непрерывно, поэтому её громкость и вкл/выкл приходится
+    // применять на лету. Звуки действий канал и громкость не хранят вовсе —
+    // спрашивают их в момент проигрывания
     autorun(() => {
-      const volume = this.volume * MUSIC_SHARE;
+      // Настройки читаются безусловно, до проверки this.music: иначе на первом
+      // прогоне (музыка ещё не создана) autorun не подпишется ни на что и
+      // больше никогда не перезапустится
+      const { enabled, volume } = settingsStore.general.music;
 
-      if (this.music) {
-        this.music.volume = volume;
+      if (!this.music) {
+        return;
+      }
+
+      this.music.volume = volume * MUSIC_SHARE;
+
+      if (enabled) {
+        void this.music.play().catch(() => undefined);
+      } else {
+        this.music.pause();
       }
     });
   }
@@ -75,14 +86,17 @@ export class LucidSoundService {
 
   public play = (name: TLucidSound): void => {
     // Проверка стоит здесь, а не в момент постановки звука в очередь: между
-    // постановкой и проигрыванием игрок успевает приглушить звук
-    if (this.volume === 0) {
+    // постановкой и проигрыванием игрок успевает выключить канал или
+    // приглушить громкость
+    const { enabled, volume } = settingsStore.general.ui;
+
+    if (!enabled || volume === 0) {
       return;
     }
 
     const sound = this.soundFor(name);
 
-    sound.volume = this.volume;
+    sound.volume = volume;
     // Звук мог не доиграть предыдущий раз: перематываем, иначе повтор
     // молча пропадёт
     sound.currentTime = 0;
@@ -98,12 +112,16 @@ export class LucidSoundService {
     this.mood = mood;
 
     const music = new Audio(MUSIC_URLS[mood]);
+    const { enabled, volume } = settingsStore.general.music;
 
     music.loop = true;
-    music.volume = this.volume * MUSIC_SHARE;
+    music.volume = volume * MUSIC_SHARE;
     this.music = music;
-    // Партия не ждёт загрузки: элемент играет, как только сможет
-    this.start(music);
+
+    if (enabled) {
+      // Партия не ждёт загрузки: элемент играет, как только сможет
+      this.start(music);
+    }
   };
 
   public stopMusic = (): void => {
@@ -114,10 +132,6 @@ export class LucidSoundService {
 
   // Своей копии громкости нет: копия рассинхронизировалась бы с настройками,
   // и звук зажил бы своей жизнью — приглушённый продолжал бы звучать
-  private get volume(): number {
-    return settingsStore.general.volume;
-  }
-
   private soundFor = (name: TLucidSound): HTMLAudioElement => {
     const existing = this.sounds.get(name);
 
@@ -128,7 +142,7 @@ export class LucidSoundService {
     const sound = new Audio(SOUND_URLS[name]);
 
     sound.preload = 'auto';
-    sound.volume = this.volume;
+    sound.volume = settingsStore.general.ui.volume;
     this.sounds.set(name, sound);
 
     return sound;
@@ -143,9 +157,13 @@ export class LucidSoundService {
       document.addEventListener(
         'pointerdown',
         () => {
-          // Пока звук ждал нажатия, игрок мог его приглушить — и этим самым
-          // нажатием. Музыке молчать не нужно: её громкость уже ноль
-          if (element !== this.music && this.volume === 0) {
+          // Пока звук ждал нажатия, игрок мог выключить канал или
+          // приглушить его этим самым нажатием
+          const { enabled, volume } = element === this.music
+            ? settingsStore.general.music
+            : settingsStore.general.ui;
+
+          if (!enabled || volume === 0) {
             return;
           }
 

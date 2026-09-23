@@ -353,11 +353,11 @@ PartyPage (routes/games/lucid/PartyPage/index.tsx)
 
 `services/LucidSoundService.ts`. Звуки — Kenney.nl CC0, `assets/games/lucid/sounds/`, отбор по спектральному центру тяжести на пике, не по названию файла (порог ~1 кГц): событие 258, шаг 455, ресурс +/− 485/740, победа 655, кубик 766, развилка 1059 Гц. Ровно эти семь, грузятся разом при первом состоянии партии.
 
-Громкость не хранится копией — читается из `settingsStore.general.volume` при проигрывании, у музыки её ведёт `autorun`. Музыка — 2 дорожки (`light`/`dark`, `assets/games/lucid/music/`, 4.7/4.3 МБ) по `mood`, лениво, одна, `volume×0.4`; автовоспроизведение снимается первым `pointerdown`. Сворачивание карточки события звука не издаёт.
+Два независимых канала — музыка и звуки интерфейса, каждый со своим переключателем и громкостью (`settingsStore.general.music`/`general.ui`). Копии не хранятся — читаются из стора в момент проигрывания, у музыки переключатель и громкость ведёт `autorun` (выключенный канал не просто приглушается, а ставится на паузу — если бы `autorun` сначала проверял `this.music` и лишь потом читал настройки, при первом запуске музыки ещё не было и реакция не подписалась бы ни на что; настройки читаются безусловно, до проверки). Музыка — 2 дорожки (`light`/`dark`, `assets/games/lucid/music/`, 4.7/4.3 МБ) по `mood`, лениво, одна, `volume×0.4`; автовоспроизведение снимается первым `pointerdown`. Сворачивание карточки события звука не издаёт.
 
 ### 6.7 Настройки
 
-`stores/SettingsStore.ts`, `localStorage['trgames:client-settings']`. У lucid нет своего раздела — общий `general: {volume}` (0.35) на все игры, регулятор на `Hud`.
+`stores/SettingsStore.ts`, `localStorage['trgames:client-settings']`. Звук lucid настраивается в модалке настроек сайта (`components/Header/SettingsDialog`), не в HUD — на экране партии регулятора громкости нет. Общий `general: {music: {enabled, volume}, ui: {enabled, volume}}` (0.35 у обоих) на все игры: две независимые пары переключатель+громкость — музыка и звуки интерфейса. Модалка показывает вкладку «Lucid» с этими двумя каналами только на страницах lucid (`gameName === 'lucid'`), как Cryptoz показывает свою вкладку только на своих страницах. Старый формат (одна общая `general.volume`) при первом чтении мигрирует в обе громкости; поле после миграции не пишется.
 
 ### 6.8 Телефон
 
@@ -375,16 +375,16 @@ PartyPage (routes/games/lucid/PartyPage/index.tsx)
 
 ### 6.11 Тесты клиента
 
-Vitest, `client/vitest.config.mts`. Все тесты клиента сейчас — про lucid: `lib/lucid/colors.test.ts` (6), `regions.test.ts` (7), `theme.test.ts` (5), `trackLayout.test.ts` (14), `PartyPage/components/Board/linkPath.test.ts` (9).
+Vitest, `client/vitest.config.mts`. Все тесты клиента сейчас — про lucid: `lib/lucid/colors.test.ts` (6), `regions.test.ts` (7), `theme.test.ts` (5), `trackLayout.test.ts` (14), `PartyPage/components/Board/linkPath.test.ts` (9), `stores/SettingsStore.test.ts` (6, миграция громкости и независимость каналов), `services/LucidSoundService.test.ts` (5, выключенный канал молчит, громкость 0 тоже молчит, музыка стартует/останавливается по переключателю).
 
-Прогон: 5 файлов, 61 тест — часть `it()` генерирует несколько тестов циклом по недружественным цветам. Один файл — `yarn workspace @trgames/client test --run <путь>`, `--run` обязателен, как на сервере. Вотч — `test:watch`.
+Прогон: 7 файлов, 72 теста — часть `it()` генерирует несколько тестов циклом по недружественным цветам. Один файл — `yarn workspace @trgames/client test --run <путь>`, `--run` обязателен, как на сервере. Вотч — `test:watch`.
 
 ## 7. Качество: тесты, живая проверка, уроки
 
 | Воркспейс | Файлов | Тестов | Команда |
 |---|---|---|---|
 | `@trgames/server` (вся игра, включая соседний Cryptoz) | 200 | 1839 | `yarn workspace @trgames/server test` |
-| `@trgames/client` (весь — про lucid) | 5 | 61 | `yarn workspace @trgames/client test` |
+| `@trgames/client` (весь — про lucid) | 7 | 72 | `yarn workspace @trgames/client test` |
 
 Один файл — `--run <путь>`: без него `--silent` в конце скрипта склеивается с путём, vitest падает на старте. Пример: `yarn workspace @trgames/server test --run src/games/lucid/room/Party.test.ts`. Вотч — `test:watch`.
 

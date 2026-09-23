@@ -2,16 +2,13 @@ import type { ReactNode } from 'react';
 
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Volume2, VolumeX } from 'lucide-react';
 import { LucidShared } from '@trgames/shared';
 
-import { settingsStore } from '@/stores';
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
-import { Slider } from '@/components/ui/Slider';
 import { Button } from '@/components/ui/Button';
 
 import { Die } from './components/Die';
@@ -26,13 +23,6 @@ const EPhase = LucidShared.EPhase;
 // направлением, а не номером: номер клетки человеку ничего не говорит
 const BRANCH_LABELS = ['Верхняя тропа', 'Нижняя тропа'];
 
-// Ползунок красится переменными темы: цвета сайта на сгенерированной палитре
-// могут совпасть с фоном и пропасть
-const SLIDER_CLASS = 'w-20 shrink-0 [&>span:first-child]:bg-[color:var(--lucid-muted)] '
-  + '[&>span:first-child>span]:bg-[color:var(--lucid-accent)] '
-  + '[&>span:last-child>span]:border-[color:var(--lucid-accent)] '
-  + '[&>span:last-child>span]:bg-[color:var(--lucid-base)]';
-
 // Интерфейс лежит поверх поля узкими полосами сверху и снизу: поле занимает
 // экран целиком и остаётся героем экрана, полосы молчат
 export const Hud = observer(function Hud() {
@@ -42,8 +32,6 @@ export const Hud = observer(function Hud() {
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
   const [collapsedCell, setCollapsedCell] = useState<number>();
-  // Прежняя громкость, чтобы значок вернул её обратно
-  const [mutedVolume, setMutedVolume] = useState<number>();
   const { state, view } = partyStore;
 
   if (!state || !view) {
@@ -60,7 +48,6 @@ export const Hud = observer(function Hud() {
   // тратятся — нечего обрезать. Тогда строке выгоднее обычный flex-wrap:
   // он пакует короткие ники по факту их ширины, а не по минимуму колонки
   const hasAnyRole = state.G.order.some(playerId => Boolean(state.G.players[playerId].role));
-  const { volume } = settingsStore.general;
   // Событие берётся по клетке ходящего игрока: его читают все, а не только тот,
   // чей ход
   const event = state.ctx.phase === EPhase.CHOICE ? state.G.events[current.position] : undefined;
@@ -90,17 +77,6 @@ export const Hud = observer(function Hud() {
       stateId: state.stateId,
       type: EMoveType.CHOOSE_OPTION,
     });
-  };
-
-  const handleToggleMute = (): void => {
-    if (volume > 0) {
-      setMutedVolume(volume);
-      settingsStore.setVolume(0);
-
-      return;
-    }
-
-    settingsStore.setVolume(mutedVolume ?? 0.35);
   };
 
   // Невозможное нельзя нажать: не твой ход — кнопок нет вовсе. Тогда отказ
@@ -242,34 +218,7 @@ export const Hud = observer(function Hud() {
           />
         )}
 
-        {/* Регулятор стоит у ленты, а не под кнопкой хода: на телефоне строка
-            с кубиком и действием и так занята целиком */}
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0 grow"><Ribbon /></div>
-
-          <div className="flex shrink-0 items-center gap-1">
-            <Button
-              aria-label={volume > 0 ? 'Выключить звук' : 'Включить звук'}
-              className="size-7 hover:bg-transparent"
-              onClick={handleToggleMute}
-              size="icon"
-              style={{ color: 'var(--lucid-text)' }}
-              variant="ghost"
-            >
-              {volume > 0 ? <Volume2 /> : <VolumeX />}
-            </Button>
-
-            <Slider
-              aria-label="Громкость"
-              className={SLIDER_CLASS}
-              max={1}
-              min={0}
-              onValueChange={([value]) => settingsStore.setVolume(value)}
-              step={0.05}
-              value={[volume]}
-            />
-          </div>
-        </div>
+        <Ribbon />
 
         <div className="flex items-center gap-3">
           <Die roll={state.G.lastRoll} />
