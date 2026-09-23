@@ -71,7 +71,10 @@ export class LucidSoundService {
       this.music.volume = volume * MUSIC_SHARE;
 
       if (enabled) {
-        void this.music.play().catch(() => undefined);
+        // Тот же путь, что и у первого запуска: если браузер откажет
+        // в автовоспроизведении, музыка всё равно возобновится по pointerdown,
+        // а не замолчит до следующего изменения настроек
+        this.start(this.music, 'music');
       } else {
         this.music.pause();
       }
@@ -100,7 +103,7 @@ export class LucidSoundService {
     // Звук мог не доиграть предыдущий раз: перематываем, иначе повтор
     // молча пропадёт
     sound.currentTime = 0;
-    this.start(sound);
+    this.start(sound, 'ui');
   };
 
   public playMusic = (mood: TLucidMood): void => {
@@ -120,7 +123,7 @@ export class LucidSoundService {
 
     if (enabled) {
       // Партия не ждёт загрузки: элемент играет, как только сможет
-      this.start(music);
+      this.start(music, 'music');
     }
   };
 
@@ -151,17 +154,17 @@ export class LucidSoundService {
   // Браузер не пускает звук до первого действия человека. Вход в партию всё
   // равно начинается с нажатий, но после перезагрузки страницы посреди партии
   // нажатия ещё не было — тогда ждём ближайшего. Не удалось и так: молчим,
-  // партия важнее звука
-  private start = (element: HTMLAudioElement): void => {
+  // партия важнее звука. Канал передаётся явно, а не определяется сравнением
+  // с this.music: к моменту pointerdown музыку могли уже переключить на другой
+  // трек, и сравнение проверило бы настройки не того канала
+  private start = (element: HTMLAudioElement, channel: 'music' | 'ui'): void => {
     element.play().catch(() => {
       document.addEventListener(
         'pointerdown',
         () => {
           // Пока звук ждал нажатия, игрок мог выключить канал или
           // приглушить его этим самым нажатием
-          const { enabled, volume } = element === this.music
-            ? settingsStore.general.music
-            : settingsStore.general.ui;
+          const { enabled, volume } = settingsStore.general[channel];
 
           if (!enabled || volume === 0) {
             return;

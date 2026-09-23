@@ -375,16 +375,16 @@ PartyPage (routes/games/lucid/PartyPage/index.tsx)
 
 ### 6.11 Тесты клиента
 
-Vitest, `client/vitest.config.mts`. Все тесты клиента сейчас — про lucid: `lib/lucid/colors.test.ts` (6), `regions.test.ts` (7), `theme.test.ts` (5), `trackLayout.test.ts` (14), `PartyPage/components/Board/linkPath.test.ts` (9), `stores/SettingsStore.test.ts` (6, миграция громкости и независимость каналов), `services/LucidSoundService.test.ts` (5, выключенный канал молчит, громкость 0 тоже молчит, музыка стартует/останавливается по переключателю).
+Vitest, `client/vitest.config.mts`. Все тесты клиента сейчас — про lucid: `lib/lucid/colors.test.ts` (6), `regions.test.ts` (7), `theme.test.ts` (5), `trackLayout.test.ts` (14), `PartyPage/components/Board/linkPath.test.ts` (9), `stores/SettingsStore.test.ts` (6, миграция громкости и независимость каналов), `services/LucidSoundService.test.ts` (6, выключенный канал молчит, громкость 0 тоже молчит, музыка стартует/останавливается по переключателю, отклонённый браузером play() возобновляется по pointerdown).
 
-Прогон: 7 файлов, 72 теста — часть `it()` генерирует несколько тестов циклом по недружественным цветам. Один файл — `yarn workspace @trgames/client test --run <путь>`, `--run` обязателен, как на сервере. Вотч — `test:watch`.
+Прогон: 7 файлов, 73 теста — часть `it()` генерирует несколько тестов циклом по недружественным цветам. Один файл — `yarn workspace @trgames/client test --run <путь>`, `--run` обязателен, как на сервере. Вотч — `test:watch`.
 
 ## 7. Качество: тесты, живая проверка, уроки
 
 | Воркспейс | Файлов | Тестов | Команда |
 |---|---|---|---|
 | `@trgames/server` (вся игра, включая соседний Cryptoz) | 200 | 1839 | `yarn workspace @trgames/server test` |
-| `@trgames/client` (весь — про lucid) | 7 | 72 | `yarn workspace @trgames/client test` |
+| `@trgames/client` (весь — про lucid) | 7 | 73 | `yarn workspace @trgames/client test` |
 
 Один файл — `--run <путь>`: без него `--silent` в конце скрипта склеивается с путём, vitest падает на старте. Пример: `yarn workspace @trgames/server test --run src/games/lucid/room/Party.test.ts`. Вотч — `test:watch`.
 

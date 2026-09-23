@@ -33,6 +33,27 @@ class FakeAudio {
   }
 }
 
+// Фейковый document: окружение тестов — node, DOM недоступен. Нужен только
+// pointerdown, на который LucidSoundService вешает повторную попытку play()
+class FakeDocument {
+  private listeners: Array<() => void> = [];
+
+  public addEventListener(type: string, listener: () => void): void {
+    if (type === 'pointerdown') {
+      this.listeners.push(listener);
+    }
+  }
+
+  public removeEventListener(): void {}
+
+  public dispatchPointerdown(): void {
+    const listeners = this.listeners;
+
+    this.listeners = [];
+    listeners.forEach(listener => listener());
+  }
+}
+
 describe('LucidSoundService: каналы звука', () => {
   beforeEach(() => {
     vi.stubGlobal('Audio', FakeAudio);
@@ -93,6 +114,46 @@ describe('LucidSoundService: каналы звука', () => {
 
     settingsStore.setMusicEnabled(true);
     await Promise.resolve();
+
+    expect(music?.playing).toBe(true);
+  });
+
+  it('отклонённый браузером play() не молчит навсегда — музыка стартует по pointerdown', async () => {
+    const fakeDocument = new FakeDocument();
+
+    vi.stubGlobal('document', fakeDocument);
+
+    // Первый play() имитирует отказ браузера в автовоспроизведении, дальше
+    // ведёт себя как обычно
+    let rejectNextPlay = true;
+
+    class AutoplayBlockedAudio extends FakeAudio {
+      public play(): Promise<void> {
+        if (rejectNextPlay) {
+          rejectNextPlay = false;
+
+          return Promise.reject(new Error('autoplay blocked'));
+        }
+
+        return super.play();
+      }
+    }
+
+    vi.stubGlobal('Audio', AutoplayBlockedAudio);
+
+    const service = new LucidSoundService();
+
+    service.playMusic('light');
+
+    const music = (service as unknown as { music?: FakeAudio }).music;
+
+    // Дать catch() отработать и повесить слушатель pointerdown
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(music?.playing).toBe(false);
+
+    fakeDocument.dispatchPointerdown();
 
     expect(music?.playing).toBe(true);
   });
