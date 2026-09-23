@@ -72,4 +72,36 @@ describe('applyEffect', () => {
 
     expect(G.players.a.resource).toBe(7);
   });
+
+  it('на каждый применённый атом — строка в ленте с реальным ником цели', () => {
+    const G = applyEffect(twoPlayers(), 'a', { atoms: [gain(2), gain(3)] });
+
+    expect(G.log).toEqual(['Аня: монеты +2', 'Аня: монеты +3']);
+  });
+
+  it('невыполненное условие без запасной ветки пишет в ленту «ничего не произошло»', () => {
+    const G = applyEffect(twoPlayers(), 'a', { condition: richCondition, atoms: [gain(1)] });
+
+    expect(G.log).toEqual(['ничего не произошло']);
+  });
+
+  it('цель «все» в ленте — одной строкой «все: …», без перечисления ников', () => {
+    const G = applyEffect(twoPlayers(), 'a', {
+      atoms: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.ALL, value: 1 }],
+    });
+
+    expect(G.log).toEqual(['все: монеты +1']);
+  });
+
+  it('пустая цель FIRST/LAST (ничья) пишет в ленту честно', () => {
+    const players = twoPlayers();
+    // Позиции равны — ничья за первое место, крайним не считается никто
+    players.players.b.position = players.players.a.position;
+
+    const G = applyEffect(players, 'a', {
+      atoms: [{ kind: LucidShared.EAtomKind.MOVE, target: LucidShared.ETarget.FIRST, value: 1 }],
+    });
+
+    expect(G.log).toEqual(['лидера нет — ничья, никого не задело']);
+  });
 });

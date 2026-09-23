@@ -1,3 +1,4 @@
+export * from './describe';
 export * from './types/content';
 export * from './types/effect';
 export * from './types/move';
