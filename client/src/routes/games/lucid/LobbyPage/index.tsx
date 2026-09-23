@@ -28,12 +28,11 @@ export const Component = observer(function LucidLobbyPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-4">
-      <div className="flex flex-col gap-2 text-center">
+      <div className="text-center">
         <h1 className="font-unbounded text-4xl">lucid</h1>
-        <p className="font-golos">Партию придумывает нейросеть, играть — по ссылке на неё</p>
       </div>
       <Button disabled={isCreating} onClick={handleCreateParty}>
-        {isCreating ? 'Создаём партию…' : 'Создать партию'}
+        {isCreating ? 'Создаём партию…' : 'Создать нейропартию'}
       </Button>
     </main>
   );

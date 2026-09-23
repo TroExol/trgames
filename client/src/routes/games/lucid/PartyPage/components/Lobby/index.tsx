@@ -103,7 +103,7 @@ export const Lobby = observer(function Lobby() {
                 disabled={view.members.length < MIN_MEMBERS_TO_START}
                 onClick={socketService.startParty}
               >
-                Начать партию — состав закроется, генерация займёт одну-две минуты
+                Начать партию — генерация займёт одну-две минуты
               </Button>
             )
           : (
