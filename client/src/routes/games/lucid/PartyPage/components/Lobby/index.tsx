@@ -6,6 +6,7 @@ import { observer } from 'mobx-react-lite';
 
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
+import { useNickname } from '@/hooks/useNickname';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
@@ -21,6 +22,7 @@ const MIN_MEMBERS_TO_START = 2;
 // и есть сигнал готовности
 export const Lobby = observer(function Lobby() {
   const [themeDraft, setThemeDraft] = useState('');
+  const [, setNickname] = useNickname();
   const { view } = partyStore;
 
   if (!view) {
@@ -54,7 +56,6 @@ export const Lobby = observer(function Lobby() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="font-golos text-sm text-muted-foreground">Партия раздаётся этой ссылкой</p>
         <Input readOnly value={inviteLink} />
         <Button onClick={handleCopyLink} type="button" variant="outline">
           Скопировать ссылку
@@ -66,6 +67,12 @@ export const Lobby = observer(function Lobby() {
           <MemberRow isOwner={member.playerId === view.ownerId} key={member.playerId} member={member} />
         ))}
       </ul>
+
+      {/* Сброс ника возвращает к форме входа; повторный вход с тем же playerId
+          на сервере (room/Party.ts, join) только переименовывает, место и ответ про тему сохраняются */}
+      <Button className="self-start" onClick={() => setNickname('')} size="sm" type="button" variant="ghost">
+        Сменить ник
+      </Button>
 
       {you && !you.hasAnswered && (
         <form className="flex flex-col gap-3" onSubmit={handleSubmitTheme}>
