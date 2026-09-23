@@ -1,5 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
+import type { TCellPremise } from '@/games/lucid/generation/premises';
+
 import {
   ATOM_RANGES,
   COST_RANGE,
@@ -9,10 +11,10 @@ import {
 } from '@/games/lucid/generation/schema';
 
 const ATOM_DESCRIPTIONS: Record<LucidShared.EAtomKind, string> = {
-  [LucidShared.EAtomKind.MOVE]: 'сдвинуть по треку на value клеток, минус — назад',
-  [LucidShared.EAtomKind.RESOURCE]: 'изменить запас ресурса на value',
-  [LucidShared.EAtomKind.SKIP_TURN]: 'заставить пропустить value ходов',
-  [LucidShared.EAtomKind.SWAP_WITH_FIRST]: 'поменяться местами с лидером, value всегда 0',
+  [LucidShared.EAtomKind.MOVE]: 'сдвинуть по треку на value клеток, минус — назад (value не 0)',
+  [LucidShared.EAtomKind.RESOURCE]: 'изменить запас ресурса на value (value не 0)',
+  [LucidShared.EAtomKind.SKIP_TURN]: 'заставить пропустить value ходов (value не 0)',
+  [LucidShared.EAtomKind.SWAP_WITH_FIRST]: 'поменяться местами с лидером, target всегда SELF, value всегда 0',
 };
 
 const TARGET_DESCRIPTIONS: Record<LucidShared.ETarget, string> = {
@@ -35,6 +37,26 @@ const describeAtoms = (): string => {
 const describeTargets = (): string => {
   return Object.entries(TARGET_DESCRIPTIONS).map(([key, text]) => `- ${key}: ${text}`).join('\n');
 };
+
+export interface TEventCellBrief extends TCellPremise {
+  region: string;
+}
+
+const REQUIREMENT_BY_TARGET: Record<LucidShared.ETarget.FIRST | LucidShared.ETarget.LAST, string> = {
+  [LucidShared.ETarget.FIRST]: ' (хотя бы один вариант с атомом на FIRST — задень лидера)',
+  [LucidShared.ETarget.LAST]: ' (хотя бы один вариант с атомом на LAST — помоги отстающему)',
+};
+
+// Строка на клетку вместо голого номера: край для атмосферы места, завязка —
+// направление события, не готовый заголовок. Требование к механике — только
+// у двух завязок, «удар по лидеру» / «помощь отстающему» (assignPremises)
+const describeCells = (cells: TEventCellBrief[]): string => cells
+  .map(cell => {
+    const requirement = cell.target ? REQUIREMENT_BY_TARGET[cell.target] : '';
+
+    return `- клетка ${cell.cellId} — край «${cell.region}», завязка: ${cell.premise}${requirement}`;
+  })
+  .join('\n');
 
 // Пустая строка, если ролей нет вовсе: старые миры и сбой генерации ролей
 // не должны оставлять в промпте пустой абзац
@@ -84,15 +106,20 @@ roles — короткая роль в мире партии для каждог
 export const buildEventsPrompt = (
   themeName: string,
   resourceName: string,
-  cellIds: number[],
+  cells: TEventCellBrief[],
   roles: LucidShared.TRole[],
 ): string => `
 Ты пишешь события для клеток настольной игры-бродилки.
 
 Мир: ${themeName}. Ресурс называется «${resourceName}».
 ${describeRoles(roles)}
-Количество событий: ${cellIds.length}. Номера клеток, по одному событию на каждую: ${cellIds.join(', ')}.
-Других номеров клеток не существует, выдумывать их нельзя.
+Количество событий: ${cells.length}. Клетки, по одному событию на каждую (других
+номеров не существует, выдумывать их нельзя):
+${describeCells(cells)}
+
+Край — атмосфера места. Завязка — направление события, не готовый заголовок:
+не повторяй её название дословно в title или тексте, придумай свою сцену
+в этом направлении.
 
 Каждое событие — это текст и до трёх вариантов действия. Вариант либо
 гарантированный, либо рискованный. У рискованного есть threshold — значение
@@ -100,33 +127,54 @@ ${describeRoles(roles)}
 вариант удаётся. У гарантированного может быть cost — цена в ресурсе от
 ${COST_RANGE.min} до ${COST_RANGE.max}.
 
-Примерно у трети событий один из вариантов должен стоить ресурса: поле cost
-и никакого threshold. Ресурс игрок копит весь вечер ради выбора «заплатить
+Только у трети событий один из вариантов должен стоить ресурса (поле cost,
+без threshold) — у остальных двух третей cost не ставь вовсе, как во втором
+событии примера ниже. Ресурс игрок копит весь вечер ради выбора «заплатить
 и пройти наверняка или рискнуть кубиком»; если платить негде, запас
-превращается в бесполезное число, а половина игры пропадает. Платный вариант
-ставь рядом с рискованным, тогда выбор настоящий.
+превращается в бесполезное число, а половина игры пропадает. Если платный
+вариант всё же есть — ставь его рядом с рискованным, тогда выбор настоящий.
 
-Ни один вариант не должен быть очевидно лучше остальных. Платный даёт
-примерно на единицу больше, чем стоит, и никогда не приносит ресурса больше
-цены. Рискованный при удаче даёт больше платного, а провал у него мягкий:
-шаг назад или единица ресурса; пропуск хода — только если удача вероятна
-(threshold не выше 3) или награда крупная. Игрок не видит последствий
-заранее и угадывает их по тексту, поэтому текст варианта честно намекает,
-куда он ведёт, но без чисел.
+Правила баланса вариантов, коротко:
+- ни один вариант не должен быть очевидно лучше остальных;
+- платный даёт примерно на единицу больше, чем стоит, и никогда не приносит
+  ресурса больше цены;
+- рискованный при удаче даёт больше платного, а провал у него мягкий: шаг
+  назад или единица ресурса;
+- пропуск хода — только если удача вероятна (threshold не выше 3) или
+  награда крупная;
+- текст варианта честно намекает, куда он ведёт, но без чисел — игрок
+  угадывает последствия по тексту, не видит их заранее.
 
-Механику можно выражать ТОЛЬКО такими атомами:
+Эти правила примерные — вероятности и средние по ним не считай, не
+перепроверяй каждое событие цифрами.
+
+Механику можно выражать ТОЛЬКО такими атомами, value нулём быть не может
+(кроме SWAP_WITH_FIRST, там он всегда 0):
 ${describeAtoms()}
 
 Цель атома — одно из:
 ${describeTargets()}
 
-Чаще делай события, которые мешают ближайшему к финишу и помогают отстающему:
-без этого лидер побеждает скучно.
+У клеток с пометкой FIRST/LAST в скобках — обязательное требование к
+механике, оно и держит перекос в пользу отстающих: без этого лидер
+побеждает скучно.
+
+Пример ниже показывает только формат JSON, не структуру события: число
+вариантов (1–3) и их набор (риск/платный/бесплатный) свои у каждого
+события — копировать структуру примера как шаблон для всех событий
+нельзя, иначе платный вариант окажется у каждого события вместо трети.
 
 Верни JSON строго такого вида, без пояснений:
-{"events":[{"cellId":1,"title":"...","text":"...","options":[
-  {"text":"...","threshold":4,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]},
-   "failure":{"atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}},
-  {"text":"...","cost":2,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
-]}]}
+{"events":[
+  {"cellId":1,"title":"...","text":"...","options":[
+    {"text":"...","threshold":4,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]},
+     "failure":{"atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}},
+    {"text":"...","cost":2,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
+  ]},
+  {"cellId":2,"title":"...","text":"...","options":[
+    {"text":"...","threshold":3,"success":{"atoms":[{"kind":"RESOURCE","target":"SELF","value":2}]},
+     "failure":{"atoms":[{"kind":"MOVE","target":"SELF","value":-1}]}},
+    {"text":"...","success":{"atoms":[{"kind":"MOVE","target":"SELF","value":1}]}}
+  ]}
+]}
 `.trim();

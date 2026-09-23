@@ -1,8 +1,7 @@
-import type { LucidShared } from '@trgames/shared';
-
 import { useMediaQuery, useResizeObserver } from 'usehooks-ts';
 import { useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
+import { LucidShared } from '@trgames/shared';
 
 import type { TMood } from '@/lib/lucid/colors';
 
@@ -14,7 +13,7 @@ import {
   ROW_STEP,
 } from '@/lib/lucid/trackLayout';
 import { hashString } from '@/lib/lucid/theme';
-import { regionForDepth, resolveRegions } from '@/lib/lucid/regions';
+import { resolveRegions } from '@/lib/lucid/regions';
 import { deriveRoles } from '@/lib/lucid/colors';
 
 import type { TSpot } from './linkPath';
@@ -106,7 +105,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
       - ROW_STEP - PAD_TOP - PAD_BOTTOM) / Math.max(rows - 1, 1)),
   );
   const layout = layoutTrack(track, perRow, hashString(theme.name), rowStep);
-  const regionAt = (depth: number) => regionForDepth(regions, depth, layout.maxDepth);
+  const regionAt = (depth: number) => LucidShared.regionForDepth(regions, depth, layout.maxDepth);
 
   const viewWidth = layout.width + PAD_X * 2;
   const viewHeight = layout.height + PAD_TOP + PAD_BOTTOM;

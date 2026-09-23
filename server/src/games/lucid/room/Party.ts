@@ -41,6 +41,7 @@ interface TGenerateParams {
   theme: string;
   nicknames: string[];
   eventCellIds: number[];
+  track: LucidShared.TTrack;
   seed: string;
   onWorld: (theme: LucidShared.TTheme) => void;
 }
@@ -203,6 +204,7 @@ export class Party {
       theme: this.drawTheme(),
       nicknames: players.map(player => player.nickname),
       eventCellIds: eventCellIds(track),
+      track,
       seed: this.uuid,
       onWorld: theme => {
         this.theme = theme;

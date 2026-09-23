@@ -1,4 +1,4 @@
-import type { LucidShared } from '@trgames/shared';
+import { LucidShared } from '@trgames/shared';
 
 // Условные единицы: реальный размер задаётся масштабом SVG
 export const CELL_STEP = 132;
@@ -70,29 +70,10 @@ const meander = (depth: number, seed: number): number => {
   return Math.sin(depth * frequency + phase) * MEANDER_AMPLITUDE;
 };
 
-const depthsFromStart = (track: LucidShared.TTrack): Record<number, number> => {
-  const cellById = new Map(track.cells.map(cell => [cell.id, cell]));
-  const depths: Record<number, number> = { [track.startId]: 0 };
-  const queue = [track.startId];
-
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-
-    cellById.get(id)?.next.forEach(nextId => {
-      if (depths[nextId] === undefined) {
-        depths[nextId] = depths[id] + 1;
-        queue.push(nextId);
-      }
-    });
-  }
-
-  return depths;
-};
-
 // Сколько позиций по длине пути: клеток больше, потому что пряди развилки
 // делят одну глубину. Нужно до укладки — по этому числу подбирается ряд
 export const depthCount = (track: LucidShared.TTrack): number => {
-  return Math.max(...Object.values(depthsFromStart(track))) + 1;
+  return Math.max(...Object.values(LucidShared.trackDepths(track))) + 1;
 };
 
 // Наклон пути в клетке: по соседям, а не по одной из связей. У развилки
@@ -126,7 +107,7 @@ export const layoutTrack = (
   seed = 0,
   rowStep = ROW_STEP,
 ): TTrackLayout => {
-  const depths = depthsFromStart(track);
+  const depths = LucidShared.trackDepths(track);
   const byDepth = new Map<number, LucidShared.TCell[]>();
 
   track.cells.forEach(cell => {

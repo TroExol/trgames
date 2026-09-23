@@ -7,6 +7,7 @@ import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model
 
 import { eventBatchSchema, worldSchema } from '@/games/lucid/generation/schema';
 import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
+import { assignPremises, assignRegionNames } from '@/games/lucid/generation/premises';
 import { MODEL_ID } from '@/games/lucid/generation/model';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
 
@@ -52,6 +53,9 @@ interface TGenerateContentParams {
   nicknames: string[];
   // Номера реальных клеток событий: ответ модели сверяется с ними
   eventCellIds: number[];
+  // Нужен для края клетки (глубина пути, regionForDepth) — тот же расчёт,
+  // что у клиента на поле. Завязка от него не зависит, только край
+  track: LucidShared.TTrack;
   deadlineMs: number;
   seed: string;
   // Вызывается, как только готова стадия «Мир»: тема перекрашивает экран,
@@ -83,6 +87,7 @@ export const generateContent = async ({
   theme,
   nicknames,
   eventCellIds,
+  track,
   deadlineMs,
   seed,
   onWorld,
@@ -215,13 +220,26 @@ export const generateContent = async ({
 
     onWorld?.(world.theme);
 
+    // Завязка и край — от кода, не от модели: иначе параллельные куски видят
+    // одинаковый промпт и сходятся на самой очевидной идее темы (раздел 4.3
+    // PRD). Раскладка вся сразу, по полному списку клеток партии, поэтому
+    // соседние куски не получают одну и ту же завязку на границе
+    const premises = assignPremises(eventCellIds, seed);
+    const regionNames = assignRegionNames(eventCellIds, track, world.theme.regions);
+    const cellBriefs = premises.map(premise => ({ ...premise, region: regionNames[premise.cellId] ?? '' }));
+    const briefByCellId = new Map(cellBriefs.map(brief => [brief.cellId, brief]));
+
     // У каждого куска своя валидация и свои попытки, но идут они разом
-    const batches = await Promise.all(chunk(eventCellIds, EVENTS_CHUNK_SIZE).map(chunkIds => request(
-      'events',
-      buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkIds, world.roles ?? []),
-      eventBatchSchema,
-      parseEvents(chunkIds),
-    )));
+    const batches = await Promise.all(chunk(eventCellIds, EVENTS_CHUNK_SIZE).map(chunkIds => {
+      const chunkBriefs = chunkIds.map(cellId => briefByCellId.get(cellId)!);
+
+      return request(
+        'events',
+        buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkBriefs, world.roles ?? []),
+        eventBatchSchema,
+        parseEvents(chunkIds),
+      );
+    }));
 
     // Не дался хотя бы один кусок — на запасную партию уходит вся: события
     // двух разных миров смешивать нельзя, мир должен остаться цельным

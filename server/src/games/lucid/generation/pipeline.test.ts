@@ -4,6 +4,7 @@ import {
   it,
   vi,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
 import type { TGenerateJson } from '@/games/lucid/generation/pipeline';
 
@@ -13,6 +14,24 @@ import {
   MAX_ATTEMPTS,
 } from '@/games/lucid/generation/pipeline';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
+
+// Прямая цепочка клеток — конкретные depth не важны тестам пайплайна, только
+// то, что assignRegionNames/assignPremises не падают на реальной структуре
+// трека. Id может быть не связан со стартом/финишем реального трека — depth
+// не найденной клетки трактуется раскладкой как 0, крушения не будет
+const straightTrackFor = (cellIds: number[]): LucidShared.TTrack => ({
+  startId: -1,
+  finishId: -2,
+  cells: [
+    { id: -1, type: LucidShared.ECellType.START, next: cellIds.length > 0 ? [cellIds[0]] : [-2] },
+    ...cellIds.map((id, index) => ({
+      id,
+      type: LucidShared.ECellType.EVENT,
+      next: [index + 1 < cellIds.length ? cellIds[index + 1] : -2],
+    })),
+    { id: -2, type: LucidShared.ECellType.FINISH, next: [] },
+  ],
+});
 
 const usage = { inputTokens: 10, outputTokens: 20, costUsd: 0.001 };
 
@@ -43,9 +62,10 @@ const SEED = 'pipeline';
 // Клеток больше, чем влезает в один кусок: ответ придёт двумя запросами
 const MANY_CELLS = Array.from({ length: EVENTS_CHUNK_SIZE + 3 }, (_, index) => index + 1);
 
-// Промпт событий перечисляет номера клеток своего куска — по ним и отвечаем
+// Промпт событий перечисляет клетки своего куска строкой на клетку —
+// «- клетка 12 — край «...», завязка: ...» — по номерам и отвечаем
 const askedCells = (prompt: string): number[] =>
-  (/каждую: ([\d, ]+)/.exec(prompt)?.[1] ?? '').split(', ').map(Number);
+  [...prompt.matchAll(/- клетка (\d+) —/g)].map(match => Number(match[1]));
 
 const run = (
   generateJson: TGenerateJson,
@@ -56,6 +76,7 @@ const run = (
   theme: 'пираты',
   nicknames: ['Аня', 'Боря'],
   eventCellIds,
+  track: straightTrackFor(eventCellIds),
   deadlineMs: Date.now() + deadlineOffsetMs,
   seed: SEED,
 });
@@ -206,6 +227,7 @@ describe('generateContent', () => {
       theme: 'пираты',
       nicknames: ['Аня', 'Боря'],
       eventCellIds: [1, 2],
+      track: straightTrackFor([1, 2]),
       deadlineMs: Date.now() + 10_000,
       seed: SEED,
       onCall,
@@ -239,6 +261,7 @@ describe('generateContent', () => {
       theme: 'пираты',
       nicknames: ['Аня'],
       eventCellIds: MANY_CELLS,
+      track: straightTrackFor(MANY_CELLS),
       deadlineMs: Date.now() + 10_000,
       seed: SEED,
       onCall,
@@ -275,6 +298,7 @@ describe('generateContent', () => {
       theme: 'пираты',
       nicknames: ['Аня'],
       eventCellIds: [1, 2],
+      track: straightTrackFor([1, 2]),
       deadlineMs: Date.now() + 10_000,
       seed: 'stages',
       onWorld: theme => seen.push(`мир готов: ${theme.name}`),
@@ -292,6 +316,7 @@ describe('generateContent', () => {
       theme: 'пираты',
       nicknames: ['Аня'],
       eventCellIds: [1],
+      track: straightTrackFor([1]),
       deadlineMs: Date.now() + 10_000,
       seed: 'stages',
       onWorld,

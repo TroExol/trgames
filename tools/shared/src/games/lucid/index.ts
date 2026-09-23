@@ -1,4 +1,5 @@
 export * from './describe';
+export * from './track';
 export * from './types/content';
 export * from './types/effect';
 export * from './types/move';

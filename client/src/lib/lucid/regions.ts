@@ -23,21 +23,9 @@ export interface TRegionColors {
   hollow: string;
 }
 
-// Края раскладываются по длине пути, а не по содержимому клеток: содержимое
-// секрет до посещения, и деление по нему слило бы карту
-export const regionForDepth = <TItem>(
-  items: TItem[],
-  depth: number,
-  maxDepth: number,
-): TItem | undefined => {
-  if (items.length === 0) {
-    return undefined;
-  }
-
-  const index = Math.floor((depth / (maxDepth + 1)) * items.length);
-
-  return items[Math.min(Math.max(index, 0), items.length - 1)];
-};
+// regionForDepth переехал в @trgames/shared (games/lucid/track.ts) — тот же
+// расчёт нужен и серверу, для завязок и краёв клеток в промпте
+// (generation/premises.ts). Импортировать напрямую оттуда, не отсюда
 
 // Цвета краёв приходят от модели и потому произвольны: бежевый край на бежевой
 // основе стёр бы кусок пути. Приглушение ленты вмешано в цвет, а не сделано

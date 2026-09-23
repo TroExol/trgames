@@ -3,9 +3,15 @@ import {
   expect,
   it,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
-import { regionForDepth, resolveRegions } from '@/lib/lucid/regions';
+import { resolveRegions } from '@/lib/lucid/regions';
 import { contrastRatio, parseHex } from '@/lib/lucid/colors';
+
+// regionForDepth живёт в @trgames/shared (используется и сервером — раздача
+// краёв клеток в промпте, generation/premises.ts), тестируется здесь тем же
+// набором случаев, что был локальным до переноса
+const { regionForDepth } = LucidShared;
 
 const named = (names: string[]) => names.map(name => ({ name, color: '#415a77' }));
 
