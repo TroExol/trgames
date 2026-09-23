@@ -275,6 +275,116 @@ describe('события', () => {
     expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
   });
 
+  it('выбор варианта пишет в ленту, что выбрано, и что применилось', () => {
+    const state = makeParty('log-choice');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Находка',
+        text: 'Ты подбираешь монету',
+        options: [{
+          text: 'Подобрать',
+          success: {
+            atoms: [{
+              kind: LucidShared.EAtomKind.RESOURCE,
+              target: LucidShared.ETarget.SELF,
+              value: 1,
+            }],
+          },
+        }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    expect(next.G.log).toEqual(['Аня выбирает «Подобрать»', 'Аня: дублоны +1']);
+  });
+
+  it('выбор варианта пишет запись в историю клетки: ветка success, без броска', () => {
+    const state = makeParty('history-success');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Находка',
+        text: 'Ты подбираешь монету',
+        options: [{
+          text: 'Подобрать',
+          success: {
+            atoms: [{
+              kind: LucidShared.EAtomKind.RESOURCE,
+              target: LucidShared.ETarget.SELF,
+              value: 1,
+            }],
+          },
+        }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    expect(next.G.cellHistory[1]).toEqual([{
+      playerId: 'a',
+      nickname: 'Аня',
+      optionIndex: 0,
+      branch: 'success',
+      roll: undefined,
+      lines: ['Аня выбирает «Подобрать»', 'Аня: дублоны +1'],
+    }]);
+  });
+
+  it('выбор варианта с недостижимым порогом пишет ветку failure с броском', () => {
+    const state = makeParty('history-failure');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Риск',
+        text: 'Попробовать удачу',
+        options: [{
+          text: 'Рискнуть',
+          threshold: 7,
+          success: {
+            atoms: [{
+              kind: LucidShared.EAtomKind.RESOURCE,
+              target: LucidShared.ETarget.SELF,
+              value: 5,
+            }],
+          },
+        }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    // Порог 7 недостижим кубиком 1..6 — ветка неминуемо failure
+    expect(next.G.cellHistory[1]).toHaveLength(1);
+    expect(next.G.cellHistory[1][0].branch).toBe('failure');
+    expect(next.G.cellHistory[1][0].roll).toBeLessThan(7);
+  });
+
   it('победить можно эффектом варианта, а не только броском', () => {
     const state = makeParty('effect-win');
     state.G.track = lineTrack();

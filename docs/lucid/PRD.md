@@ -50,6 +50,24 @@
 ### События, цена, ресурс
 Клетка `EVENT` — до 3 вариантов (`generation/schema.ts:59`): гарантированный (`cost`) или рискованный (`threshold`). Не по карману — ход отклонён; иначе Ресурс списывается, `threshold` — отдельным броском (`core/options.ts:7-45`).
 
+Исход варианта скрыт, пока не раскрыт. Единица раскрытия — **ветка** (`success`/`failure`) конкретного варианта конкретной клетки: без `threshold` ветка всегда `success`; с `threshold` — `success` при броске ≥ порога, иначе `failure` (даже без `failure` в контенте — ветка всё равно считается раскрытой, просто пустой). Раскрывает ветку тот, у кого она сработала; вторая ветка остаётся скрытой, пока на неё не попадёт кто-то другой (или тот же игрок позже, на этой же клетке). `condition`/`otherwise` — часть ветки, раскрывается вместе с ней целиком. Источник раскрытых веток — история клетки (ниже).
+
+Карточка варианта (`EventCard/OptionButton.tsx`) под текстом показывает только раскрытые исходы: без порога — одной строкой без префикса, пока ветка не раскрыта — вовсе без строки (ветка одна, вопросительный знак под единственным исходом выглядел бы лишним драматизмом); с порогом — раздельно «удача — …» / «провал — …», нераскрытая ветка — «удача — ?» / «провал — ?» (знак вопроса, а не пустота: видно, что развилка есть, просто исход ещё не известен). Раскрытая, но пустая `failure` — «провал — ничего». Порог и цена видны всегда, независимо от раскрытия. Строит текст чистая функция `LucidShared.describeEffect` (`tools/shared/src/games/lucid/describe.ts`, экспорт через `LucidShared`): атомы через запятую общей подписью цели (ты/лидер/отстающий/все — не настоящий ник, целевой игрок ещё не известен), при условии — «если {клетка|ресурс} {=/>/≥/</≤} {value}: …, иначе: … (или «ничего» без `otherwise`)». `resourceName` карточка берёт из `state.G.theme.resourceName` (`Hud/index.tsx` → `EventCard` → `OptionButton`).
+
+### История клетки
+
+`G.cellHistory: Record<cellId, THistoryEntry[]>` (`shared/types/state.ts`) — все разыгранные варианты по клеткам, источник раскрытых веток. Запись (`THistoryEntry`): `playerId`, `nickname`, `optionIndex`, `branch: 'success' | 'failure'`, `roll?` (был ли бросок), `lines: string[]` — тот же прирост `G.log`, что породил этот выбор (сам выбор, бросок, применённые эффекты). Пишет `resolveOption` (`core/options.ts::resolveOption`) на клетку `player.position`, взятую до применения эффекта (эффект может увести игрока дальше атомом `MOVE`). `setup.ts` инициализирует `{}`; партии из базы старше этого поля читаются устойчиво — `Party.fromSnapshot` подставляет `cellHistory ?? {}` в снимок при подъёме из хранилища (5.6/5.7).
+
+Сервер вырезает нераскрытое в `core/formatForPlayer.ts`: посещённые события уходят клиенту в форме `LucidShared.TEventView`/`TOptionView` (`shared/types/content.ts`, `shared/types/effect.ts`), не сырым `TEvent`/`TOption`. У варианта всегда видны `text`/`threshold`/`cost`; `success`/`failure` — только если соответствующая ветка раскрыта в `cellHistory` этой клетки. Поле `revealed: { success: boolean; failure: boolean }` отличает «раскрыта и пуста» (`revealed.failure=true`, `failure=undefined`) от «ещё не раскрыта вовсе» (`revealed.failure=false`). `cellHistory` целиком уезжает в `TStateForPlayer.G` — записи в нём и так существуют только для посещённых клеток (запись появляется вместе с посещением).
+
+### Карточка итога и просмотр клетки
+
+После `CHOOSE_OPTION` всем игрокам показывается итог — компонент `Hud/Outcome.tsx`: строки последней записи истории клетки (`entry.lines`), те же, что ушли бы в ленту. Стоит в общем потоке нижней полосы HUD, не поверх поля (`inset-0`, как `EventCard`): кнопка «Бросить кубик» остаётся нажимаемой, ход следующего игрока ничем не заблокирован. Закрывается сама через 6 секунд (`Outcome.tsx`, `AUTO_CLOSE_MS`) — таймер гарантирует закрытие независимо от того, кликнул ли кто-то, — и кнопкой «Дальше» для тех, кто не хочет ждать. Триггер в `Hud/index.tsx`: `useEffect` по `state.stateId` сравнивает клетку текущего события с клеткой на предыдущем рендере — смена или исчезновение здесь означает, что по прежней клетке только что разыграли вариант, и в её `cellHistory` можно взять последнюю запись.
+
+Клик по посещённой клетке с историей (`Board/index.tsx`, слой `onViewCell`, независимый от `onSelectCell` для развилок) открывает `CellView` (`PartyPage/components/CellView/index.tsx`) — заголовок, текст, варианты только с раскрытыми ветками (без кнопок выбора) и список истории строкой `LucidShared.describeHistoryEntry`: «Ваня — «Вскрыть ящик ломом», выпало 5 из 4 — заряды +3». Кликабельны только клетки, где `cellHistory[cellId]` не пуст — это само собой исключает и непосещённые клетки, и клетку текущего нерешённого события (запись появляется только после выбора), поэтому просмотр никогда не мешает текущей карточке события: у неё своё независимое состояние в `PartyPage/index.tsx` (`viewCellId`), закрытие не трогает `Hud`.
+
+Лента (`G.log`) после `CHOOSE_OPTION` получает по порядку: «{ник} выбирает «{текст варианта}»» (`core/options.ts::resolveOption`, до броска), затем строка броска (уже была), затем по строке на каждый применённый атом — с реальными никами целей, не общей подписью (`core/atomLog.ts::describeAtomLog`, использует `LucidShared.describeAtomAction` и `resolveTarget`): «Петя: +2 клетки», «Петя, Ваня: заряды −1», цель `ALL` — коротко «все: …», не перечисление. Ничья `FIRST`/`LAST` (`resolveTarget` вернул `[]`) — «лидера нет — ничья, никого не задело» / «отстающего нет — ничья, никого не задело». `SWAP_WITH_FIRST` — свой текст: «Ваня меняется местами с Петей» либо «обмена нет: лидер — сам игрок» / «обмена нет: ничья». Эффект без атомов к применению (условие не прошло и `otherwise` нет, либо `threshold` провален и `failure` нет) — «ничего не произошло» (`core/effects.ts::applyEffect`, `core/options.ts::resolveOption`).
+
 Ресурс — один счётчик, старт `START_RESOURCE=3` (`core/setup.ts:6`), не ниже нуля — Долг. Ни один вариант не по карману — событие пропускается.
 
 ### Эффекты: атомы и цели
@@ -255,9 +273,9 @@ OpenRouter. `DEFAULT_MODEL` — `deepseek/deepseek-v4.1-flash:nitro` (`generatio
 
 ### 5.5 Граница секретности
 
-`core/formatForPlayer.ts` — явный список полей `G` (`Omit<TG, 'log' | 'random'>`): новое поле без упоминания здесь ломает сборку.
+`core/formatForPlayer.ts` — явный список полей `G` (`Omit<TG, 'log' | 'random' | 'events'> & { events: Record<number, TEventView> }`): новое поле без упоминания здесь ломает сборку.
 
-Уходит: `players`, `order`, `track`, `theme`, `visited`, `winner`, `branchChoices`, `pendingSteps`, `lastRoll`, посещённые `events`. Не уходит никогда: `G.random`, `G.log` целиком, непосещённые события.
+Уходит: `players`, `order`, `track`, `theme`, `visited`, `winner`, `branchChoices`, `pendingSteps`, `lastRoll`, `cellHistory`, посещённые `events` — но не сырым `TEvent`, а урезанным `TEventView`: у варианта видны `text`/`threshold`/`cost` всегда, `success`/`failure` — только по раскрытой ветке (3). Не уходит никогда: `G.random`, `G.log` целиком, непосещённые события, нераскрытые ветки вариантов.
 
 Роль игрока — не секрет, отдельного поля в списке заводить не пришлось: сырые пары ник/роль от модели (`TPartyContent.roles`, `shared/content.ts:43-54`) `setupParty` сопоставляет с `playerId` по нику и пишет прямо в `TPlayer.role` (`shared/state.ts:16`, `core/setup.ts:14-19,44`) — а `TPlayer` целиком уже входит в `players` выше, так что роль едет до клиента бесплатно.
 
@@ -326,9 +344,10 @@ PartyPage (routes/games/lucid/PartyPage/index.tsx)
 ├─ view.phase === LOBBY → Lobby → MemberRow × N
 ├─ нет state (идёт генерация) → Generating
 └─ есть state
-    ├─ Board
-    ├─ Hud → Die, Ribbon, EventBar (свёрнуто) / EventCard (развёрнуто) → OptionButton × N
-    └─ view.phase === ENDED → Ending
+    ├─ Board (клик по клетке из branchChoices → onSelectCell; по посещённой клетке с историей → onViewCell)
+    ├─ Hud → Die, Ribbon, EventBar (свёрнуто) / EventCard (развёрнуто) → OptionButton × N; Outcome (итог после CHOOSE_OPTION)
+    ├─ view.phase === ENDED → Ending
+    └─ viewCellId задан → CellView (просмотр клетки, свой стейт в PartyPage, не связан с Hud)
 ```
 
 `themeStyle` считается раз на смену темы, на корневом `<main>` — смена фазы оформление не сбрасывает.
@@ -383,7 +402,7 @@ Vitest, `client/vitest.config.mts`. Все тесты клиента сейча�
 
 | Воркспейс | Файлов | Тестов | Команда |
 |---|---|---|---|
-| `@trgames/server` (вся игра, включая соседний Cryptoz) | 200 | 1839 | `yarn workspace @trgames/server test` |
+| `@trgames/server` (вся игра, включая соседний Cryptoz) | 201 | 1852 | `yarn workspace @trgames/server test` |
 | `@trgames/client` (весь — про lucid) | 7 | 73 | `yarn workspace @trgames/client test` |
 
 Один файл — `--run <путь>`: без него `--silent` в конце скрипта склеивается с путём, vitest падает на старте. Пример: `yarn workspace @trgames/server test --run src/games/lucid/room/Party.test.ts`. Вотч — `test:watch`.

@@ -20,6 +20,7 @@ import { Lobby } from '@/routes/games/lucid/PartyPage/components/Lobby';
 import { Hud } from '@/routes/games/lucid/PartyPage/components/Hud';
 import { Generating } from '@/routes/games/lucid/PartyPage/components/Generating';
 import { Ending } from '@/routes/games/lucid/PartyPage/components/Ending';
+import { CellView } from '@/routes/games/lucid/PartyPage/components/CellView';
 import { Board } from '@/routes/games/lucid/PartyPage/components/Board';
 import { themeStyle } from '@/lib/lucid/theme';
 import { deriveRoles } from '@/lib/lucid/colors';
@@ -47,6 +48,9 @@ export const Component = observer(function LucidPartyPage() {
   const playerId = usePlayerId();
   const [nickname, setNickname] = useNickname();
   const [nicknameDraft, setNicknameDraft] = useState('');
+  // Просмотр посещённой клетки — своё состояние, не связанное с текущим
+  // выбором: открывается и закрывается независимо от карточки события хода
+  const [viewCellId, setViewCellId] = useState<number>();
   const previousSound = useRef<TSoundSnapshot>();
   const theme = partyStore.view?.theme;
   // Оформление считается один раз на изменение темы и вешается на корень
@@ -278,6 +282,7 @@ export const Component = observer(function LucidPartyPage() {
         <div className="flex min-h-0 grow px-2 pb-32 pt-16">
           <Board
             onSelectCell={isMyBranch ? handleSelectCell : undefined}
+            onViewCell={setViewCellId}
             state={state}
           />
         </div>
@@ -287,6 +292,15 @@ export const Component = observer(function LucidPartyPage() {
         {/* Поле остаётся видимым вокруг экрана победы: партия закончилась
             на нём, и это стоит показать */}
         {view.phase === LucidShared.EPartyPhase.ENDED && <Ending />}
+
+        {viewCellId !== undefined && state.G.events[viewCellId] && (
+          <CellView
+            event={state.G.events[viewCellId]}
+            history={state.G.cellHistory[viewCellId] ?? []}
+            onClose={() => setViewCellId(undefined)}
+            resourceName={state.G.theme.resourceName}
+          />
+        )}
       </>
     );
   };

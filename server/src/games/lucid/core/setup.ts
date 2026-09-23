@@ -55,6 +55,7 @@ export const setupParty = ({
       log: [],
       branchChoices: [],
       pendingSteps: 0,
+      cellHistory: {},
     },
     ctx: {
       currentPlayer: players[0].id,

@@ -1,4 +1,4 @@
-import type { TOption } from './effect';
+import type { TOption, TOptionView } from './effect';
 
 // Настроение мира. Поле решает сразу две задачи: светлая партия или тёмная
 // по палитре и какая играет музыка. Вывести настроение из средней светлоты
@@ -35,6 +35,14 @@ export interface TEvent {
   title: string;
   text: string;
   options: TOption[];
+}
+
+// Событие глазами игрока — вариантами в форме TOptionView (5.5)
+export interface TEventView {
+  cellId: number;
+  title: string;
+  text: string;
+  options: TOptionView[];
 }
 
 // Роль игрока в мире партии, как её вернула модель. Привязана к нику, а не

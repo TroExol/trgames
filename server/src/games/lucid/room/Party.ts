@@ -309,7 +309,13 @@ export class Party {
 
     party.phase = snapshot.phase;
     party.theme = snapshot.theme;
-    party.state = snapshot.state;
+    // Партии из базы старше истории клетки не имеют cellHistory вовсе —
+    // подставляем пусто, чтобы формату и редьюсеру не пришлось знать про
+    // старые снимки
+    party.state = snapshot.state && {
+      ...snapshot.state,
+      G: { ...snapshot.state.G, cellHistory: snapshot.state.G.cellHistory ?? {} },
+    };
     party.usedFallback = snapshot.usedFallback;
     party.sentRibbonLines = snapshot.sentRibbonLines;
     party.nextPartyId = snapshot.nextPartyId;

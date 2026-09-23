@@ -33,6 +33,23 @@ export interface TRoll {
   threshold?: number;
 }
 
+// Ветка варианта — единица раскрытия исхода. Без порога срабатывает всегда
+// success; с порогом — success при броске ≥ threshold, иначе failure (даже
+// если failure не описан — тогда сработавшая ветка считается «пустой»)
+export type TBranch = 'success' | 'failure';
+
+// Запись истории одного разыгранного варианта на клетке. Строки — тот же
+// прирост G.log, что породил этот выбор: сам выбор, бросок (если был)
+// и применённые эффекты — секретов внутри нет, это уже случившееся
+export interface THistoryEntry {
+  playerId: TPlayerId;
+  nickname: string;
+  optionIndex: number;
+  branch: TBranch;
+  roll?: number;
+  lines: string[];
+}
+
 export interface TG {
   players: Record<TPlayerId, TPlayer>;
   order: TPlayerId[];
@@ -53,6 +70,10 @@ export interface TG {
   // Сколько шагов осталось дойти после выбора ветки
   pendingSteps: number;
   lastRoll?: TRoll;
+  // История разыгранных вариантов по клеткам — источник раскрытых веток
+  // (какая из success/failure уже случалась на этой клетке) и посещённой
+  // истории для просмотра клетки. Ключ — cellId
+  cellHistory: Record<number, THistoryEntry[]>;
 }
 
 export interface TCtx {

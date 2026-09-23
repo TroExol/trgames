@@ -118,6 +118,7 @@ const makeParty = ({
       branchChoices: forkCell.next,
       pendingSteps: 2,
       lastRoll: { playerId: walker, value: 5 },
+      cellHistory: {},
     },
     ctx: {
       currentPlayer: walker,

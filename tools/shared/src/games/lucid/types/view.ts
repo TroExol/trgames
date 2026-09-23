@@ -3,13 +3,15 @@ import type {
   TG,
   TPlayerId,
 } from './state';
-import type { TTheme } from './content';
+import type { TEventView, TTheme } from './content';
 
 // Состояние глазами одного игрока. Ни состояния генератора случайных чисел,
 // ни журнала партии здесь нет: первое позволило бы предсказать все броски,
-// второй за партию разрастается на сотни строк и не нужен целиком
+// второй за партию разрастается на сотни строк и не нужен целиком.
+// events — в форме TEventView: исход варианта виден только по раскрытым
+// веткам (5.5), обычный TEvent целиком уехал бы со спойлером
 export interface TStateForPlayer {
-  G: Omit<TG, 'log' | 'random'>;
+  G: { events: Record<number, TEventView> } & Omit<TG, 'log' | 'random' | 'events'>;
   ctx: TCtx;
   stateId: number;
   you: TPlayerId;

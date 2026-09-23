@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 
-import { useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
@@ -11,6 +15,7 @@ import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/Ev
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
 import { Button } from '@/components/ui/Button';
 
+import { Outcome } from './Outcome';
 import { Die } from './components/Die';
 
 // @trgames/shared отдаёт перечисления только через неймспейс LucidShared,
@@ -32,7 +37,36 @@ export const Hud = observer(function Hud() {
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
   const [collapsedCell, setCollapsedCell] = useState<number>();
+  // Итог только что разыгранного варианта — своя клетка и запись истории,
+  // не флаг: пока он висит, следующее событие всё равно открывается само
+  const [outcome, setOutcome] = useState<{ cellId: number; entry: LucidShared.THistoryEntry }>();
+  // Клетка события с прошлого рендера: пропадает или меняется — значит по
+  // ней только что разыграли вариант. Ref, а не state: хук должен звать
+  // хуки безусловно, а state ниже вычисляется уже после возможного раннего return
+  const prevEventCellRef = useRef<number>();
   const { state, view } = partyStore;
+  const currentEventCellId = state && state.ctx.phase === LucidShared.EPhase.CHOICE
+    ? state.G.events[state.G.players[state.ctx.currentPlayer].position]?.cellId
+    : undefined;
+
+  useEffect(() => {
+    const prevCellId = prevEventCellRef.current;
+
+    prevEventCellRef.current = currentEventCellId;
+
+    if (!state || prevCellId === undefined || prevCellId === currentEventCellId) {
+      return;
+    }
+
+    const entry = state.G.cellHistory[prevCellId]?.at(-1);
+
+    if (entry) {
+      setOutcome({ cellId: prevCellId, entry });
+    }
+    // Реагируем только на смену состояния партии — currentEventCellId и cellHistory
+    // берутся из его же снимка, отдельно отслеживать их незачем
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.stateId]);
 
   if (!state || !view) {
     return null;
@@ -218,6 +252,10 @@ export const Hud = observer(function Hud() {
           />
         )}
 
+        {outcome && (
+          <Outcome lines={outcome.entry.lines} onClose={() => setOutcome(undefined)} />
+        )}
+
         <Ribbon />
 
         <div className="flex items-center gap-3">
@@ -235,6 +273,7 @@ export const Hud = observer(function Hud() {
           onChoose={handleChooseOption}
           onCollapse={() => setCollapsedCell(event.cellId)}
           resource={you.resource}
+          resourceName={theme.resourceName}
         />
       )}
     </>

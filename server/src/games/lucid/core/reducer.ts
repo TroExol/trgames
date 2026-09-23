@@ -122,7 +122,7 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return null;
     }
 
-    const G = resolveOption(state.G, player.id, option);
+    const G = resolveOption(state.G, player.id, move.optionIndex, option);
 
     // Вариант недоступен, например не хватает ресурса: ход не состоялся,
     // игрок не теряет право выбрать другой

@@ -73,6 +73,7 @@ const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = fals
         branchChoices: [],
         pendingSteps: 0,
         lastRoll: undefined,
+        cellHistory: {},
       },
       ctx: {
         currentPlayer: order[0],

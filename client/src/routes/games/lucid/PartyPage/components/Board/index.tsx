@@ -29,6 +29,10 @@ export interface TBoardProps {
   state: LucidShared.TStateForPlayer;
   // Вызывается только для клеток из branchChoices: другие клетки не нажимаются
   onSelectCell?: (cellId: number) => void;
+  // Клик по посещённой клетке с историей — открыть её просмотр (5 в задаче).
+  // Не пересекается с onSelectCell: branchChoices — клетки, куда ещё только
+  // предстоит шагнуть, в cellHistory их по определению ещё нет
+  onViewCell?: (cellId: number) => void;
 }
 
 // Размеры в условных единицах раскладки, где клетка отстоит от клетки на 132
@@ -69,7 +73,7 @@ const DRAW_MS = 1400;
 // Ширина картинки известна до укладки: по ней считается растяжение рядов
 const viewWidthFor = (perRow: number): number => perRow * CELL_STEP + PAD_X * 2;
 
-export const Board = observer(function Board({ state, onSelectCell }: TBoardProps) {
+export const Board = observer(function Board({ state, onSelectCell, onViewCell }: TBoardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ribbonRefs = useRef<(SVGPathElement | null)[]>([]);
   const isDrawn = useRef(false);
@@ -358,6 +362,30 @@ export const Board = observer(function Board({ state, onSelectCell }: TBoardProp
                   </g>
                 );
               })}
+
+              {/* Просмотр клетки: только там, где уже что-то разыграно —
+                  клетка без записи в cellHistory нечего показывать, и это
+                  само собой исключает и непосещённые клетки, и клетку
+                  текущего нерешённого события (запись появляется только
+                  после выбора) */}
+              {layout.cells.filter(cell => (state.G.cellHistory[cell.id]?.length ?? 0) > 0).map(cell => (
+                <g
+                  aria-label="Посмотреть клетку"
+                  className="cursor-pointer"
+                  key={`view-${cell.id}`}
+                  onClick={() => onViewCell?.(cell.id)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onViewCell?.(cell.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <circle cx={cell.x} cy={cell.y} fill="transparent" r={HIT_RADIUS} />
+                </g>
+              ))}
 
               {Array.from(groups).flatMap(([position, playerIds]) => playerIds.map((playerId, index) => {
                 const cell = layout.byId[position];

@@ -84,6 +84,7 @@ export const makeG = ({
   log: [],
   branchChoices: [],
   pendingSteps: 0,
+  cellHistory: {},
 });
 
 interface TMakeFallbackPartyParams {

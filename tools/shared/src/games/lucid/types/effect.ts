@@ -57,3 +57,16 @@ export interface TOption {
   success: TEffect;
   failure?: TEffect;
 }
+
+// Вариант глазами игрока: исход виден только по раскрытым веткам (5.5).
+// text/threshold/cost видны всегда, success/failure — только раскрытые.
+// revealed отличает «ветка раскрыта и пуста» (failure отсутствует,
+// но событие уже случалось) от «ветка ещё не раскрыта вовсе»
+export interface TOptionView {
+  text: string;
+  threshold?: number;
+  cost?: number;
+  revealed: { success: boolean; failure: boolean };
+  success?: TEffect;
+  failure?: TEffect;
+}

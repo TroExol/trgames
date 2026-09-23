@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/Button';
 import { OptionButton } from './OptionButton';
 
 interface TProps {
-  event: LucidShared.TEvent;
+  event: LucidShared.TEventView;
   // Ход не твой — карточка показывает то же самое без кнопок: все читают одно
   // и то же событие, это общий момент партии
   isMyTurn: boolean;
   currentNickname: string;
   resource: number;
+  resourceName: string;
   // Оптимистичных ходов нет: после отправки кнопки молчат до нового stateId
   isSent: boolean;
   onChoose: (optionIndex: number) => void;
@@ -26,6 +27,7 @@ export const EventCard = observer(function EventCard({
   isMyTurn,
   currentNickname,
   resource,
+  resourceName,
   isSent,
   onChoose,
   onCollapse,
@@ -63,6 +65,7 @@ export const EventCard = observer(function EventCard({
                       onClick={() => onChoose(index)}
                       option={option}
                       resource={resource}
+                      resourceName={resourceName}
                     />
                   </li>
                 ))}
