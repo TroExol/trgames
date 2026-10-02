@@ -12,7 +12,7 @@ import type { TSocketServiceCreateRoomParams } from '@/routes/games/cryptoz/Room
 
 import { analyticsService } from '@/services';
 import { roomsStore } from '@/routes/games/cryptoz/RoomsPage/stores';
-import { getApiUrl } from '@/lib/constants';
+import { getCryptozUrl } from '@/lib/constants';
 
 export class SocketService {
   public readonly socket: Socket<
@@ -22,7 +22,7 @@ export class SocketService {
 
   constructor() {
     this.socket = io(
-      getApiUrl(),
+      getCryptozUrl(),
       { autoConnect: false },
     );
 

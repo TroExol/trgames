@@ -16,7 +16,7 @@ import {
   messagesStore,
   roomStore,
 } from '@/routes/games/cryptoz/RoomPage/stores';
-import { getApiUrl } from '@/lib/constants';
+import { getCryptozUrl } from '@/lib/constants';
 
 import {
   openCardsDialog,
@@ -41,7 +41,7 @@ export class SocketService {
   }: TSocketServiceConnectParams): Promise<void> => {
     return new Promise((resolve, reject) => {
       this.socket = io(
-        getApiUrl(`/room/${roomUuid}`),
+        getCryptozUrl(`/room/${roomUuid}`),
         { query: { nickname, participant, roomPassword: roomPassword }, multiplex: false },
       );
 

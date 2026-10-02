@@ -106,5 +106,5 @@ prompts/         — Промпты для генерации контента (
 ## Переменные окружения
 
 - Client: `VITE_API_BASE_URL` в `client/.env` (инжектится как `__API_BASE_URL__`)
-- Server: CLI аргументы `--local true` (CORS *) и `--debug true` (передаётся в
-  `start:dev`, сейчас ни на что не влияет — `getProcessArg('--debug')` нигде не вызывается)
+- Client: без `VITE_API_BASE_URL` сервер ищется на хосте страницы, порт 4001
+- Server: `server/.env` (пример — `server/.env.example`): `CORS_ORIGIN` (пусто — `*`), ключ и модель lucid

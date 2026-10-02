@@ -1,6 +1,5 @@
 import { Server } from 'socket.io';
 
-import { getProcessArg } from '@/helpers/utils';
 import { loadEnv } from '@/helpers/loadEnv';
 import { Lucid } from '@/games/lucid';
 import { Cryptoz } from '@/games/cryptoz';
@@ -9,11 +8,9 @@ import { Cryptoz } from '@/games/cryptoz';
 // клиента модели
 loadEnv();
 
-const localhost = getProcessArg('--local') === 'true';
-
 const io = new Server({
   cors: {
-    origin: localhost ? '*' : 'https://toexol.ru',
+    origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST'],
   },
   cleanupEmptyChildNamespaces: true,

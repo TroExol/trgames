@@ -22,6 +22,7 @@ Play board games with friends straight from the browser — no install, no signu
 ## Games
 
 - **Cryptoz** — a card game built around obscurantist roles, hideouts, seals, glory shards and the Crown of Dark
+- **lucid** — a 2–6 player race to the Finish; an AI generates the theme, events and look of every party
 
 ## Tech stack
 
@@ -49,10 +50,12 @@ trgames/
 ├── server/                  # Socket.io server
 │   └── src/
 │       ├── games/cryptoz/   # Game logic (cards, modifiers, triggers)
+│       ├── games/lucid/     # lucid: engine, AI generation, rooms
 │       └── i18n/            # Localisation
 ├── tools/
 │   ├── shared/              # Shared TypeScript types for client and server
 │   └── eslint-plugin-trgames/  # Custom ESLint plugin
+├── docs/lucid/              # lucid PRD, ADRs and open questions
 └── prompts/                 # Prompts used for content generation
 ```
 
@@ -92,6 +95,7 @@ cd ../server && yarn start # starts the server
 | `yarn lint` | Lint every workspace |
 | `yarn workspace @trgames/server test` | Run server tests |
 | `yarn workspace @trgames/client storybook` | Storybook on port 6006 |
+| `yarn workspace @trgames/server lucid:usage` | lucid AI generation cost report |
 
 ### Linting
 
@@ -109,9 +113,13 @@ yarn workspace @trgames/server lint    # server only
 
 | Variable | Location | Description |
 |----------|----------|-------------|
-| `VITE_API_BASE_URL` | `client/.env` | Server URL used by Socket.io |
+| `VITE_API_BASE_URL` | `client/.env` | Server URL used by Socket.io, defaults to the page host on port 4001 |
+| `OPENROUTER_API_KEY` | `server/.env` | OpenRouter key for lucid generation |
+| `LUCID_MODEL` | `server/.env` | OpenRouter model, defaults to `deepseek/deepseek-v4.1-flash:nitro` |
+| `CORS_ORIGIN` | `server/.env` | Allowed CORS origin, defaults to `*` |
+| `LUCID_DB_PATH` | `server/.env` | lucid database file relative to `server/`, defaults to `lucid.db` |
 
-Server flags are passed on the CLI: `--local true` (CORS `*`), `--debug true` (verbose logging).
+See `server/.env.example`.
 
 ## License
 

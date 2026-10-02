@@ -461,7 +461,7 @@ yarn lint                                   # линт всех воркспей
 
 Значения переменных в документы не выносим. `server/.env` грузится своим парсером (`loadEnv()`) первой строкой `index.ts` — `node --env-file` не пробрасывается через `nodemon`.
 
-CLI-флаги (`getProcessArg`, `server/src/helpers/utils.ts`): `--local true` — CORS `origin: '*'` вместо продакшен-домена; `--debug true` передаётся в `start:dev`, но **нигде в `server/src` не читается** — логов не включает, вопреки прежнему `CLAUDE.md` (исправлено в `dc63d12`).
+CLI-флагов у сервера нет: CORS origin берётся из `CORS_ORIGIN` в `server/.env`, пусто — `*`. Клиент без `VITE_API_BASE_URL` ищет сервер на хосте страницы, порт 4001.
 
 Скрипты вне `server/src` — с `TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node"}'`, иначе `ts-node` резолвит модули иначе, чем основной процесс.
 
