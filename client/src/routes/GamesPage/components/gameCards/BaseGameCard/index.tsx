@@ -23,7 +23,7 @@ export const BaseGameCard: FC<TProps> = observer(function BaseGameCard({
     <Link
       className={cn(`rounded-3xl border-4 border-border
         bg-black/40  bg-cover bg-center bg-no-repeat
-        p-20 text-center text-4xl font-bold bg-blend-darken
+        flex h-52 w-80 items-center justify-center text-center text-4xl font-bold bg-blend-darken
         transition-shadow hover:shadow-lg hover:shadow-accent`, className)}
       style={{ backgroundImage: `url(${cardImg})` }}
       to={url}
