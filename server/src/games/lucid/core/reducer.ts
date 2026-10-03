@@ -1,5 +1,12 @@
 import { LucidShared } from '@trgames/shared';
 
+import {
+  currentEvent,
+  land,
+  nextTurn,
+  proceed,
+  withTurn,
+} from '@/games/lucid/core/turn';
 import { resolveOption } from '@/games/lucid/core/options';
 import {
   openSafe,
@@ -7,7 +14,6 @@ import {
   rollAndMove,
   takeBranch,
 } from '@/games/lucid/core/moves';
-import { landOnCell } from '@/games/lucid/core/cells';
 
 // @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
 // плоского реэкспорта не существует — извлекаем сами, чтобы обращения
@@ -30,42 +36,12 @@ const PHASE_FOR_MOVE: Record<EMoveType, LucidShared.EPhase> = {
 // null означает «ход невозможен»: состояние остаётся прежним
 type TMoveHandler = (state: LucidShared.TState, move: TMove) => LucidShared.TState | null;
 
-const nextPlayer = (state: LucidShared.TState): LucidShared.TCtx => {
-  const index = state.G.order.indexOf(state.ctx.currentPlayer);
-
-  return {
-    ...state.ctx,
-    currentPlayer: state.G.order[(index + 1) % state.G.order.length],
-    turn: state.ctx.turn + 1,
-    phase: LucidShared.EPhase.ROLL,
-  };
-};
-
-// Событие разыграно — ход на этом заканчивается. Проверять клетку заново нельзя:
-// вариант мог не сдвинуть игрока, и то же событие предлагалось бы ему бесконечно
-const endTurn = (state: LucidShared.TState): LucidShared.TState => {
-  return { ...state, ctx: nextPlayer(state) };
-};
-
 const afterMove = (state: LucidShared.TState): LucidShared.TState => {
   if (state.G.branchChoices.length > 1) {
     return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.BRANCH } };
   }
 
-  const player = state.G.players[state.ctx.currentPlayer];
-  const event = state.G.events[player.position];
-  // Вариант, который игроку не по карману, выбрать нельзя. Если таковы все варианты,
-  // выбирать не из чего и событие проходит мимо: иначе у игрока не осталось бы
-  // ни одного допустимого хода и партия встала бы намертво
-  const affordable = event?.options.some(option => !option.cost || option.cost <= player.resource);
-
-  if (affordable) {
-    return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.CHOICE } };
-  }
-
-  const landed = { ...state, G: landOnCell(state.G, player.id) };
-
-  return { ...landed, ctx: nextPlayer(landed) };
+  return land(state);
 };
 
 const isAtFinish = (state: LucidShared.TState, player: LucidShared.TPlayer): boolean =>
@@ -81,7 +57,7 @@ const skipTurn = (state: LucidShared.TState, player: LucidShared.TPlayer): Lucid
     log: [...state.G.log, `${player.nickname} пропускает ход`],
   };
 
-  return { ...state, G, ctx: nextPlayer({ ...state, G }) };
+  return nextTurn({ ...state, G });
 };
 
 const HANDLERS: Record<EMoveType, TMoveHandler> = {
@@ -99,7 +75,7 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return skipTurn(state, player);
     }
 
-    const rolled = { ...state, G: rollAndMove(state.G, player.id) };
+    const rolled = { ...state, G: rollAndMove(withTurn(state.G, { from: player.position }), player.id) };
 
     if (rolled.G.lastRoll?.pending) {
       return { ...rolled, ctx: { ...rolled.ctx, phase: LucidShared.EPhase.DICE } };
@@ -134,7 +110,7 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return { ...state, G, ctx: { ...state.ctx, phase: LucidShared.EPhase.ENDED } };
     }
 
-    return { ...state, G, ctx: nextPlayer({ ...state, G }) };
+    return nextTurn({ ...state, G });
   },
 
   [EMoveType.CHOOSE_BRANCH]: (state, move) => {
@@ -168,7 +144,7 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
     }
 
     const player = state.G.players[state.ctx.currentPlayer];
-    const option = state.G.events[player.position]?.options[move.optionIndex];
+    const option = currentEvent(state.G, player.id)?.options[move.optionIndex];
 
     if (!option) {
       return null;
@@ -182,7 +158,13 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return null;
     }
 
-    return endTurn({ ...state, G: { ...G, branchChoices: [], pendingSteps: 0 } });
+    return proceed({
+      ...state,
+      G: withTurn(
+        { ...G, branchChoices: [], pendingSteps: 0 },
+        { step: LucidShared.ETurnStep.LANDED, eventCellId: undefined, lawEvent: undefined },
+      ),
+    });
   },
 };
 
