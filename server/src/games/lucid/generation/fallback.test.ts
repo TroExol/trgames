@@ -6,6 +6,7 @@ import {
 
 import { eventSchema, worldSchema } from '@/games/lucid/generation/schema';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
+import { computeContentMetrics } from '@/games/lucid/generation/contentMetrics';
 import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
 import { createRandom } from '@/games/lucid/core/random';
 
@@ -30,6 +31,22 @@ describe('loadFallbackContent', () => {
     Object.values(events).forEach(event => {
       expect(eventSchema.safeParse(event).success).toBe(true);
     });
+  });
+
+  it('тексты пула короткие: событие до 140 символов, вариант до 50', () => {
+    const { events } = loadFallbackContent(trackEventCellIds(2), 'fallback');
+
+    Object.values(events).forEach(event => {
+      expect(event.text.length).toBeLessThanOrEqual(140);
+      event.options.forEach(option => expect(option.text.length).toBeLessThanOrEqual(50));
+    });
+  });
+
+  it('пул держит целевые доли: платных около трети, бед около четверти', () => {
+    const metrics = computeContentMetrics(loadFallbackContent(trackEventCellIds(2), 'fallback'));
+
+    expect(metrics.paidOptionShare).toBeCloseTo(1 / 3, 1);
+    expect(metrics.calamityShare).toBeCloseTo(1 / 4, 1);
   });
 
   it('события покрывают ровно переданные клетки — без лишних и без пропусков', () => {

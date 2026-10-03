@@ -43,7 +43,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 4
+                "value": -1
               }
             ]
           },
@@ -52,20 +52,20 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -3
               }
             ]
           }
         },
         {
-          "text": "Выровнять давление вручную и пройти спокойно",
-          "cost": 2,
+          "text": "Выровнять давление вручную",
+          "cost": 1,
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ]
           }
@@ -119,7 +119,7 @@
       "text": "Датчики движения сошли с ума: переборка захлопывается перед носом у того, кто бежит первым.",
       "options": [
         {
-          "text": "Не вмешиваться и посмотреть, как лидер отскакивает назад",
+          "text": "Смотреть, как лидер отскакивает назад",
           "success": {
             "atoms": [
               {
@@ -147,7 +147,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -192,13 +192,18 @@
       "text": "Турбина кашляет и выдаёт последний импульс. Его можно загнать в одну батарею или раздать по всей станции.",
       "options": [
         {
-          "text": "Забрать весь импульс себе",
+          "text": "Забрать весь импульс, обесточив себе путь",
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 3
+              },
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": -1
               }
             ]
           }
@@ -220,10 +225,10 @@
     {
       "cellId": 6,
       "title": "Смотровой купол",
-      "text": "Сквозь купол видна вся станция и тот, кто ушёл дальше всех. На пульте рядом горит кнопка грузового транспортёра: а вдруг он сработает и на людях?",
+      "text": "Сквозь купол виден тот, кто ушёл дальше всех. Рядом горит кнопка транспортёра: вдруг он сработает и на людях?",
       "options": [
         {
-          "text": "Запустить транспортёр и поменяться местами с лидером",
+          "text": "Поменяться местами с лидером",
           "cost": 3,
           "success": {
             "atoms": [
@@ -260,9 +265,9 @@
           "success": {
             "atoms": [
               {
-                "kind": "MOVE",
+                "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ]
           },
@@ -271,17 +276,29 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -3
               }
             ]
           }
         },
         {
-          "text": "Не верить мёртвым голосам и идти своей дорогой",
+          "text": "Не верить и обойти коридор",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
+                "target": "SELF",
+                "value": -2
+              }
+            ]
+          }
+        },
+        {
+          "text": "Выключить динамик и переждать",
+          "success": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
                 "target": "SELF",
                 "value": 1
               }
@@ -317,7 +334,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -342,23 +359,21 @@
       "text": "Оранжерея проросла в коридор. Сквозь заросли можно прорубиться, но в темноте быстро не выйдет.",
       "options": [
         {
-          "text": "Прорубаться при свете фонаря: с двумя зарядами и больше выйдет быстрее",
+          "text": "Прорубаться наугад",
+          "threshold": 3,
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
-            ],
-            "condition": {
-              "field": "RESOURCE",
-              "operator": "GTE",
-              "value": 2
-            },
-            "otherwise": [
+            ]
+          },
+          "failure": {
+            "atoms": [
               {
-                "kind": "MOVE",
+                "kind": "SKIP_TURN",
                 "target": "SELF",
                 "value": 1
               }
@@ -366,13 +381,25 @@
           }
         },
         {
-          "text": "Срезать сухую ветку на факел",
+          "text": "Идти в обход",
+          "success": {
+            "atoms": [
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": -2
+              }
+            ]
+          }
+        },
+        {
+          "text": "Жечь лианы факелом",
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": -2
               }
             ]
           }
@@ -401,7 +428,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -474,7 +501,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -535,9 +562,9 @@
           "success": {
             "atoms": [
               {
-                "kind": "MOVE",
+                "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ]
           },
@@ -546,7 +573,12 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
+              },
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
               }
             ]
           }
@@ -559,7 +591,19 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 2
+                "value": -1
+              }
+            ]
+          }
+        },
+        {
+          "text": "Переждать за переборкой",
+          "success": {
+            "atoms": [
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
               }
             ]
           }
@@ -584,14 +628,14 @@
           }
         },
         {
-          "text": "Схватиться за оголённый кабель и поймать разряд",
+          "text": "Схватиться за оголённый кабель",
           "threshold": 5,
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ]
           },
@@ -601,6 +645,11 @@
                 "kind": "RESOURCE",
                 "target": "SELF",
                 "value": -2
+              },
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
               }
             ]
           }
@@ -629,13 +678,13 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
         },
         {
-          "text": "Доложить, что его бронь просрочена, и списать запасы лидера",
+          "text": "Списать запасы лидера как просроченные",
           "success": {
             "atoms": [
               {
@@ -654,13 +703,13 @@
       "text": "Табло отсчитывает секунды до продувки. Успеет тот, кто бежит налегке.",
       "options": [
         {
-          "text": "Бежать: с двумя зарядами или меньше выйдет дальше",
+          "text": "Бежать налегке, без лишнего груза",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ],
             "condition": {
@@ -672,24 +721,19 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 1
+                "value": -3
               }
             ]
           }
         },
         {
-          "text": "Бросить пару зарядов и рвануть",
+          "text": "Пересидеть цикл в нише",
           "success": {
             "atoms": [
               {
-                "kind": "RESOURCE",
+                "kind": "SKIP_TURN",
                 "target": "SELF",
-                "value": -2
-              },
-              {
-                "kind": "MOVE",
-                "target": "SELF",
-                "value": 3
+                "value": 1
               }
             ]
           }
@@ -782,7 +826,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -835,7 +879,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -892,7 +936,7 @@
       "text": "Последняя запись обрывается на полуслове: «Если реактор снова запоёт, бегите к...»",
       "options": [
         {
-          "text": "Посветить фонарём и дочитать: сожжёт заряд, если он есть",
+          "text": "Дочитать при фонаре, пока есть заряд",
           "success": {
             "atoms": [
               {
@@ -947,7 +991,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": -1
               }
             ]
           },
@@ -956,19 +1000,19 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
         },
         {
-          "text": "Не тратить время",
+          "text": "Уйти ни с чем",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 1
+                "value": -1
               }
             ]
           }
@@ -997,7 +1041,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1042,7 +1086,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 2
+                "value": -1
               }
             ]
           },
@@ -1051,32 +1095,19 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -3
               }
             ]
           }
         },
         {
-          "text": "Заклеить трещину и спокойно пройти",
-          "cost": 1,
+          "text": "Обойти по длинному коридору",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 2
-              }
-            ]
-          }
-        },
-        {
-          "text": "Засмотреться на Землю и перевести дух",
-          "success": {
-            "atoms": [
-              {
-                "kind": "RESOURCE",
-                "target": "SELF",
-                "value": 1
+                "value": -2
               }
             ]
           }
@@ -1105,7 +1136,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1158,7 +1189,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1212,7 +1243,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1237,11 +1268,16 @@
       "text": "Голос двадцатилетней давности желает счастливого дежурства и зачитывает прогноз солнечной активности.",
       "options": [
         {
-          "text": "Дослушать до конца",
+          "text": "Дослушать прогноз до конца",
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
+                "target": "SELF",
+                "value": 2
+              },
+              {
+                "kind": "SKIP_TURN",
                 "target": "SELF",
                 "value": 1
               }
@@ -1304,18 +1340,18 @@
           "success": {
             "atoms": [
               {
-                "kind": "MOVE",
+                "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ]
           },
           "failure": {
             "atoms": [
               {
-                "kind": "MOVE",
+                "kind": "SKIP_TURN",
                 "target": "SELF",
-                "value": -1
+                "value": 1
               }
             ]
           }
@@ -1328,7 +1364,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 2
+                "value": -1
               }
             ]
           }
@@ -1381,7 +1417,12 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 3
+              },
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": -1
               }
             ]
           }
@@ -1410,7 +1451,7 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1544,21 +1585,12 @@
     {
       "cellId": 38,
       "title": "Стыковочный узел",
-      "text": "Ржавый механизм скрипит, но поддаётся. Провернёшь до конца, и откроется переход прямо в соседний модуль.",
+      "text": "Ржавый механизм заклинило. Переход в соседний модуль закрыт, а время уходит.",
       "options": [
         {
-          "text": "Провернуть вручную",
+          "text": "Бить по механизму, пока не сдвинется",
           "threshold": 4,
           "success": {
-            "atoms": [
-              {
-                "kind": "MOVE",
-                "target": "SELF",
-                "value": 4
-              }
-            ]
-          },
-          "failure": {
             "atoms": [
               {
                 "kind": "MOVE",
@@ -1566,17 +1598,30 @@
                 "value": -1
               }
             ]
+          },
+          "failure": {
+            "atoms": [
+              {
+                "kind": "RESOURCE",
+                "target": "SELF",
+                "value": -1
+              },
+              {
+                "kind": "SKIP_TURN",
+                "target": "SELF",
+                "value": 1
+              }
+            ]
           }
         },
         {
-          "text": "Подключить привод к батарее",
-          "cost": 2,
+          "text": "Идти в обход",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 3
+                "value": -2
               }
             ]
           }
@@ -1610,7 +1655,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1695,7 +1740,7 @@
               {
                 "kind": "MOVE",
                 "target": "ALL",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1720,35 +1765,35 @@
       "text": "Кто-то на другом конце станции просит подтвердить приём. Голос дрожит.",
       "options": [
         {
-          "text": "Ответить и подбодрить всех в эфире",
+          "text": "Остаться на связи, пока не успокоится",
           "success": {
             "atoms": [
               {
-                "kind": "RESOURCE",
-                "target": "ALL",
+                "kind": "SKIP_TURN",
+                "target": "SELF",
                 "value": 1
               }
             ]
           }
         },
         {
-          "text": "Промолчать и подслушать чужие частоты",
+          "text": "Подслушать чужие частоты",
           "threshold": 3,
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": -1
               }
             ]
           },
           "failure": {
             "atoms": [
               {
-                "kind": "RESOURCE",
+                "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1761,7 +1806,7 @@
       "text": "Сирена требует всем замереть. Протокол один для всех, но строже всего к тем, кто вырвался вперёд.",
       "options": [
         {
-          "text": "Соблюсти протокол: замереть самому и задержать лидера",
+          "text": "Замереть самому и задержать лидера",
           "success": {
             "atoms": [
               {
@@ -1794,7 +1839,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1823,7 +1868,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -1934,13 +1979,18 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 3
+              },
+              {
+                "kind": "MOVE",
+                "target": "SELF",
+                "value": -1
               }
             ]
           }
         },
         {
-          "text": "Отправить отчёт на Землю и получить короткий маршрут",
+          "text": "Отправить отчёт на Землю и срезать путь",
           "cost": 1,
           "success": {
             "atoms": [
@@ -1967,7 +2017,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": -1
               }
             ]
           },
@@ -1976,19 +2026,19 @@
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": -1
+                "value": -3
               }
             ]
           }
         },
         {
-          "text": "Обойти стороной",
+          "text": "Обойти по вентиляции",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
-                "value": 1
+                "value": -2
               }
             ]
           }
