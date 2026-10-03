@@ -3,6 +3,7 @@ import { LucidShared } from '@trgames/shared';
 const RED_FILL = '#c8553d';
 const GREEN_FILL = '#5a9e4b';
 export const LAW_FILL = '#c9a227';
+export const SHOP_FILL = '#3f7cc4';
 const PORTAL_RINGS = ['#8e5bd0', '#2f8fd8'];
 
 export const ZONE_LABEL: Record<LucidShared.EDiceZone, string> = {
@@ -30,6 +31,8 @@ export const cellLook = (cell: LucidShared.TCell, isVisited: boolean): TCellLook
       return { fill: 'hollow', ring: PORTAL_RINGS[(cell.portal?.pair ?? 0) % PORTAL_RINGS.length] };
     case LucidShared.ECellType.RED:
       return { fill: RED_FILL };
+    case LucidShared.ECellType.SHOP:
+      return { fill: SHOP_FILL, glyph: '¤' };
     default:
       return { fill: isVisited ? 'ink' : 'hollow' };
   }

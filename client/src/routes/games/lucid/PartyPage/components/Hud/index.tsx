@@ -12,6 +12,7 @@ import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
 import { LawsStrip } from '@/routes/games/lucid/PartyPage/components/LawsStrip';
+import { Hand } from '@/routes/games/lucid/PartyPage/components/Hand';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
 import { CardPick } from '@/routes/games/lucid/PartyPage/components/CardPick';
@@ -41,6 +42,7 @@ export const Hud = observer(function Hud() {
   const [sentStateId, setSentStateId] = useState<number>();
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
+  const [pendingBuy, setPendingBuy] = useState<number>();
   const [collapsedCell, setCollapsedCell] = useState<number>();
   // Итог только что разыгранного варианта — своя клетка и запись истории,
   // не флаг: пока он висит, следующее событие всё равно открывается само
@@ -153,6 +155,34 @@ export const Hud = observer(function Hud() {
     });
   };
 
+  const handleBuy = (index: number | null, discardUid?: number): void => {
+    setSentStateId(state.stateId);
+    setPendingBuy(undefined);
+    socketService.makeMove({
+      discardUid,
+      index,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.BUY_CARD,
+    });
+  };
+
+  const handlePlayCard = (uid: number, targetId?: string): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      playerId: state.you,
+      stateId: state.stateId,
+      targetId,
+      type: EMoveType.PLAY_CARD,
+      uid,
+    });
+  };
+
+  const handleEndTurn = (): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({ playerId: state.you, stateId: state.stateId, type: EMoveType.END_TURN });
+  };
+
   // Невозможное нельзя нажать: не твой ход — кнопок нет вовсе. Тогда отказ
   // сервера перестаёт быть событием для человека
   const renderAction = (): ReactNode => {
@@ -164,6 +194,28 @@ export const Hud = observer(function Hud() {
 
     if (state.ctx.phase === EPhase.LAW) {
       return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} выбирает закон`}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.SHOP) {
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} в Лавке`}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.CARDS) {
+      if (!isMyTurn) {
+        return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
+      }
+
+      return (
+        <Button
+          className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
+          disabled={isSent || isRevealing}
+          onClick={handleEndTurn}
+          style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+          variant="outline"
+        >
+          Закончить ход
+        </Button>
+      );
     }
 
     // Остаток шагов у развилки виден всем, не только ходящему: ждущие видят,
@@ -280,6 +332,45 @@ export const Hud = observer(function Hud() {
     return <p className="text-sm">Событие ждёт решения</p>;
   };
 
+  const renderShop = (): ReactNode => {
+    const hand = state.G.cards.hands[state.you] ?? [];
+    const { resourceName } = theme;
+
+    if (pendingBuy !== undefined) {
+      return (
+        <CardPick
+          isSent={isSent || isRevealing}
+          items={hand.map(item => ({
+            actionLabel: 'Сбросить',
+            key: String(item.uid),
+            name: LucidShared.cardName(state.G, item.card),
+            rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
+          }))}
+          onPick={index => handleBuy(pendingBuy, hand[index].uid)}
+          title="Рука полна: что сбросить?"
+        />
+      );
+    }
+
+    return (
+      <CardPick
+        isSent={isSent || isRevealing}
+        items={state.G.cards.shopOffer.map(item => ({
+          actionLabel: 'Купить',
+          disabled: you.resource < LucidShared.SHOP_PRICE,
+          flavor: state.G.cardNames?.[item.card]?.flavor,
+          key: String(item.uid),
+          name: LucidShared.cardName(state.G, item.card),
+          rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
+        }))}
+        onPick={index => (hand.length >= LucidShared.HAND_LIMIT ? setPendingBuy(index) : handleBuy(index))}
+        onSkip={() => handleBuy(null)}
+        skipLabel="Ничего не беру"
+        title={`Лавка: одна карта за ${LucidShared.SHOP_PRICE}`}
+      />
+    );
+  };
+
   return (
     <>
       <header
@@ -343,6 +434,17 @@ export const Hud = observer(function Hud() {
                   text={`— ${state.G.players[playerId].role}`}
                 />
               )}
+              <span className="shrink-0">{`· ${state.G.players[playerId].resource}`}</span>
+              {(state.G.cards.hands[playerId] ?? []).map(item => (
+                <span
+                  className="shrink-0 rounded border px-1 leading-tight"
+                  key={item.uid}
+                  style={{ borderColor: 'var(--lucid-muted)' }}
+                  title={`${LucidShared.cardName(state.G, item.card)}: ${LucidShared.SHOP_TEXT[item.card].rule(theme.resourceName)}`}
+                >
+                  {LucidShared.cardName(state.G, item.card).charAt(0)}
+                </span>
+              ))}
               {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
             </li>
           ))}
@@ -370,6 +472,12 @@ export const Hud = observer(function Hud() {
 
         <Ribbon />
 
+        <Hand
+          canPlay={isMyTurn && state.ctx.phase === EPhase.CARDS}
+          isSent={isSent || isRevealing}
+          onPlay={handlePlayCard}
+        />
+
         <div className="flex items-center gap-3">
           <Die
             roll={partyStore.dicePhase === 'idle' ? state.G.lastRoll : partyStore.pendingRoll}
@@ -385,13 +493,15 @@ export const Hud = observer(function Hud() {
           items={state.G.cards.lawDraw.map(law => ({
             actionLabel: 'Ввести',
             key: law,
-            name: LucidShared.LAW_TEXT[law].name,
+            name: LucidShared.cardName(state.G, law),
             rule: LucidShared.LAW_TEXT[law].rule(theme.resourceName),
           }))}
           onPick={handleChooseLaw}
           title="Закон: какой ввести?"
         />
       )}
+
+      {state.ctx.phase === EPhase.SHOP && isMyTurn && renderShop()}
 
       {event && !isCollapsed && (
         <EventCard

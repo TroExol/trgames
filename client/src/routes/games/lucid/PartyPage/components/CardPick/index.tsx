@@ -6,6 +6,7 @@ export interface TCardPickItem {
   key: string;
   name: string;
   rule: string;
+  flavor?: string;
   actionLabel: string;
   disabled?: boolean;
 }
@@ -45,6 +46,7 @@ export const CardPick = observer(function CardPick({
               style={{ borderColor: 'var(--lucid-accent)' }}
             >
               <p className="font-unbounded text-base">{item.name}</p>
+              {item.flavor && <p className="text-sm italic" style={{ color: 'var(--lucid-muted)' }}>{item.flavor}</p>}
               <p className="text-sm leading-relaxed">{item.rule}</p>
               <Button
                 className="w-full whitespace-normal bg-transparent hover:bg-transparent"

@@ -26,7 +26,7 @@ export const LawsStrip = observer(function LawsStrip() {
               )
             : (
                 <>
-                  <p className="font-unbounded text-xs">{LucidShared.LAW_TEXT[law].name}</p>
+                  <p className="font-unbounded text-xs">{LucidShared.cardName(state.G, law)}</p>
                   <p className="text-[11px] leading-tight" style={{ color: 'var(--lucid-muted)' }}>
                     {LucidShared.LAW_TEXT[law].rule(resourceName)}
                   </p>

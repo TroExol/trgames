@@ -8,6 +8,7 @@ import { LucidShared } from '@trgames/shared';
 import {
   cellLook,
   LAW_FILL,
+  SHOP_FILL,
   zoneStarts,
 } from './cellLook';
 
@@ -33,6 +34,11 @@ describe('cellLook', () => {
     const look = cellLook({ id: 1, type: ECellType.LAW, next: [] }, false);
 
     expect(look).toEqual({ fill: LAW_FILL, glyph: '§' });
+  });
+
+  it('клетка «Лавка» видна сразу и с глифом', () => {
+    expect(cellLook({ id: 1, type: ECellType.SHOP, next: [] }, false)).toEqual({ fill: SHOP_FILL, glyph: '¤' });
+    expect(SHOP_FILL).toBe('#3f7cc4');
   });
 
   it('портал — кольцо цвета своей пары, у пар разные цвета', () => {
