@@ -3,7 +3,7 @@ import { LucidShared } from '@trgames/shared';
 import { buildTrack } from '@/games/lucid/core/track';
 import { createRandom } from '@/games/lucid/core/random';
 
-const START_RESOURCE = 3;
+const START_RESOURCE = 10;
 
 interface TSetupPartyParams {
   seed: string;

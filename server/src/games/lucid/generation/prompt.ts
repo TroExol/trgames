@@ -48,7 +48,7 @@ const REQUIREMENT_BY_TARGET: Record<LucidShared.ETarget.FIRST | LucidShared.ETar
 };
 
 const CALAMITY_REQUIREMENT = ' (беда — все варианты с потерей: игрок выбирает меньшее зло, например'
-  + ' −2 клетки, −2 ресурса, пропуск хода или рискнуть с провалом хуже; успех рискованного варианта'
+  + ' −2 клетки, −4 ресурса, пропуск хода или рискнуть с провалом хуже; успех рискованного варианта'
   + ' — «обошлось», мелкая потеря или ничего, но не прибыль)';
 const PAID_REQUIREMENT = ' (один вариант платный — cost, без threshold)';
 
@@ -152,11 +152,11 @@ ${COST_RANGE.min} до ${COST_RANGE.max}.
 
 Правила баланса вариантов, коротко:
 - ни один вариант не должен быть очевидно лучше остальных;
-- платный даёт примерно на единицу больше, чем стоит, и никогда не приносит
+- платный даёт примерно на 1–2 больше, чем стоит, и никогда не приносит
   ресурса больше цены; в беде платный — откуп: платишь вместо потери, а
   прибыли не получаешь;
 - рискованный при удаче даёт больше платного, а провал у него ощутимый:
-  от −1 до −3 клеток, или −1…−2 ресурса, или пропуск хода — не мягкий шаг
+  от −1 до −3 клеток, или −2…−4 ресурса, или пропуск хода — не мягкий шаг
   назад;
 - пропуск хода как провал допустим при любом threshold; в остальных ветках —
   только если удача вероятна (threshold не выше 3) или награда крупная;
@@ -189,10 +189,10 @@ ${describeTargets()}
   {"cellId":1,"title":"...","text":"...","options":[
     {"text":"...","threshold":4,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]},
      "failure":{"atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}},
-    {"text":"...","cost":2,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
+    {"text":"...","cost":3,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
   ]},
   {"cellId":2,"title":"...","text":"...","options":[
-    {"text":"...","threshold":3,"success":{"atoms":[{"kind":"RESOURCE","target":"SELF","value":2}]},
+    {"text":"...","threshold":3,"success":{"atoms":[{"kind":"RESOURCE","target":"SELF","value":4}]},
      "failure":{"atoms":[{"kind":"MOVE","target":"SELF","value":-1}]}},
     {"text":"...","success":{"atoms":[{"kind":"MOVE","target":"SELF","value":1}]}}
   ]}
