@@ -32,10 +32,47 @@ export const Lobby = observer(function Lobby() {
   const you = view.members.find(member => member.playerId === view.you);
   const inviteLink = window.location.href;
 
-  const handleCopyLink = (): void => {
-    navigator.clipboard.writeText(inviteLink)
-      .then(() => toast.success('Ссылка скопирована'))
-      .catch(() => toast.error('Не удалось скопировать ссылку'));
+  const canShare = typeof navigator.share === 'function';
+
+  const copyViaTextarea = (): void => {
+    const textarea = document.createElement('textarea');
+
+    textarea.value = inviteLink;
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      if (!document.execCommand('copy')) {
+        throw new Error('copy failed');
+      }
+    } finally {
+      textarea.remove();
+    }
+  };
+
+  const handleCopyLink = async (): Promise<void> => {
+    try {
+      if (canShare) {
+        await navigator.share({ url: inviteLink });
+
+        return;
+      }
+
+      // По http (например, LAN-IP) navigator.clipboard не существует
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(inviteLink);
+      } else {
+        copyViaTextarea();
+      }
+
+      toast.success('Ссылка скопирована');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+
+      toast.error('Не удалось скопировать ссылку');
+    }
   };
 
   const handleSubmitTheme = (event: FormEvent<HTMLFormElement>): void => {
@@ -57,8 +94,8 @@ export const Lobby = observer(function Lobby() {
 
       <div className="flex flex-col gap-2">
         <Input readOnly value={inviteLink} />
-        <Button onClick={handleCopyLink} type="button" variant="outline">
-          Скопировать ссылку
+        <Button onClick={() => void handleCopyLink()} type="button" variant="outline">
+          {canShare ? 'Поделиться ссылкой' : 'Скопировать ссылку'}
         </Button>
       </div>
 
