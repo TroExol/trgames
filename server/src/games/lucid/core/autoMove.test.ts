@@ -16,6 +16,18 @@ describe('chooseAutoMove', () => {
     expect(chooseAutoMove(state)?.type).toBe(LucidShared.EMoveType.ROLL);
   });
 
+  it('в фазе выбора кубика берёт первый', () => {
+    const state = makeFallbackParty({ seed: 'auto-dice' });
+    state.ctx.phase = LucidShared.EPhase.DICE;
+
+    expect(chooseAutoMove(state)).toEqual({
+      type: LucidShared.EMoveType.CHOOSE_DIE,
+      playerId: state.ctx.currentPlayer,
+      stateId: state.stateId,
+      dieIndex: 0,
+    });
+  });
+
   it('в фазе развилки берёт первую доступную ветку', () => {
     const state = makeFallbackParty({ seed: 'auto-branch' });
     state.ctx.phase = LucidShared.EPhase.BRANCH;

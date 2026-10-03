@@ -1,7 +1,11 @@
 import { LucidShared } from '@trgames/shared';
 
 import { resolveOption } from '@/games/lucid/core/options';
-import { rollAndMove, takeBranch } from '@/games/lucid/core/moves';
+import {
+  pickDie,
+  rollAndMove,
+  takeBranch,
+} from '@/games/lucid/core/moves';
 import { landOnCell } from '@/games/lucid/core/cells';
 
 // @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
@@ -16,6 +20,7 @@ export type TMove = LucidShared.TMove;
 const PHASE_FOR_MOVE: Record<EMoveType, LucidShared.EPhase> = {
   [EMoveType.ROLL]: LucidShared.EPhase.ROLL,
   [EMoveType.CHOOSE_BRANCH]: LucidShared.EPhase.BRANCH,
+  [EMoveType.CHOOSE_DIE]: LucidShared.EPhase.DICE,
   [EMoveType.CHOOSE_OPTION]: LucidShared.EPhase.CHOICE,
 };
 
@@ -99,7 +104,13 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return { ...state, G, ctx: nextPlayer({ ...state, G }) };
     }
 
-    return afterMove({ ...state, G: rollAndMove(state.G, player.id) });
+    const rolled = { ...state, G: rollAndMove(state.G, player.id) };
+
+    if (rolled.G.lastRoll?.pending) {
+      return { ...rolled, ctx: { ...rolled.ctx, phase: LucidShared.EPhase.DICE } };
+    }
+
+    return afterMove(rolled);
   },
 
   [EMoveType.CHOOSE_BRANCH]: (state, move) => {
@@ -111,6 +122,16 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       ...state,
       G: takeBranch(state.G, state.ctx.currentPlayer, move.cellId),
     });
+  },
+
+  [EMoveType.CHOOSE_DIE]: (state, move) => {
+    if (move.type !== EMoveType.CHOOSE_DIE) {
+      return null;
+    }
+
+    const G = pickDie(state.G, state.ctx.currentPlayer, move.dieIndex);
+
+    return G ? afterMove({ ...state, G }) : null;
   },
 
   [EMoveType.CHOOSE_OPTION]: (state, move) => {

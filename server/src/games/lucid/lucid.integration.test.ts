@@ -66,7 +66,7 @@ describe('партия целиком', () => {
   it('за партию развилка предлагается не раз и не два', () => {
     // Если бы выбор ветки ждал точного попадания на клетку развилки,
     // предложений было бы в разы меньше
-    expect(playToEnd(makeParty('branches')).branchOffers).toBeGreaterThan(3);
+    expect(playToEnd(makeParty('branches-2')).branchOffers).toBeGreaterThan(3);
   });
 
   it('за партию выбор варианта события предлагается не раз и не два', () => {

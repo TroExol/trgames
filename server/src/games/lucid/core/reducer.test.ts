@@ -492,3 +492,61 @@ describe('клетка после хода', () => {
     expect(next.G.players.a.resource).toBe(before);
   });
 });
+
+describe('выбор кубика', () => {
+  const straight = (length: number): LucidShared.TTrack => ({
+    cells: Array.from({ length }, (_, id) => ({
+      id,
+      type: id === 0
+        ? LucidShared.ECellType.START
+        : id === length - 1 ? LucidShared.ECellType.FINISH : LucidShared.ECellType.EMPTY,
+      next: id === length - 1 ? [] : [id + 1],
+    })),
+    startId: 0,
+    finishId: length - 1,
+  });
+
+  const inPickZone = () => {
+    const state = makeParty('dice-pick');
+    state.G.track = straight(31);
+    state.G.players.a.position = 15;
+
+    return state;
+  };
+
+  const choose = (state: LucidShared.TState, dieIndex: number) => applyMove(state, {
+    type: EMoveType.CHOOSE_DIE,
+    playerId: state.ctx.currentPlayer,
+    stateId: state.stateId,
+    dieIndex,
+  });
+
+  it('ROLL в зоне выбора переводит в фазу DICE без движения', () => {
+    const rolled = roll(inPickZone());
+
+    expect(rolled.ctx.phase).toBe(LucidShared.EPhase.DICE);
+    expect(rolled.ctx.currentPlayer).toBe('a');
+    expect(rolled.G.players.a.position).toBe(15);
+  });
+
+  it('CHOOSE_DIE двигает фишку и передаёт ход', () => {
+    const rolled = roll(inPickZone());
+    const after = choose(rolled, 0);
+
+    expect(after.G.players.a.position).toBe(15 + (rolled.G.lastRoll?.values?.[0] ?? 0));
+    expect(after.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(after.ctx.currentPlayer).toBe('b');
+  });
+
+  it('CHOOSE_DIE с несуществующим кубиком игнорируется', () => {
+    const rolled = roll(inPickZone());
+
+    expect(choose(rolled, 2)).toBe(rolled);
+  });
+
+  it('CHOOSE_DIE в фазе ROLL игнорируется', () => {
+    const state = inPickZone();
+
+    expect(choose(state, 0)).toBe(state);
+  });
+});
