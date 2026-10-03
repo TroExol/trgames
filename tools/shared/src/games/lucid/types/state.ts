@@ -19,6 +19,7 @@ export interface TPlayer {
 export enum EPhase {
   BRANCH = 'BRANCH',
   CHOICE = 'CHOICE',
+  DICE = 'DICE',
   ENDED = 'ENDED',
   ROLL = 'ROLL',
 }
@@ -31,6 +32,12 @@ export interface TRoll {
   value: number;
   // Есть, если бросок был проверкой варианта события, а не броском на движение
   threshold?: number;
+  // Все кубики броска, если их было два
+  values?: number[];
+  // Два кубика на выбор: фишка ещё не двигалась, ждём CHOOSE_DIE
+  pending?: boolean;
+  // Индекс выбранного кубика в values
+  picked?: number;
   // Версия состояния, в которой этот бросок случился (TState.stateId после хода).
   // Нужна клиенту, чтобы отличить новый бросок от старого: два броска подряд
   // могут выпасть одинаковыми, а по одному lastRoll.value такой случай не отличить
