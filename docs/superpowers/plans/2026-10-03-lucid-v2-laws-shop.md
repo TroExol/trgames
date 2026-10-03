@@ -1561,7 +1561,7 @@ git commit -m "docs(lucid): итерация 2 — законы, замер ав
 - Test: `core/shop.test.ts`, `core/cards.test.ts`, `core/autoMove.test.ts`, `core/formatForPlayer.test.ts`, `core/lawEffects.test.ts`
 
 **Interfaces:**
-- Produces: `LucidShared.EShopCard`, `LucidShared.THandCard = { uid: number; card: EShopCard }`, `LucidShared.SHOP_TEXT: Record<EShopCard, TShopCardText>` где `TShopCardText = TCardText & { kind: 'active' | 'oneshot' | 'passive' }`; константы в `cardText.ts`: `HAND_LIMIT = 3`, `SHOP_PRICE = 5`, `CARD_USE_PRICE = 3`, `SHOP_OFFER = 3`; `ECellType.SHOP`, `EPhase.SHOP`, ход `BUY_CARD { index: number | null; discardUid?: number }`; `TCards` + `shopDeck`, `shopDiscard`, `shopOffer: THandCard[]`, `hands: Record<TPlayerId, THandCard[]>`; `TCardsView` + `shopOffer`, `hands`. Сервер: `openShop(G): TG`, `buyCard(G, playerId, index, discardUid?): TG | null`, `giveCard(G, playerId): TG`.
+- Produces: `LucidShared.EShopCard`, `LucidShared.THandCard = { uid: number; card: EShopCard }`, `LucidShared.SHOP_TEXT: Record<EShopCard, TShopCardText>` где `TShopCardText = TCardText & { kind: 'active' | 'passive' }`; константы в `cardText.ts`: `HAND_LIMIT = 3`, `SHOP_PRICE = 5`, `CARD_USE_PRICE = 3`, `SHOP_OFFER = 3`; `ECellType.SHOP`, `EPhase.SHOP`, ход `BUY_CARD { index: number | null; discardUid?: number }`; `TCards` + `shopDeck`, `shopDiscard`, `shopOffer: THandCard[]`, `hands: Record<TPlayerId, THandCard[]>`; `TCardsView` + `shopOffer`, `hands`. Сервер: `openShop(G): TG`, `buyCard(G, playerId, index, discardUid?): TG | null`, `giveCard(G, playerId): TG`.
 
 - [ ] **Step 1: Типы и тексты**
 
@@ -1598,7 +1598,7 @@ export const CARD_USE_PRICE = 3;
 export const SHOP_OFFER = 3;
 
 export interface TShopCardText extends TCardText {
-  kind: 'active' | 'oneshot' | 'passive';
+  kind: 'active' | 'passive';
 }
 
 export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
@@ -1608,8 +1608,8 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   },
   [EShopCard.HAND_OF_FATE]: {
     name: 'Толчок',
-    kind: 'oneshot',
-    rule: () => 'Выбери игрока — он отступает на 2 клетки (при двух-трёх игроках на 1). Карта уходит в сброс',
+    kind: 'active',
+    rule: resource => `Отдай ${resource} 3 — выбранный игрок отступает на 4 клетки`,
   },
   [EShopCard.HARPOON]: {
     name: 'Аркан',
@@ -1875,12 +1875,12 @@ git commit -m "feat(lucid): Лавка — три карты, одна поку�
 Правила:
 - Фаза `CARDS` — шаг `CARDS` машины хода. Она открывается, только если у игрока есть карта, которую можно сыграть. Иначе ход идёт к `END`.
 - Каждая карта руки играется не больше раза за ход (`turn.used`). `freshTurn` ставит `used: []`.
-- Активная карта стоит 3 Ресурса. «Толчок» бесплатен и уходит в сброс после розыгрыша.
+- Активная карта стоит 3 Ресурса за применение и остаётся в руке.
 - «Ближайший впереди» — другой игрок с наименьшей глубиной из тех, у кого глубина больше твоей; игроки у сейфа не считаются; ничья — первый по `G.order`. Расстояние — разница глубин (`trackDepths`).
 - «Кошка» и «Аркан» требуют расстояние ≤10. «Рывок» и «Кошка» не играются у сейфа.
 - «Рывок» и «Кошка» вызывают `land`: клетка срабатывает. После неё ход вернётся в фазу карт (`LANDED → CARDS`).
 - «Порча»: `cursed += 1` у цели. В начале хода проклятого игрока, до законов начала хода, он разыгрывает беду (`drawEvent(G, 'bad')`), `cursed -= 1`. Бед в партии нет — строка в ленту, ход идёт дальше.
-- «Толчок»: `targetId` обязателен, это другой игрок не у сейфа; сдвиг −2, при 2–3 игроках −1.
+- «Толчок»: `targetId` обязателен, это другой игрок не у сейфа; сдвиг −4 при любом числе игроков. Отличие от «Обвала» — цель любая, а не ближайший впереди.
 
 - [ ] **Step 1: Типы**
 
@@ -1897,7 +1897,7 @@ git commit -m "feat(lucid): Лавка — три карты, одна поку�
 - «Кошка»: `b` на 9, `a` на 2 → `a` на 9; `b` на 15 (расстояние 13) — не играется.
 - «Аркан»: `b` на 9 → `b` на 2.
 - «Порча»: у `b` `cursed: 1`; в партии есть беда → в начале хода `b` фаза `CHOICE` с этой бедой, `cursed: 0`.
-- «Толчок»: трое игроков, цель `c` на 6 → `c` на 5; карта ушла из руки в `shopDiscard`; без `targetId` → `null`; цель — сам игрок → `null`.
+- «Толчок»: трое игроков, цель `c` на 6 → `c` на 2, у `a` Ресурс −3, карта осталась в руке; без `targetId` → `null`; цель — сам игрок → `null`; Ресурс 2 → `null`.
 - `END_TURN` в фазе `CARDS` → ход у `b`.
 
 `core/autoMove.test.ts`: фаза `CARDS` → `{ type: END_TURN }`.
@@ -1957,14 +1957,14 @@ export const canPlay = (
     return false;
   }
 
+  if (G.players[actorId].resource < LucidShared.CARD_USE_PRICE) {
+    return false;
+  }
+
   if (item.card === EShopCard.HAND_OF_FATE) {
     return targetId === undefined
       ? G.order.some(id => isValidTarget(G, actorId, id))
       : isValidTarget(G, actorId, targetId);
-  }
-
-  if (G.players[actorId].resource < LucidShared.CARD_USE_PRICE) {
-    return false;
   }
 
   const ahead = nearestAhead(G, actorId);
@@ -1987,7 +1987,7 @@ export const hasPlayable = (G: LucidShared.TG, actorId: LucidShared.TPlayerId): 
 
 `playCard(state, uid, targetId)`:
 1. Найти карту в руке ходящего; `canPlay(..., targetId)` ложно → `null`.
-2. Отметить `turn.used`; для активной списать 3 Ресурса; для «Толчка» убрать из руки в `shopDiscard`.
+2. Отметить `turn.used`; списать 3 Ресурса.
 3. Применить эффект; строка ленты «{ник} играет «{название}»: {что}».
 4. «Рывок», «Кошка» → `land(state)`; иначе → `proceed(state)` (шаг `CARDS` снова проверит `hasPlayable`).
 
@@ -2008,7 +2008,7 @@ Run: `yarn workspace @trgames/server test --run src/games/lucid` — Expected: P
 
 - [ ] **Step 5: PRD и commit**
 
-PRD: подраздел «Лавка и рука» — фаза карт, правила выше, таблица 6 активных/разовых карт; 5.4 — `PLAY_CARD`, `END_TURN`; «Словарь» — «Ближайший впереди — другой игрок с наименьшей глубиной больше твоей, не у сейфа; ничья — первый по очереди».
+PRD: подраздел «Лавка и рука» — фаза карт, правила выше, таблица 6 активных карт; 5.4 — `PLAY_CARD`, `END_TURN`; «Словарь» — «Ближайший впереди — другой игрок с наименьшей глубиной больше твоей, не у сейфа; ничья — первый по очереди».
 
 ```bash
 git add tools/shared server/src/games/lucid docs/lucid/PRD.md
@@ -2129,7 +2129,7 @@ git commit -m "feat(lucid): модель называет законы и кар
 
 - [ ] **Step 3: Рука**
 
-`Hand/index.tsx` — ряд карт ходящего себя (`hands[state.you]`) в нижней панели над кнопкой хода. Карта — чип с названием; нажатие раскрывает правило под рядом. В фазе `CARDS` мой ход: у карты, которую можно сыграть, кнопка «Применить · {CARD_USE_PRICE}» (у «Толчка» — «Применить»); у «Толчка» после нажатия — кнопки с никами других игроков не у сейфа, выбор шлёт `PLAY_CARD { uid, targetId }`. Справа кнопка «Закончить ход» → `END_TURN`. Можно ли сыграть карту — сервер всё равно проверит; клиент блокирует кнопку по тем же простым признакам: карта в `turn.used`, не хватает Ресурса.
+`Hand/index.tsx` — ряд карт ходящего себя (`hands[state.you]`) в нижней панели над кнопкой хода. Карта — чип с названием; нажатие раскрывает правило под рядом. В фазе `CARDS` мой ход: у карты, которую можно сыграть, кнопка «Применить · {CARD_USE_PRICE}»; у «Толчка» после нажатия — кнопки с никами других игроков не у сейфа, выбор шлёт `PLAY_CARD { uid, targetId }`. Справа кнопка «Закончить ход» → `END_TURN`. Можно ли сыграть карту — сервер всё равно проверит; клиент блокирует кнопку по тем же простым признакам: карта в `turn.used`, не хватает Ресурса.
 
 - [ ] **Step 4: Список игроков**
 
@@ -2166,7 +2166,7 @@ Run: `yarn workspace @trgames/server lucid:balance` — записать обе 
 
 - [ ] **Step 2: Документы**
 
-- `OPEN-QUESTIONS.md`: решения владельца (Лавка: 3 карты, одна покупка, сброс при полной руке; руки и Ресурс видны всем; полоса законов над полем, рука в нижней панели; автопроверка после каждой части; названия только наши) — «одобрено 2026-10-03». Решения исполнителя — «ждёт апрува»: «Толчок» разовый и бесплатный; при Ресурсе меньше 5 Лавка не открывается; «ближайший впереди» при ничьей — первый по очереди.
+- `OPEN-QUESTIONS.md`: решения владельца (Лавка: 3 карты, одна покупка, сброс при полной руке; руки и Ресурс видны всем; «Толчок» — многоразовый, 3 Ресурса, выбранный игрок −4; полоса законов над полем, рука в нижней панели; автопроверка после каждой части; названия только наши) — «одобрено 2026-10-03». Решения исполнителя — «ждёт апрува»: при Ресурсе меньше 5 Лавка не открывается; «ближайший впереди» при ничьей — первый по очереди.
 - `CONTEXT.md`: «Карта руки», «Лавка» — сверить с реализацией.
 - `PRD.md`, раздел 10: итерации 2 и 3 сделаны, дальше — живая партия владельца, затем итерация 4 (схватка, `CHOSEN` в событиях модели).
 
