@@ -72,14 +72,12 @@ export const Die = observer(function Die({ roll, spinning }: TProps) {
 
   const values = roll?.values?.length === 2 ? roll.values : undefined;
   const shownValue = spinning ? spinFace : roll?.value;
-  const faces = values
-    ? spinning
-      ? [spinFace, (spinFace % 6) + 1]
-      : values
-    : [shownValue];
-  const total = values && !roll?.pending && roll?.picked === undefined ? values[0] + values[1] : roll?.value;
-  const shownNumber = spinning ? shownValue : values ? total : shownValue;
+  let faces = [shownValue];
   let title = 'Кубик ещё не бросали';
+
+  if (values) {
+    faces = spinning ? [spinFace, (spinFace % 6) + 1] : values;
+  }
 
   if (spinning) {
     title = 'Кубик катится';
@@ -88,6 +86,8 @@ export const Die = observer(function Die({ roll, spinning }: TProps) {
   } else if (roll) {
     title = `Выпало ${roll.value}`;
   }
+
+  const hideNumber = !spinning && roll?.pending === true;
 
   return (
     // Броска ещё не было — кубик погашен, но остаётся на месте: полоса не
@@ -104,7 +104,7 @@ export const Die = observer(function Die({ roll, spinning }: TProps) {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="font-unbounded text-lg leading-none">{shownNumber ?? '—'}</span>
+        {!hideNumber && <span className="font-unbounded text-lg leading-none">{shownValue ?? '—'}</span>}
 
         {/* Порог — часть решения, а не сноска: по нему игрок и выбирал вариант.
             Во время перебора граней порог не показываем — он ещё не относится
