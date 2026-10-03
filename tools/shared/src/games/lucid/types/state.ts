@@ -11,6 +11,7 @@ export interface TPlayer {
   position: number;
   resource: number;
   skipTurns: number;
+  cursed?: number;
   // Роль в мире партии, придуманная нейросетью в честь игрока. Необязательна:
   // модель могла не прислать роль на всех, а партии, сгенерированные раньше,
   // лежат в базе вовсе без ролей
@@ -19,6 +20,7 @@ export interface TPlayer {
 
 export enum EPhase {
   BRANCH = 'BRANCH',
+  CARDS = 'CARDS',
   CHOICE = 'CHOICE',
   DICE = 'DICE',
   ENDED = 'ENDED',

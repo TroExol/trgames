@@ -60,6 +60,7 @@ export interface TTurn {
   from?: number;
   fired: ELaw[];
   extraTurn: boolean;
+  used: number[];
   eventCellId?: number;
   lawEvent?: TEvent;
 }

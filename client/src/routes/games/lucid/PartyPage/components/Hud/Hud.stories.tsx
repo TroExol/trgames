@@ -81,7 +81,7 @@ const setupHud = (
         lastRoll: dice?.lastRoll,
         cellHistory: {},
         cards: { laws: [null, null, null], lawDraw: [], shopOffer: [], hands: {} },
-        turn: { step: LucidShared.ETurnStep.START, fired: [], extraTurn: false },
+        turn: { step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] },
       },
       ctx: {
         currentPlayer: order[0],

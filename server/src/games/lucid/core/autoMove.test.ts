@@ -146,4 +146,15 @@ describe('chooseAutoMove', () => {
 
     expect(chooseAutoMove(state)).toMatchObject({ optionIndex: 1 });
   });
+
+  it('в фазе карт завершает ход', () => {
+    const state = makeFallbackParty({ seed: 'auto-cards' });
+    state.ctx.phase = LucidShared.EPhase.CARDS;
+
+    expect(chooseAutoMove(state)).toEqual({
+      type: LucidShared.EMoveType.END_TURN,
+      playerId: state.ctx.currentPlayer,
+      stateId: state.stateId,
+    });
+  });
 });

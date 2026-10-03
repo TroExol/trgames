@@ -7,6 +7,7 @@ import {
   proceed,
   withTurn,
 } from '@/games/lucid/core/turn';
+import { playCard } from '@/games/lucid/core/playCard';
 import { resolveOption } from '@/games/lucid/core/options';
 import {
   openSafe,
@@ -33,6 +34,8 @@ const PHASE_FOR_MOVE: Record<EMoveType, LucidShared.EPhase> = {
   [EMoveType.OPEN_SAFE]: LucidShared.EPhase.ROLL,
   [EMoveType.CHOOSE_LAW]: LucidShared.EPhase.LAW,
   [EMoveType.BUY_CARD]: LucidShared.EPhase.SHOP,
+  [EMoveType.PLAY_CARD]: LucidShared.EPhase.CARDS,
+  [EMoveType.END_TURN]: LucidShared.EPhase.CARDS,
 };
 
 // null означает «ход невозможен»: состояние остаётся прежним
@@ -63,6 +66,15 @@ const skipTurn = (state: LucidShared.TState, player: LucidShared.TPlayer): Lucid
 };
 
 const HANDLERS: Record<EMoveType, TMoveHandler> = {
+  [EMoveType.PLAY_CARD]: (state, move) => {
+    if (move.type !== EMoveType.PLAY_CARD || !Number.isInteger(move.uid)) {
+      return null;
+    }
+
+    return playCard(state, move.uid, move.targetId);
+  },
+  [EMoveType.END_TURN]: state =>
+    proceed({ ...state, G: withTurn(state.G, { step: LucidShared.ETurnStep.END }) }),
   [EMoveType.BUY_CARD]: (state, move) => {
     if (move.type !== EMoveType.BUY_CARD) {
       return null;

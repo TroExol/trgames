@@ -30,3 +30,20 @@ export const resolveTarget = (
       return [actorId];
   }
 };
+
+export const nearestAhead = (
+  G: LucidShared.TG,
+  actorId: LucidShared.TPlayerId,
+): { id: LucidShared.TPlayerId; distance: number } | undefined => {
+  const depths = LucidShared.trackDepths(G.track);
+  const own = depths[G.players[actorId].position] ?? 0;
+  const ahead = G.order
+    .filter(id => id !== actorId && G.players[id].position !== G.track.finishId)
+    .map(id => ({ id, distance: (depths[G.players[id].position] ?? 0) - own }))
+    .filter(item => item.distance > 0);
+
+  return ahead.reduce<{ id: LucidShared.TPlayerId; distance: number } | undefined>(
+    (best, item) => (!best || item.distance < best.distance ? item : best),
+    undefined,
+  );
+};

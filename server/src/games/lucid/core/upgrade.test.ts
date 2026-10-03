@@ -19,7 +19,7 @@ describe('upgradeG', () => {
 
     expect(upgraded.cards.laws).toEqual([null, null, null]);
     expect(upgraded.cards.lawDeck).toEqual([]);
-    expect(upgraded.turn).toEqual({ step: LucidShared.ETurnStep.START, fired: [], extraTurn: false });
+    expect(upgraded.turn).toEqual({ step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] });
   });
 
   it('новая партия не меняется', () => {

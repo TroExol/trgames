@@ -25,7 +25,7 @@ describe('машина хода', () => {
 
     expect(next.ctx.currentPlayer).toBe('b');
     expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
-    expect(next.G.turn).toEqual({ step: LucidShared.ETurnStep.START, fired: [], extraTurn: false });
+    expect(next.G.turn).toEqual({ step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] });
   });
 
   it('ход ещё раз оставляет того же игрока', () => {

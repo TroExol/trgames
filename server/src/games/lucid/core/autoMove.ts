@@ -33,6 +33,10 @@ export const chooseAutoMove = (state: LucidShared.TState): LucidShared.TMove | n
     return { type: LucidShared.EMoveType.CHOOSE_LAW, playerId, stateId, index: 0 };
   }
 
+  if (state.ctx.phase === LucidShared.EPhase.CARDS) {
+    return { type: LucidShared.EMoveType.END_TURN, playerId, stateId };
+  }
+
   if (state.ctx.phase === LucidShared.EPhase.SHOP) {
     return { type: LucidShared.EMoveType.BUY_CARD, playerId, stateId, index: null };
   }
