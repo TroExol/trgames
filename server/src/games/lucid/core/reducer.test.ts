@@ -307,6 +307,7 @@ describe('события', () => {
         }],
       },
     };
+    state.G.turn = { ...state.G.turn, step: LucidShared.ETurnStep.LANDED };
     state.ctx.phase = LucidShared.EPhase.CHOICE;
 
     const next = applyMove(state, {

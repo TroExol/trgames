@@ -160,10 +160,7 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
 
     return proceed({
       ...state,
-      G: withTurn(
-        { ...G, branchChoices: [], pendingSteps: 0 },
-        { step: LucidShared.ETurnStep.LANDED, eventCellId: undefined, lawEvent: undefined },
-      ),
+      G: withTurn({ ...G, branchChoices: [], pendingSteps: 0 }, { eventCellId: undefined, lawEvent: undefined }),
     });
   },
 };
