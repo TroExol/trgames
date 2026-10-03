@@ -9,6 +9,10 @@ interface TAtomParams {
   value: number;
 }
 
+// Игрок у сейфа неприкосновенен: эффекты не двигают и не меняют его местами
+export const isAtFinish = (G: LucidShared.TG, player: LucidShared.TPlayer): boolean =>
+  player.position === G.track.finishId;
+
 type TAtomHandler = (G: LucidShared.TG, params: TAtomParams) => LucidShared.TG;
 
 const updatePlayers = (
@@ -24,10 +28,11 @@ const updatePlayers = (
 });
 
 export const ATOMS: Record<LucidShared.EAtomKind, TAtomHandler> = {
-  [LucidShared.EAtomKind.MOVE]: (G, { targets, value }) => updatePlayers(G, targets, player => ({
-    ...player,
-    position: moveBy(G.track, player.position, value),
-  })),
+  [LucidShared.EAtomKind.MOVE]: (G, { targets, value }) => updatePlayers(G, targets, player => (
+    isAtFinish(G, player)
+      ? player
+      : { ...player, position: moveBy(G.track, player.position, value) }
+  )),
 
   // Долг: отдаёшь сколько есть, отрицательного запаса не бывает
   [LucidShared.EAtomKind.RESOURCE]: (G, { targets, value }) => updatePlayers(G, targets, player => ({
@@ -45,7 +50,7 @@ export const ATOMS: Record<LucidShared.EAtomKind, TAtomHandler> = {
   [LucidShared.EAtomKind.SWAP_WITH_FIRST]: (G, { actorId }) => {
     const [firstId] = resolveTarget(G, actorId, LucidShared.ETarget.FIRST);
 
-    if (!firstId || firstId === actorId) {
+    if (!firstId || firstId === actorId || isAtFinish(G, G.players[firstId]) || isAtFinish(G, G.players[actorId])) {
       return G;
     }
 

@@ -17,6 +17,7 @@ import { resolveRegions } from '@/lib/lucid/regions';
 import { deriveRoles } from '@/lib/lucid/colors';
 import {
   cellLook,
+  SAFE_LABEL,
   ZONE_LABEL,
   zoneStarts,
 } from '@/lib/lucid/cellLook';
@@ -187,6 +188,12 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
   // Точки, которых подпись края сторонится: центры клеток, середины связей и
   // ники. Этого хватает, чтобы не наехать ни на соседний ряд, ни на прядь
   // развилки, ни на чужую подпись
+  const finishCell = layout.byId[track.finishId];
+  const safeHalfWidth = (SAFE_LABEL.length * textSize * 0.85) / 3;
+  const safeY = finishCell ? finishCell.y + TILE_ACROSS / 2 + 4 + textSize * 0.4 : 0;
+  const safeSpots = finishCell
+    ? [finishCell.x - safeHalfWidth, finishCell.x, finishCell.x + safeHalfWidth].map(x => ({ x, y: safeY }))
+    : [];
   const busy = [
     ...layout.cells,
     ...layout.links.map(link => linkMiddle(layout.byId[link.from], layout.byId[link.to])),
@@ -208,6 +215,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
 
       return [cell.x - halfWidth, cell.x, cell.x + halfWidth].map(x => ({ x, y }));
     }),
+    ...safeSpots,
   ];
 
   // Подпись края стоит у его первой клетки и отходит поперёк пути: на ленте её
@@ -373,6 +381,24 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                   {glyph.text}
                 </text>
               ))}
+
+              {finishCell && (
+                <text
+                  className="font-golos"
+                  dominantBaseline="hanging"
+                  fill="var(--lucid-text)"
+                  fontSize={textSize * 0.85}
+                  paintOrder="stroke"
+                  pointerEvents="none"
+                  stroke="var(--lucid-base)"
+                  strokeWidth={4}
+                  textAnchor="middle"
+                  x={finishCell.x}
+                  y={finishCell.y + TILE_ACROSS / 2 + 4}
+                >
+                  {SAFE_LABEL}
+                </text>
+              )}
 
               {zoneStarts(track).map(start => {
                 const cell = layout.byId[start.cellId];

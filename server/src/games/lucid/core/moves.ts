@@ -89,6 +89,35 @@ export const pickDie = (
   );
 };
 
+// null — не хватает Ресурса на доплату. Доплата списывается до броска и при провале сгорает
+export const openSafe = (
+  G: LucidShared.TG,
+  playerId: LucidShared.TPlayerId,
+  bonus: number,
+): LucidShared.TG | null => {
+  const player = G.players[playerId];
+  const cost = LucidShared.SAFE_BONUS_COSTS[bonus];
+
+  if (player.resource < cost) {
+    return null;
+  }
+
+  const rolled = rollDie(G.random);
+  const total = rolled.value + bonus;
+  const opened = total >= LucidShared.SAFE_THRESHOLD;
+  const attempt = bonus > 0 ? `${rolled.value} + ${bonus} = ${total}` : `${rolled.value}`;
+  const prefix = cost > 0 ? `${player.nickname} платит ${cost} и бросает за сейф` : `${player.nickname} бросает за сейф`;
+
+  return {
+    ...G,
+    random: rolled.state,
+    players: { ...G.players, [playerId]: { ...player, resource: player.resource - cost } },
+    lastRoll: { playerId, value: rolled.value, threshold: LucidShared.safeNeed(bonus) },
+    winner: opened ? playerId : G.winner,
+    log: [...G.log, `${prefix}: ${attempt} — ${opened ? 'сейф открыт' : 'не открыл'}`],
+  };
+};
+
 // Шаг на выбранную ветку тратит один шаг, остаток дохаживается.
 // По дороге может встретиться ещё одна развилка — тогда спросим снова
 export const takeBranch = (
