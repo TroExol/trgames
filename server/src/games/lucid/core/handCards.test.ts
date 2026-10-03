@@ -164,6 +164,27 @@ describe('активные карты', () => {
     expect(playCard(cardsState({ a: 2, b: 3, c: 6 }, [EShopCard.HAND_OF_FATE], 2), 0, 'c')).toBeNull();
   });
 
+  it('«Толчок»: чужой ключ вместо id игрока — null, состояние прежнее', () => {
+    const state = cardsState({ a: 2, b: 3, c: 6 }, [EShopCard.HAND_OF_FATE]);
+
+    expect(playCard(state, 0, 'constructor')).toBeNull();
+    expect(state.G.players.a.resource).toBe(10);
+  });
+
+  it('«Порча» с недоступной бедой: ход b идёт дальше', () => {
+    const event = badEvent(5);
+
+    event.options[0].cost = 99;
+
+    const state = cardsState({ a: 2, b: 9 }, [EShopCard.VOODOO], 10, { 5: event });
+    const next = playCard(state, 0)!;
+
+    expect(next.ctx.currentPlayer).toBe('b');
+    expect(next.ctx.phase).toBe(EPhase.ROLL);
+    expect(next.G.players.b.cursed).toBe(0);
+    expect(next.G.log.some(line => line.includes('не по карману'))).toBe(true);
+  });
+
   it('END_TURN в фазе карт передаёт ход b', () => {
     const state = cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET]);
     const next = applyMove(state, { type: EMoveType.END_TURN, playerId: 'a', stateId: 0 });

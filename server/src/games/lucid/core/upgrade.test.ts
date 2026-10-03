@@ -22,6 +22,14 @@ describe('upgradeG', () => {
     expect(upgraded.turn).toEqual({ step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] });
   });
 
+  it('ход без used получает пустой used', () => {
+    const G = makeG();
+    const { used, ...rest } = G.turn;
+
+    expect(used).toEqual([]);
+    expect(upgradeG({ ...G, turn: rest as LucidShared.TTurn }).turn.used).toEqual([]);
+  });
+
   it('новая партия не меняется', () => {
     const G = makeG();
 

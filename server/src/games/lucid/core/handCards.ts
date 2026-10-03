@@ -8,12 +8,12 @@ const REACH = 10;
 const atFinish = (G: LucidShared.TG, id: LucidShared.TPlayerId): boolean =>
   G.players[id].position === G.track.finishId;
 
-export const isValidTarget = (
+const isValidTarget = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   targetId?: LucidShared.TPlayerId,
 ): boolean =>
-  targetId !== undefined && targetId !== actorId && Boolean(G.players[targetId]) && !atFinish(G, targetId);
+  targetId !== undefined && targetId !== actorId && G.order.includes(targetId) && !atFinish(G, targetId);
 
 export const canPlay = (
   G: LucidShared.TG,

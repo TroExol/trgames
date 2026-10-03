@@ -7,5 +7,5 @@ export const upgradeG = (G: LucidShared.TG): LucidShared.TG => ({
   ...G,
   cellHistory: G.cellHistory ?? {},
   cards: { ...emptyCards(), ...G.cards },
-  turn: G.turn ?? freshTurn(),
+  turn: { ...freshTurn(), ...G.turn },
 });
