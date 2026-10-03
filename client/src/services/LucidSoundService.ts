@@ -42,10 +42,17 @@ const MUSIC_URLS: Record<TLucidMood, string> = {
 // Фон не должен спорить с речью в голосовом чате
 const MUSIC_SHARE = 0.4;
 
-// Звук через <audio>, а не через WebAudio: громкость, зацикливание и ленивая
-// загрузка у элемента уже есть, а звуки идут раз в несколько секунд и никогда
-// не накладываются — смешивать нечего
+type TChannel = 'music' | 'ui';
+
+// Звук идёт через <audio>: зацикливание и ленивая загрузка у элемента уже есть.
+// Громкость — через GainNode канала: на iOS Safari audio.volume только для
+// чтения, ползунок там ничего не делал бы. Без AudioContext (тесты, старые
+// браузеры) остаётся audio.volume
 export class LucidSoundService {
+  private context?: AudioContext;
+
+  private gains = new Map<TChannel, GainNode>();
+
   private sounds = new Map<TLucidSound, HTMLAudioElement>();
 
   private music?: HTMLAudioElement;
@@ -68,7 +75,7 @@ export class LucidSoundService {
         return;
       }
 
-      this.music.volume = volume * MUSIC_SHARE;
+      this.setVolume(this.music, 'music', volume * MUSIC_SHARE);
 
       if (enabled) {
         // Тот же путь, что и у первого запуска: если браузер откажет
@@ -99,7 +106,7 @@ export class LucidSoundService {
 
     const sound = this.soundFor(name);
 
-    sound.volume = volume;
+    this.setVolume(sound, 'ui', volume);
     // Звук мог не доиграть предыдущий раз: перематываем, иначе повтор
     // молча пропадёт
     sound.currentTime = 0;
@@ -118,7 +125,8 @@ export class LucidSoundService {
     const { enabled, volume } = settingsStore.general.music;
 
     music.loop = true;
-    music.volume = volume * MUSIC_SHARE;
+    this.connect(music, 'music');
+    this.setVolume(music, 'music', volume * MUSIC_SHARE);
     this.music = music;
 
     if (enabled) {
@@ -145,10 +153,51 @@ export class LucidSoundService {
     const sound = new Audio(SOUND_URLS[name]);
 
     sound.preload = 'auto';
-    sound.volume = settingsStore.general.ui.volume;
+    this.connect(sound, 'ui');
+    this.setVolume(sound, 'ui', settingsStore.general.ui.volume);
     this.sounds.set(name, sound);
 
     return sound;
+  };
+
+  // Источник для элемента создаётся один раз: звуки кешируются, музыкальный
+  // элемент на каждый трек свой
+  private connect = (element: HTMLAudioElement, channel: TChannel): void => {
+    if (typeof AudioContext === 'undefined') {
+      return;
+    }
+
+    if (!this.context) {
+      const context = new AudioContext();
+      // На iOS контекст стартует suspended и оживает только от действия человека
+      const resume = (): void => {
+        void context.resume();
+      };
+
+      document.addEventListener('pointerdown', resume);
+      document.addEventListener('click', resume);
+      this.context = context;
+    }
+
+    let gain = this.gains.get(channel);
+
+    if (!gain) {
+      gain = this.context.createGain();
+      gain.connect(this.context.destination);
+      this.gains.set(channel, gain);
+    }
+
+    this.context.createMediaElementSource(element).connect(gain);
+  };
+
+  private setVolume = (element: HTMLAudioElement, channel: TChannel, value: number): void => {
+    const gain = this.gains.get(channel);
+
+    if (gain) {
+      gain.gain.value = value;
+    } else {
+      element.volume = value;
+    }
   };
 
   // Браузер не пускает звук до первого действия человека. Вход в партию всё
@@ -157,7 +206,7 @@ export class LucidSoundService {
   // партия важнее звука. Канал передаётся явно, а не определяется сравнением
   // с this.music: к моменту pointerdown музыку могли уже переключить на другой
   // трек, и сравнение проверило бы настройки не того канала
-  private start = (element: HTMLAudioElement, channel: 'music' | 'ui'): void => {
+  private start = (element: HTMLAudioElement, channel: TChannel): void => {
     element.play().catch(() => {
       document.addEventListener(
         'pointerdown',

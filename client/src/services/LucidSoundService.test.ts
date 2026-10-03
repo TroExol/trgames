@@ -177,4 +177,57 @@ describe('LucidSoundService: каналы звука', () => {
     // Музыка играет тише: MUSIC_SHARE = 0.4
     expect(music?.volume).toBeCloseTo(0.36);
   });
+
+  it('при наличии AudioContext громкость идёт через GainNode канала, а контекст оживает по pointerdown', () => {
+    const gains: Array<{ gain: { value: number } }> = [];
+    const resume = vi.fn();
+
+    class FakeAudioContext {
+      public destination = {};
+
+      public createGain(): { connect: () => void; gain: { value: number } } {
+        const node = { connect: vi.fn(), gain: { value: 1 } };
+
+        gains.push(node);
+
+        return node;
+      }
+
+      public createMediaElementSource(): { connect: () => void } {
+        return { connect: vi.fn() };
+      }
+
+      public resume = resume;
+    }
+
+    const listeners: Record<string, () => void> = {};
+
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    vi.stubGlobal('document', {
+      addEventListener: (type: string, listener: () => void) => {
+        listeners[type] = listener;
+      },
+    });
+    settingsStore.setMusicVolume(0.5);
+    settingsStore.setUiSoundVolume(0.25);
+
+    const service = new LucidSoundService();
+
+    service.play('dice');
+    service.playMusic('light');
+
+    const internals = service as unknown as { music?: FakeAudio; sounds: Map<string, FakeAudio> };
+
+    // Первым создаётся канал звуков интерфейса, вторым — музыки
+    expect(gains.map(node => node.gain.value)).toEqual([0.25, 0.2]);
+    // Громкость самого элемента не трогается
+    expect(internals.sounds.get('dice')?.volume).toBe(0);
+    expect(internals.music?.volume).toBe(0);
+
+    listeners.pointerdown();
+
+    expect(resume).toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
 });
