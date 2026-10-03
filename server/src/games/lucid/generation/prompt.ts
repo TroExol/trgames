@@ -4,6 +4,8 @@ import type { TCellPremise } from '@/games/lucid/generation/premises';
 
 import {
   ATOM_RANGES,
+  CARD_FLAVOR_MAX,
+  CARD_NAME_MAX,
   COST_RANGE,
   REGION_NAME_MAX,
   REGION_RANGE,
@@ -79,6 +81,11 @@ const describeRoles = (roles: LucidShared.TRole[]): string => {
     + 'будто событие происходит именно с ним.\n';
 };
 
+const describeCards = (): string => [
+  ...Object.entries(LucidShared.LAW_TEXT),
+  ...Object.entries(LucidShared.SHOP_TEXT),
+].map(([id, card]) => `- ${id}: ${card.rule('ресурс')}`).join('\n');
+
 export const buildWorldPrompt = (theme: string, nicknames: string[]): string => `
 Ты придумываешь оформление настольной игры-бродилки.
 
@@ -91,7 +98,8 @@ export const buildWorldPrompt = (theme: string, nicknames: string[]): string => 
 Верни JSON строго такого вида, без пояснений:
 {"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...],"mood":"DARK",
 "regions":[{"name":"...","color":"#rrggbb"}, ...]},
-"roles":[{"nickname":"...","role":"..."}, ...]}
+"roles":[{"nickname":"...","role":"..."}, ...],
+"cards":[{"id":"...","name":"...","flavor":"..."}, ...]}
 
 name — название мира в духе темы, до 80 символов.
 resourceName — как в этом мире называются монеты, до 40 символов.
@@ -108,6 +116,11 @@ roles — короткая роль в мире партии для каждог
 выше: nickname — точно одно из этих имён, без выдумывания новых, role — 2-5
 слов в духе темы, например «хранитель чайника», а не описание характера или
 судьбы.
+cards — название и строка настроения для каждой карты из списка. id — точно
+из списка. name — 1–4 слова в духе мира, до ${CARD_NAME_MAX} знаков. flavor —
+одна фраза до ${CARD_FLAVOR_MAX} знаков. Правило карты не пересказывай, оно
+уже есть.
+${describeCards()}
 `.trim();
 
 export const buildEventsPrompt = (

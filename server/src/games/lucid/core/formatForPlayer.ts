@@ -74,6 +74,7 @@ export const formatForPlayer = (
     track: state.G.track,
     events: opened,
     theme: state.G.theme,
+    cardNames: state.G.cardNames,
     visited: state.G.visited,
     winner: state.G.winner,
     branchChoices: state.G.branchChoices,

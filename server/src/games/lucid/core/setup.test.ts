@@ -87,3 +87,19 @@ describe('setupParty: законы', () => {
     expect(state.G.turn.step).toBe(LucidShared.ETurnStep.START);
   });
 });
+
+describe('setupParty: названия карт', () => {
+  it('cardNames контента попадает в G, cardName берёт имя модели или запасное', () => {
+    const cardNames = { ROCKET: { name: 'Паровой рывок', flavor: 'Котёл гудит' } };
+    const state = setupParty({
+      seed: 'names',
+      players: [{ id: 'a', nickname: 'Аня' }],
+      content: { ...content(), cardNames },
+    });
+
+    expect(state.G.cardNames).toEqual(cardNames);
+    expect(LucidShared.cardName(state.G, LucidShared.EShopCard.ROCKET)).toBe('Паровой рывок');
+    expect(LucidShared.cardName({}, LucidShared.EShopCard.ROCKET)).toBe('Рывок');
+    expect(LucidShared.cardName({}, LucidShared.ELaw.SIX_SKIP)).toBe('Шестёрка');
+  });
+});

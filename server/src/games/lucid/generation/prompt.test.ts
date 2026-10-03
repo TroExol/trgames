@@ -103,3 +103,15 @@ describe('buildEventsPrompt', () => {
     expect(buildEventsPrompt('Подземелье', 'золото', [cell()], [])).not.toContain('роли игроков');
   });
 });
+
+describe('buildWorldPrompt: названия карт', () => {
+  it('требует cards и перечисляет все 25 карт с правилом', () => {
+    const prompt = buildWorldPrompt('пираты', ['Аня']);
+    const ids = [...Object.values(LucidShared.ELaw), ...Object.values(LucidShared.EShopCard)];
+
+    expect(ids).toHaveLength(25);
+    expect(prompt).toContain('"cards":[{"id"');
+    ids.forEach(id => expect(prompt).toContain(`- ${id}: `));
+    expect(prompt).toContain('- ROCKET: Отдай ресурс 3');
+  });
+});

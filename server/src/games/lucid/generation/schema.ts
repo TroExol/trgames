@@ -16,6 +16,9 @@ export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: numb
 export const EVENT_TEXT_MAX = 200;
 export const OPTION_TEXT_MAX = 80;
 
+export const CARD_NAME_MAX = 30;
+export const CARD_FLAVOR_MAX = 70;
+
 export const THRESHOLD_RANGE = { min: 2, max: 6 };
 export const COST_RANGE = { min: 2, max: 5 };
 
@@ -88,6 +91,11 @@ export const worldSchema = z.strictObject({
   roles: z.array(z.strictObject({
     nickname: z.string().min(1).max(60),
     role: z.string().min(1).max(50),
+  })).optional(),
+  cards: z.array(z.strictObject({
+    id: z.string(),
+    name: z.string().min(1).max(CARD_NAME_MAX),
+    flavor: z.string().min(1).max(CARD_FLAVOR_MAX),
   })).optional(),
 });
 

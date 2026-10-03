@@ -226,3 +226,19 @@ describe('eventBatchSchema', () => {
     expect(eventBatchSchema.safeParse({ events: [] }).success).toBe(false);
   });
 });
+
+describe('worldSchema: названия карт', () => {
+  const card = { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит, дорога короче' };
+
+  it('принимает мир с названиями карт', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: [card] }).success).toBe(true);
+  });
+
+  it('принимает мир без cards', () => {
+    expect(worldSchema.safeParse(validWorld()).success).toBe(true);
+  });
+
+  it('отклоняет название длиннее 30 знаков', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: [{ ...card, name: 'я'.repeat(31) }] }).success).toBe(false);
+  });
+});

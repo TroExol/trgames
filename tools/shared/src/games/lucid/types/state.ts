@@ -1,6 +1,10 @@
 import type { TTrack } from './track';
 import type { TRandomState } from './random';
-import type { TEvent, TTheme } from './content';
+import type {
+  TCardName,
+  TEvent,
+  TTheme,
+} from './content';
 import type { TCards, TTurn } from './cards';
 
 export type TPlayerId = string;
@@ -74,6 +78,7 @@ export interface TG {
   // Дальше партия развивается независимо от исходных данных
   events: Record<number, TEvent>;
   theme: TTheme;
+  cardNames?: Record<string, TCardName>;
   random: TRandomState;
   // Клетки, содержимое которых уже открыто всем
   visited: number[];

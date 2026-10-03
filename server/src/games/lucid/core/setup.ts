@@ -52,6 +52,7 @@ export const setupParty = ({
       track,
       events: content.events,
       theme: content.theme,
+      cardNames: content.cardNames,
       random: createRandom(`${seed}:dice`),
       visited: [track.startId],
       log: [],

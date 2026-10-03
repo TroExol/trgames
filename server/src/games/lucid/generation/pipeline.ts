@@ -1,7 +1,7 @@
 import type { z } from 'zod';
-import type { LucidShared } from '@trgames/shared';
 
 import { chunk } from 'lodash';
+import { LucidShared } from '@trgames/shared';
 
 import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model';
 
@@ -81,6 +81,16 @@ export interface TGenerateContentResult {
   usedFallback: boolean;
   stats: TGenerateStats;
 }
+
+const KNOWN_CARD_IDS = new Set<string>([...Object.values(LucidShared.ELaw), ...Object.values(LucidShared.EShopCard)]);
+
+const toCardNames = (
+  cards: { id: string; name: string; flavor: string }[] = [],
+): Record<string, LucidShared.TCardName> => Object.fromEntries(
+  cards
+    .filter(card => KNOWN_CARD_IDS.has(card.id))
+    .map(card => [card.id, { name: card.name, flavor: card.flavor }]),
+);
 
 export const generateContent = async ({
   generateJson,
@@ -257,6 +267,7 @@ export const generateContent = async ({
         ),
         // Сопоставление с конкретными игроками — забота setupParty, здесь только сырой ответ модели
         roles: world.roles,
+        cardNames: toCardNames(world.cards),
       },
       usedFallback: false,
       stats: stats(),

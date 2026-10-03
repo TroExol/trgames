@@ -53,6 +53,11 @@ export interface TRole {
   role: string;
 }
 
+export interface TCardName {
+  name: string;
+  flavor: string;
+}
+
 // Всё, что генерирует нейросеть для одной партии
 export interface TPartyContent {
   theme: TTheme;
@@ -60,4 +65,5 @@ export interface TPartyContent {
   // Необязательное: модель может прислать не для всех игроков или не прислать
   // вовсе, тогда часть или все останутся без роли
   roles?: TRole[];
+  cardNames?: Record<string, TCardName>;
 }

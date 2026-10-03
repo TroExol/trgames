@@ -1,3 +1,5 @@
+import type { TCardName } from './types/content';
+
 import { ELaw, EShopCard } from './types/cards';
 
 export interface TCardText {
@@ -95,3 +97,6 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
     rule: resource => `Отдай ${resource} 3 — ближайший впереди в начале своего хода разыгрывает беду`,
   },
 };
+
+export const cardName = (G: { cardNames?: Record<string, TCardName> }, id: ELaw | EShopCard): string =>
+  G.cardNames?.[id]?.name ?? (id in LAW_TEXT ? LAW_TEXT[id as ELaw] : SHOP_TEXT[id as EShopCard]).name;

@@ -325,3 +325,23 @@ describe('generateContent', () => {
     expect(onWorld).not.toHaveBeenCalled();
   });
 });
+
+describe('generateContent: названия карт', () => {
+  it('оставляет только известные id карт', async () => {
+    const world = {
+      ...validWorld,
+      cards: [
+        { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит' },
+        { id: 'NOPE', name: 'Лишняя', flavor: 'Нет такой' },
+      ],
+    };
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: world, usage })
+      .mockResolvedValue({ data: eventsFor([1, 2]), usage });
+
+    const { content } = await run(generateJson);
+
+    expect(content.cardNames?.ROCKET).toEqual({ name: 'Паровой рывок', flavor: 'Котёл гудит' });
+    expect(content.cardNames).not.toHaveProperty('NOPE');
+  });
+});
