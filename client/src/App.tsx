@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 
 import { RootLayout } from '@/routes/RootLayout';
+import { lucidRoutes } from '@/routes/games/lucid';
 import { cryptozRoutes } from '@/routes/games/cryptoz';
 import { ErrorPage } from '@/routes/ErrorPage';
 import { ThemeProvider } from '@/providers/ThemeProvider';
@@ -21,6 +22,7 @@ const router = createBrowserRouter([
         lazy: () => import('@/routes/GamesPage'),
       },
       cryptozRoutes,
+      lucidRoutes,
     ],
   },
 ]);

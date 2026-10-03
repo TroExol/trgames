@@ -22,6 +22,7 @@
 ## Игры
 
 - **Cryptoz** — карточная игра с механиками мракобоя, укрытий, печатей, осколков славы и короны Мрака
+- **lucid** — бродилка на 2–6 игроков; тему, события и оформление каждой партии генерирует нейросеть
 
 ## Стек технологий
 
@@ -46,10 +47,12 @@ trgames/
 ├── server/                  # Socket.io сервер
 │   └── src/
 │       ├── games/cryptoz/   # Игровая логика (карты, модификаторы, триггеры)
+│       ├── games/lucid/     # lucid: движок, генерация нейросетью, комнаты
 │       └── i18n/            # Локализация (русский)
 ├── tools/
 │   ├── shared/              # Общие TypeScript-типы для клиента и сервера
 │   └── eslint-plugin-trgames/  # Кастомный ESLint-плагин
+├── docs/lucid/              # PRD, ADR и открытые вопросы lucid
 └── prompts/                 # Промпты для генерации контента
 ```
 
@@ -89,6 +92,7 @@ cd ../server && yarn start # Запуск сервера
 | `yarn lint` | Проверка кода во всех воркспейсах |
 | `yarn workspace @trgames/server test` | Запуск серверных тестов |
 | `yarn workspace @trgames/client storybook` | Storybook на порту 6006 |
+| `yarn workspace @trgames/server lucid:usage` | Отчёт о стоимости генерации lucid |
 
 ### Линтинг
 
@@ -106,9 +110,13 @@ yarn workspace @trgames/server lint    # Только сервер
 
 | Переменная | Расположение | Описание |
 |-----------|--------------|----------|
-| `VITE_API_BASE_URL` | `client/.env` | URL сервера для Socket.io |
+| `VITE_API_BASE_URL` | `client/.env` | URL сервера для Socket.io, по умолчанию хост страницы на порту 4001 |
+| `OPENROUTER_API_KEY` | `server/.env` | Ключ OpenRouter для генерации lucid |
+| `LUCID_MODEL` | `server/.env` | Модель OpenRouter, по умолчанию `deepseek/deepseek-v4.1-flash:nitro` |
+| `CORS_ORIGIN` | `server/.env` | Разрешённый CORS origin, по умолчанию `*` |
+| `LUCID_DB_PATH` | `server/.env` | Файл базы lucid относительно `server/`, по умолчанию `lucid.db` |
 
-Серверные флаги передаются через CLI: `--local true` (CORS *), `--debug true` (подробные логи).
+Пример — `server/.env.example`.
 
 ## Лицензия
 

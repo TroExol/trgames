@@ -30,16 +30,21 @@ import { SettingsDialog } from './SettingsDialog';
 import Logo from '/icon.svg';
 
 export const Header = observer(function Header() {
-  const { roomUuid } = useParams<{ roomUuid: string }>();
+  const { roomUuid, partyId } = useParams<{ roomUuid?: string; partyId?: string }>();
   const { gameName } = useGameName();
   const { gameTheme } = useGameTheme();
   const isRoomsPage = location.pathname === `/game/${gameName}`;
+  // В lucid списка комнат нет: партия раздаётся ссылкой, и пункт уводит на
+  // страницу создания. Слова «комната» в её словаре тоже нет — только «партия»
+  const gamePageLabel = gameName === 'lucid' ? 'Новая партия' : 'Список комнат';
   const isRulesPage = location.pathname === `/game/${gameName}/rules`;
   const isUpdatesPage = location.pathname === `/game/${gameName}/updates`;
+  // Правила и обновления написаны только для Криптоза, маршрутов lucid под них нет
+  const hasStaticPages = Boolean(gameName) && gameName !== 'lucid';
 
   return (
     <header
-      className={cn('flex h-14 w-full shrink-0 items-center p-2 sm:px-4', roomUuid && '[@media(max-height:620px)]:hidden')}
+      className={cn('flex h-14 w-full shrink-0 items-center p-2 sm:px-4', (roomUuid || partyId) && '[@media(max-height:620px)]:hidden')}
     >
       <div className="mr-4 flex">
         <Link className="mr-4 flex items-center space-x-2 pr-1 lg:mr-5" to="/">
@@ -47,7 +52,9 @@ export const Header = observer(function Header() {
           {' '}
           <span className="hidden font-bold lg:inline-block">TRGames</span>
         </Link>
-        <NavigationMenu>
+        {/* Ниже sm подписи навигации не помещаются в полосу и уводят страницу
+            вбок: там эти же пункты живут во всплывающем меню справа */}
+        <NavigationMenu className="hidden sm:flex">
           <NavigationMenuList>
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={buttonVariants({ variant: 'ghost' })}>
@@ -62,7 +69,7 @@ export const Header = observer(function Header() {
                   <NavigationMenuItem>
                     <NavigationMenuLink asChild className={buttonVariants({ variant: 'ghost' })}>
                       <Link to={`/game/${gameName}`}>
-                        Список комнат
+                        {gamePageLabel}
                       </Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
@@ -82,7 +89,21 @@ export const Header = observer(function Header() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuGroup>
-              {gameName && (
+              <DropdownMenuItem asChild className="cursor-pointer sm:hidden">
+                <Link to="/">
+                  Список игр
+                </Link>
+              </DropdownMenuItem>
+              {gameName && !isRoomsPage && (
+                <DropdownMenuItem asChild className="cursor-pointer sm:hidden">
+                  <Link to={`/game/${gameName}`}>
+                    {gamePageLabel}
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {/* Страницы правил и обновлений есть не у всякой игры: в lucid
+                  их нет, и пункты вели бы в никуда */}
+              {hasStaticPages && (
                 <>
                   {!isRulesPage && (
                     <DropdownMenuItem>

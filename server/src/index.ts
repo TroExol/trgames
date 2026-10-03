@@ -1,13 +1,16 @@
 import { Server } from 'socket.io';
 
-import { getProcessArg } from '@/helpers/utils';
+import { loadEnv } from '@/helpers/loadEnv';
+import { Lucid } from '@/games/lucid';
 import { Cryptoz } from '@/games/cryptoz';
 
-const localhost = getProcessArg('--local') === 'true';
+// До первого обращения к process.env: ключ провайдера читается при создании
+// клиента модели
+loadEnv();
 
 const io = new Server({
   cors: {
-    origin: localhost ? '*' : 'https://toexol.ru',
+    origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST'],
   },
   cleanupEmptyChildNamespaces: true,
@@ -24,6 +27,7 @@ io.on('connection', socket => {
 });
 
 Cryptoz.init(io);
+Lucid.init(io);
 
 io.listen(4001);
 
