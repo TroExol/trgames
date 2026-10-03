@@ -5,7 +5,11 @@ import { LucidShared } from '@trgames/shared';
 
 import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model';
 
-import { eventBatchSchema, worldSchema } from '@/games/lucid/generation/schema';
+import {
+  cardNameSchema,
+  eventBatchSchema,
+  worldSchema,
+} from '@/games/lucid/generation/schema';
 import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
 import { assignPremises, assignRegionNames } from '@/games/lucid/generation/premises';
 import { MODEL_ID } from '@/games/lucid/generation/model';
@@ -84,11 +88,10 @@ export interface TGenerateContentResult {
 
 const KNOWN_CARD_IDS = new Set<string>([...Object.values(LucidShared.ELaw), ...Object.values(LucidShared.EShopCard)]);
 
-const toCardNames = (
-  cards: { id: string; name: string; flavor: string }[] = [],
-): Record<string, LucidShared.TCardName> => Object.fromEntries(
+const toCardNames = (cards: unknown[] = []): Record<string, LucidShared.TCardName> => Object.fromEntries(
   cards
-    .filter(card => KNOWN_CARD_IDS.has(card.id))
+    .map(card => cardNameSchema.safeParse(card))
+    .flatMap(parsed => (parsed.success && KNOWN_CARD_IDS.has(parsed.data.id) ? [parsed.data] : []))
     .map(card => [card.id, { name: card.name, flavor: card.flavor }]),
 );
 

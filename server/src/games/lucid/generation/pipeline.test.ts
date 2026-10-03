@@ -344,4 +344,35 @@ describe('generateContent: названия карт', () => {
     expect(content.cardNames?.ROCKET).toEqual({ name: 'Паровой рывок', flavor: 'Котёл гудит' });
     expect(content.cardNames).not.toHaveProperty('NOPE');
   });
+
+  it('карта с кривым названием отбрасывается без перегенерации мира', async () => {
+    const world = {
+      ...validWorld,
+      cards: [
+        { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит' },
+        { id: 'GRENADE', name: 'я'.repeat(31), flavor: 'Слишком длинно' },
+      ],
+    };
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: world, usage })
+      .mockResolvedValue({ data: eventsFor([1, 2]), usage });
+
+    const result = await run(generateJson);
+
+    expect(result.usedFallback).toBe(false);
+    expect(result.content.cardNames).toHaveProperty('ROCKET');
+    expect(result.content.cardNames).not.toHaveProperty('GRENADE');
+    expect(vi.mocked(generateJson).mock.calls.filter(([prompt]) => prompt.includes('Верни JSON строго такого вида, без пояснений:\n{"theme"'))).toHaveLength(1);
+  });
+
+  it('cards не массивом: мир принят, названий нет', async () => {
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: { ...validWorld, cards: 'мусор' }, usage })
+      .mockResolvedValue({ data: eventsFor([1, 2]), usage });
+
+    const result = await run(generateJson);
+
+    expect(result.usedFallback).toBe(false);
+    expect(result.content.cardNames).toEqual({});
+  });
 });

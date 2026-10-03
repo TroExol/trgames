@@ -238,7 +238,11 @@ describe('worldSchema: названия карт', () => {
     expect(worldSchema.safeParse(validWorld()).success).toBe(true);
   });
 
-  it('отклоняет название длиннее 30 знаков', () => {
-    expect(worldSchema.safeParse({ ...validWorld(), cards: [{ ...card, name: 'я'.repeat(31) }] }).success).toBe(false);
+  it('мир с названием длиннее 30 знаков валиден: кривая карта не рушит мир', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: [{ ...card, name: 'я'.repeat(31) }] }).success).toBe(true);
+  });
+
+  it('cards не массивом не рушит мир', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: 'мусор' }).success).toBe(true);
   });
 });

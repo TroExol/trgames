@@ -67,6 +67,12 @@ export const eventSchema = z.strictObject({
   options: z.array(optionSchema).max(3),
 });
 
+export const cardNameSchema = z.strictObject({
+  id: z.string(),
+  name: z.string().min(1).max(CARD_NAME_MAX),
+  flavor: z.string().min(1).max(CARD_FLAVOR_MAX),
+});
+
 export const worldSchema = z.strictObject({
   theme: z.strictObject({
     name: z.string().min(1).max(80),
@@ -92,11 +98,7 @@ export const worldSchema = z.strictObject({
     nickname: z.string().min(1).max(60),
     role: z.string().min(1).max(50),
   })).optional(),
-  cards: z.array(z.strictObject({
-    id: z.string(),
-    name: z.string().min(1).max(CARD_NAME_MAX),
-    flavor: z.string().min(1).max(CARD_FLAVOR_MAX),
-  })).optional(),
+  cards: z.array(z.unknown()).optional().catch(undefined),
 });
 
 export const eventBatchSchema = z.strictObject({
