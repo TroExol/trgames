@@ -29,15 +29,23 @@ export const describeAtomLog = (
     return `${G.players[actorId].nickname} меняется местами с ${G.players[firstId].nickname}`;
   }
 
-  const targets = resolveTarget(G, actorId, atom.target);
+  const resolved = resolveTarget(G, actorId, atom.target);
 
-  if (targets.length === 0) {
+  if (resolved.length === 0) {
     return atom.target === LucidShared.ETarget.FIRST
       ? 'лидера нет — ничья, никого не задело'
       : 'отстающего нет — ничья, никого не задело';
   }
 
-  const label = atom.target === LucidShared.ETarget.ALL
+  const targets = atom.kind === LucidShared.EAtomKind.MOVE
+    ? resolved.filter(id => !isAtFinish(G, G.players[id]))
+    : resolved;
+
+  if (targets.length === 0) {
+    return 'у сейфа никого не сдвинуть';
+  }
+
+  const label = atom.target === LucidShared.ETarget.ALL && targets.length === resolved.length
     ? 'все'
     : targets.map(id => G.players[id].nickname).join(', ');
 
