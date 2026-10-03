@@ -4,7 +4,7 @@ import type { TLawRun, TLawTiming } from '@/games/lucid/core/lawEffects';
 
 import { runLaws } from '@/games/lucid/core/lawEffects';
 import { landOnCell } from '@/games/lucid/core/cells';
-import { drawLaws } from '@/games/lucid/core/cards';
+import { drawLaws, openShop } from '@/games/lucid/core/cards';
 
 export const freshTurn = (): LucidShared.TTurn => ({
   step: LucidShared.ETurnStep.START,
@@ -82,6 +82,16 @@ const landOn = (state: LucidShared.TState): LucidShared.TState => {
     if (drawn.cards.lawDraw.length > 0) {
       return withPhase({ ...state, G: drawn }, LucidShared.EPhase.LAW);
     }
+  }
+
+  if (cell?.type === LucidShared.ECellType.SHOP) {
+    if (player.resource < LucidShared.SHOP_PRICE) {
+      const line = `${player.nickname}: в Лавке не по карману`;
+
+      return proceed({ ...state, G: { ...G, log: [...G.log, line] } });
+    }
+
+    return withPhase({ ...state, G: openShop(G) }, LucidShared.EPhase.SHOP);
   }
 
   return proceed({ ...state, G: landOnCell(G, playerId) });

@@ -6,6 +6,7 @@ const EVENT_SHARE = 0.35;
 const GREEN_SHARE = 0.12;
 const RED_SHARE = 0.12;
 const LAW_SHARE = 0.1;
+const SHOP_SHARE = 0.1;
 
 interface TAssignResult {
   track: LucidShared.TTrack;
@@ -74,6 +75,7 @@ export const assignCellTypes = (
   const greens = events + Math.round(rest.length * GREEN_SHARE);
   const reds = greens + Math.round(rest.length * RED_SHARE);
   const laws = reds + Math.round(rest.length * LAW_SHARE);
+  const shops = laws + Math.round(rest.length * SHOP_SHARE);
   const typeById = new Map<number, LucidShared.ECellType>();
 
   shuffled.value.forEach((id, index) => {
@@ -85,6 +87,8 @@ export const assignCellTypes = (
       typeById.set(id, LucidShared.ECellType.RED);
     } else if (index < laws) {
       typeById.set(id, LucidShared.ECellType.LAW);
+    } else if (index < shops) {
+      typeById.set(id, LucidShared.ECellType.SHOP);
     } else {
       typeById.set(id, LucidShared.ECellType.EMPTY);
     }

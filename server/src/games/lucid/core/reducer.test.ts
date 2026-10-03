@@ -813,6 +813,74 @@ describe('клетка «Закон»', () => {
   });
 });
 
+describe('клетка «Лавка»', () => {
+  const shopTrack = (): LucidShared.TTrack => ({
+    startId: 0,
+    finishId: 3,
+    cells: [
+      { id: 0, type: LucidShared.ECellType.START, next: [1] },
+      { id: 1, type: LucidShared.ECellType.SHOP, next: [2] },
+      { id: 2, type: LucidShared.ECellType.EMPTY, next: [3] },
+      { id: 3, type: LucidShared.ECellType.FINISH, next: [] },
+    ],
+  });
+
+  const shopState = (resource: number): LucidShared.TState => {
+    const G = makeG({
+      track: shopTrack(),
+      players: [
+        { id: 'a', nickname: 'Аня', position: 1, resource },
+        { id: 'b', nickname: 'Боря', position: 0, resource: 10 },
+      ],
+    });
+
+    return {
+      G: {
+        ...G,
+        cards: {
+          ...G.cards,
+          shopDeck: Object.values(LucidShared.EShopCard).slice(0, 4).map((card, uid) => ({ uid, card })),
+          hands: { a: [], b: [] },
+        },
+      },
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.ROLL },
+      stateId: 0,
+    };
+  };
+
+  it('с Ресурсом от 5 Лавка открывается, покупка передаёт ход', () => {
+    const landed = land(shopState(10));
+
+    expect(landed.ctx.phase).toBe(LucidShared.EPhase.SHOP);
+    expect(landed.G.cards.shopOffer).toHaveLength(3);
+
+    const bought = applyMove(landed, {
+      type: EMoveType.BUY_CARD, playerId: 'a', stateId: landed.stateId, index: 0,
+    });
+
+    expect(bought.G.cards.hands.a).toHaveLength(1);
+    expect(bought.G.players.a.resource).toBe(5);
+    expect(bought.ctx.currentPlayer).toBe('b');
+  });
+
+  it('нецелый индекс отклоняется', () => {
+    const landed = land(shopState(10));
+    const rejected = applyMove(landed, {
+      type: EMoveType.BUY_CARD, playerId: 'a', stateId: landed.stateId, index: 0.5,
+    });
+
+    expect(rejected).toBe(landed);
+  });
+
+  it('с Ресурсом меньше 5 Лавка не открывается, ход идёт дальше', () => {
+    const landed = land(shopState(4));
+
+    expect(landed.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(landed.ctx.currentPlayer).toBe('b');
+    expect(landed.G.log).toContain('Аня: в Лавке не по карману');
+  });
+});
+
 describe('вытянутые события', () => {
   const drawnEvent: LucidShared.TEvent = {
     cellId: 2,

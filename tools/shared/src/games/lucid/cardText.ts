@@ -1,4 +1,4 @@
-import { ELaw } from './types/cards';
+import { ELaw, EShopCard } from './types/cards';
 
 export interface TCardText {
   name: string;
@@ -39,4 +39,59 @@ export const LAW_TEXT: Record<ELaw, TCardText> = {
     rule: resource => `Остановился на красной — отдай каждому: ${resource} 2 (вдвоём — 4)`,
   },
   [ELaw.SIX_SKIP]: { name: 'Шестёрка', rule: () => 'Выпала 6 на кубике хода — пропусти следующий ход' },
+};
+
+export const HAND_LIMIT = 3;
+export const SHOP_PRICE = 5;
+export const CARD_USE_PRICE = 3;
+export const SHOP_OFFER = 3;
+
+export interface TShopCardText extends TCardText {
+  kind: 'active' | 'passive';
+}
+
+export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
+  [EShopCard.CLOVER]: { name: 'Подкова', kind: 'passive', rule: resource => `Остановился на пустой: ${resource} +4` },
+  [EShopCard.GRENADE]: {
+    name: 'Обвал',
+    kind: 'active',
+    rule: resource => `Отдай ${resource} 3 — ближайший впереди отступает на 6 клеток`,
+  },
+  [EShopCard.HAND_OF_FATE]: {
+    name: 'Толчок',
+    kind: 'active',
+    rule: resource => `Отдай ${resource} 3 — выбранный игрок отступает на 4 клетки`,
+  },
+  [EShopCard.HARPOON]: {
+    name: 'Аркан',
+    kind: 'active',
+    rule: resource => `Отдай ${resource} 3 — ближайший впереди, если до него не больше 10 клеток, встаёт на твою клетку`,
+  },
+  [EShopCard.HOOK]: {
+    name: 'Кошка',
+    kind: 'active',
+    rule: resource =>
+      `Отдай ${resource} 3 — встань на клетку ближайшего впереди, если до него не больше 10 клеток; клетка сработает`,
+  },
+  [EShopCard.MAGIC_DIE]: { name: 'Утяжелённый кубик', kind: 'passive', rule: () => '+1 к броску на движение' },
+  [EShopCard.MONEY_MAGNET]: {
+    name: 'Громоотвод',
+    kind: 'passive',
+    rule: resource => `Остановился на красной: ${resource} +5`,
+  },
+  [EShopCard.ROCKET]: {
+    name: 'Рывок',
+    kind: 'active',
+    rule: resource => `Отдай ${resource} 3 — пройди 5 клеток вперёд, клетка сработает`,
+  },
+  [EShopCard.TRAVELATOR]: {
+    name: 'Попутка',
+    kind: 'passive',
+    rule: () => 'Остановился на пустой — пройди 4 клетки вперёд, клетка сработает',
+  },
+  [EShopCard.VOODOO]: {
+    name: 'Порча',
+    kind: 'active',
+    rule: resource => `Отдай ${resource} 3 — ближайший впереди в начале своего хода разыгрывает беду`,
+  },
 };

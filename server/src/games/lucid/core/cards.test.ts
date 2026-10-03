@@ -6,7 +6,12 @@ import {
 import { LucidShared } from '@trgames/shared';
 
 import { makeG } from '@/games/lucid/vitest/factories';
-import { drawLaws, placeLaw } from '@/games/lucid/core/cards';
+import { createRandom } from '@/games/lucid/core/random';
+import {
+  createCards,
+  drawLaws,
+  placeLaw,
+} from '@/games/lucid/core/cards';
 
 const { ELaw } = LucidShared;
 
@@ -47,5 +52,18 @@ describe('колода законов', () => {
 
     expect(placeLaw({ ...G, cards: { ...G.cards, lawDraw: [ELaw.RED_BAD] } }, 'a', 1)).toBeNull();
     expect(placeLaw({ ...G, cards: { ...G.cards, lawDraw: [ELaw.RED_BAD] } }, 'a', 0.5)).toBeNull();
+  });
+});
+
+describe('колода Лавки', () => {
+  it('createCards кладёт 20 карт — по две каждого вида, uid 0…19', () => {
+    const { shopDeck } = createCards(createRandom('shop'));
+
+    expect(shopDeck).toHaveLength(20);
+    expect(shopDeck.map(item => item.uid).sort((first, second) => first - second))
+      .toEqual(Array.from({ length: 20 }, (_, uid) => uid));
+    Object.values(LucidShared.EShopCard).forEach(kind => {
+      expect(shopDeck.filter(item => item.card === kind)).toHaveLength(2);
+    });
   });
 });

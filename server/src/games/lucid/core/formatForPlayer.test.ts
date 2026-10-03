@@ -180,8 +180,15 @@ describe('formatForPlayer: законы', () => {
     const state = makeFallbackParty({ seed: 'secret' });
     const view = formatForPlayer(state, 'p0');
 
-    expect(view.G.cards).toEqual({ laws: [null, null, null], lawDraw: [] });
+    expect(view.G.cards).toEqual({
+      laws: [null, null, null],
+      lawDraw: [],
+      shopOffer: [],
+      hands: { p0: [], p1: [], p2: [] },
+    });
     expect(JSON.stringify(view)).not.toContain('lawDeck');
     expect(JSON.stringify(view)).not.toContain('lawDiscard');
+    expect(JSON.stringify(view)).not.toContain('shopDeck');
+    expect(JSON.stringify(view)).not.toContain('shopDiscard');
   });
 });

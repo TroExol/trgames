@@ -281,6 +281,37 @@ describe('законы броска', () => {
 describe('законы начала и конца хода', () => {
   const track = empties(10);
 
+  const withHand = (size: number): LucidShared.TState => {
+    const state = stateWith([ELaw.LAST_START_FREE_CARD], track, { a: 0, b: 3 });
+    const hand = Array.from({ length: size }, (_, uid) => ({ uid: 100 + uid, card: LucidShared.EShopCard.ROCKET }));
+
+    return {
+      ...state,
+      G: {
+        ...state.G,
+        cards: {
+          ...state.G.cards,
+          shopDeck: [{ uid: 1, card: LucidShared.EShopCard.HOOK }],
+          hands: { a: hand, b: [] },
+        },
+      },
+    };
+  };
+
+  it('«Подарок»: отстающий с рукой 2 получает третью карту', () => {
+    const next = startTurn(withHand(2));
+
+    expect(next.G.cards.hands.a).toHaveLength(3);
+    expect(next.G.log).toContain('закон «Подарок»: Аня — берёт карту');
+  });
+
+  it('«Подарок»: с полной рукой ничего не происходит', () => {
+    const next = startTurn(withHand(3));
+
+    expect(next.G.cards.hands.a).toHaveLength(3);
+    expect(next.G.log).toEqual([]);
+  });
+
   it('«Пособие»: отстающий получает 3', () => {
     const next = startTurn(stateWith([ELaw.LAST_START_RESOURCE], track, { a: 0, b: 3 }));
 

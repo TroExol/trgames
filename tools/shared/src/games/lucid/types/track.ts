@@ -6,6 +6,7 @@ export enum ECellType {
   LAW = 'LAW',
   PORTAL = 'PORTAL',
   RED = 'RED',
+  SHOP = 'SHOP',
   START = 'START',
 }
 

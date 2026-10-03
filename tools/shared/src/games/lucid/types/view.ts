@@ -6,7 +6,7 @@ import type {
 import type { TEventView, TTheme } from './content';
 import type { TCards, TTurn } from './cards';
 
-export type TCardsView = Pick<TCards, 'laws' | 'lawDraw'>;
+export type TCardsView = Pick<TCards, 'laws' | 'lawDraw' | 'shopOffer' | 'hands'>;
 
 export type TTurnView = { lawEvent?: TEventView } & Omit<TTurn, 'lawEvent'>;
 

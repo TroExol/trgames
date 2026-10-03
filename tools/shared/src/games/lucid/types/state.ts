@@ -24,6 +24,7 @@ export enum EPhase {
   ENDED = 'ENDED',
   LAW = 'LAW',
   ROLL = 'ROLL',
+  SHOP = 'SHOP',
 }
 
 // Последний бросок кубика в партии. Нужен клиенту, чтобы нарисовать грань и

@@ -83,7 +83,7 @@ describe('setupParty: законы', () => {
 
     expect(state.G.cards.laws).toEqual([null, null, null]);
     expect([...state.G.cards.lawDeck].sort()).toEqual([...LAW_DECK].sort());
-    expect(state.G.cards.lawDeck).not.toContain(LucidShared.ELaw.LAST_START_FREE_CARD);
+    expect(state.G.cards.lawDeck).toHaveLength(15);
     expect(state.G.turn.step).toBe(LucidShared.ETurnStep.START);
   });
 });

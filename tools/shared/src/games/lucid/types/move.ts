@@ -1,6 +1,7 @@
 import type { TPlayerId } from './state';
 
 export enum EMoveType {
+  BUY_CARD = 'BUY_CARD',
   CHOOSE_BRANCH = 'CHOOSE_BRANCH',
   CHOOSE_DIE = 'CHOOSE_DIE',
   CHOOSE_LAW = 'CHOOSE_LAW',
@@ -13,6 +14,7 @@ export enum EMoveType {
 // Не совпала с текущей, значит клиент отстал, и ход отклоняется
 export type TMove =
   | { type: EMoveType.ROLL; playerId: TPlayerId; stateId: number }
+  | { type: EMoveType.BUY_CARD; playerId: TPlayerId; stateId: number; index: number | null; discardUid?: number }
   | { type: EMoveType.CHOOSE_BRANCH; playerId: TPlayerId; stateId: number; cellId: number }
   | { type: EMoveType.CHOOSE_DIE; playerId: TPlayerId; stateId: number; dieIndex: number }
   | { type: EMoveType.CHOOSE_LAW; playerId: TPlayerId; stateId: number; index: number }

@@ -58,7 +58,10 @@ export const setupParty = ({
       branchChoices: [],
       pendingSteps: 0,
       cellHistory: {},
-      cards: createCards(createRandom(`${seed}:cards`)),
+      cards: {
+        ...createCards(createRandom(`${seed}:cards`)),
+        hands: Object.fromEntries(players.map(player => [player.id, []])),
+      },
       turn: freshTurn(),
     },
     ctx: {

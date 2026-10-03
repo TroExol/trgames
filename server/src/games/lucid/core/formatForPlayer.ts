@@ -80,7 +80,12 @@ export const formatForPlayer = (
     pendingSteps: state.G.pendingSteps,
     lastRoll: state.G.lastRoll,
     cellHistory: state.G.cellHistory,
-    cards: { laws: state.G.cards.laws, lawDraw: state.G.cards.lawDraw },
+    cards: {
+      laws: state.G.cards.laws,
+      lawDraw: state.G.cards.lawDraw,
+      shopOffer: state.G.cards.shopOffer,
+      hands: state.G.cards.hands,
+    },
     turn: { ...state.G.turn, lawEvent: state.G.turn.lawEvent && toOpenEventView(state.G.turn.lawEvent) },
   };
 

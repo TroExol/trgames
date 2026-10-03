@@ -18,11 +18,33 @@ export enum ELaw {
   SIX_SKIP = 'SIX_SKIP',
 }
 
+export enum EShopCard {
+  CLOVER = 'CLOVER',
+  GRENADE = 'GRENADE',
+  HAND_OF_FATE = 'HAND_OF_FATE',
+  HARPOON = 'HARPOON',
+  HOOK = 'HOOK',
+  MAGIC_DIE = 'MAGIC_DIE',
+  MONEY_MAGNET = 'MONEY_MAGNET',
+  ROCKET = 'ROCKET',
+  TRAVELATOR = 'TRAVELATOR',
+  VOODOO = 'VOODOO',
+}
+
+export interface THandCard {
+  uid: number;
+  card: EShopCard;
+}
+
 export interface TCards {
   laws: (ELaw | null)[];
   lawDeck: ELaw[];
   lawDiscard: ELaw[];
   lawDraw: ELaw[];
+  shopDeck: THandCard[];
+  shopDiscard: THandCard[];
+  shopOffer: THandCard[];
+  hands: Record<string, THandCard[]>;
 }
 
 export enum ETurnStep {

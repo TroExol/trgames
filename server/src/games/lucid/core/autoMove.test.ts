@@ -99,6 +99,18 @@ describe('chooseAutoMove', () => {
     expect(chooseAutoMove(state)).toMatchObject({ optionIndex: 1 });
   });
 
+  it('в фазе Лавки отказывается от покупки', () => {
+    const state = makeFallbackParty({ seed: 'auto-shop' });
+    state.ctx.phase = LucidShared.EPhase.SHOP;
+
+    expect(chooseAutoMove(state)).toEqual({
+      type: LucidShared.EMoveType.BUY_CARD,
+      playerId: state.ctx.currentPlayer,
+      stateId: state.stateId,
+      index: null,
+    });
+  });
+
   it('после конца партии ходить нечем', () => {
     const state = makeFallbackParty({ seed: 'auto-ended' });
     state.ctx.phase = LucidShared.EPhase.ENDED;

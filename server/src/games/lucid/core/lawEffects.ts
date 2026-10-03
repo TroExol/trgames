@@ -3,6 +3,7 @@ import { LucidShared } from '@trgames/shared';
 import { resolveTarget } from '@/games/lucid/core/targets';
 import { rollDie } from '@/games/lucid/core/random';
 import { moveBy } from '@/games/lucid/core/movement';
+import { giveCard } from '@/games/lucid/core/cards';
 import { drawEvent } from '@/games/lucid/core/calamity';
 
 export type TLawTiming = 'END' | 'LANDED' | 'ROLLED' | 'START';
@@ -211,6 +212,19 @@ const LAW_EFFECTS: Partial<Record<LucidShared.ELaw, TLawEffect>> = {
         lawLine(ELaw.LAST_START_RESOURCE, playerId, G, `${G.theme.resourceName} +3`),
       ),
     }),
+  },
+  [ELaw.LAST_START_FREE_CARD]: {
+    timing: 'START',
+    applies: isLast,
+    apply: ({ G, playerId }) => {
+      const given = giveCard(G, playerId);
+
+      if ((given.cards.hands[playerId] ?? []).length === (G.cards.hands[playerId] ?? []).length) {
+        return { G };
+      }
+
+      return { G: log(given, lawLine(ELaw.LAST_START_FREE_CARD, playerId, G, 'берёт карту')) };
+    },
   },
   [ELaw.LAST_START_GOOD]: {
     timing: 'START',
