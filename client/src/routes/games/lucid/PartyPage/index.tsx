@@ -287,7 +287,7 @@ export const Component = observer(function LucidPartyPage() {
             и оно возвращается к своим пропорциям. Отступы равны высоте полос:
             они лежат поверх поля, и без отступов под ними прятались бы
             крайние ряды клеток */}
-        <div className="flex min-h-0 grow px-2 pb-32 pt-16">
+        <div className="flex min-h-0 grow px-2 pb-32 pt-36">
           <Board
             onSelectCell={isMyBranch ? handleSelectCell : undefined}
             onViewCell={setViewCellId}

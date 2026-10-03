@@ -5,7 +5,11 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
-import { cellLook, zoneStarts } from './cellLook';
+import {
+  cellLook,
+  LAW_FILL,
+  zoneStarts,
+} from './cellLook';
 
 const ECellType = LucidShared.ECellType;
 
@@ -23,6 +27,12 @@ describe('cellLook', () => {
       expect(cellLook({ id: 1, type: ECellType.RED, next: [] }, isVisited).fill).toMatch(/^#/);
       expect(cellLook({ id: 1, type: ECellType.GREEN, next: [] }, isVisited).fill).toMatch(/^#/);
     });
+  });
+
+  it('клетка «Закон» видна сразу и с глифом', () => {
+    const look = cellLook({ id: 1, type: ECellType.LAW, next: [] }, false);
+
+    expect(look).toEqual({ fill: LAW_FILL, glyph: '§' });
   });
 
   it('портал — кольцо цвета своей пары, у пар разные цвета', () => {

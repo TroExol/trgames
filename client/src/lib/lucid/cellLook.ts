@@ -2,6 +2,7 @@ import { LucidShared } from '@trgames/shared';
 
 const RED_FILL = '#c8553d';
 const GREEN_FILL = '#5a9e4b';
+export const LAW_FILL = '#c9a227';
 const PORTAL_RINGS = ['#8e5bd0', '#2f8fd8'];
 
 export const ZONE_LABEL: Record<LucidShared.EDiceZone, string> = {
@@ -23,6 +24,8 @@ export const cellLook = (cell: LucidShared.TCell, isVisited: boolean): TCellLook
       return isVisited ? { fill: 'ink' } : { fill: 'hollow', glyph: '?' };
     case LucidShared.ECellType.GREEN:
       return { fill: GREEN_FILL };
+    case LucidShared.ECellType.LAW:
+      return { fill: LAW_FILL, glyph: '§' };
     case LucidShared.ECellType.PORTAL:
       return { fill: 'hollow', ring: PORTAL_RINGS[(cell.portal?.pair ?? 0) % PORTAL_RINGS.length] };
     case LucidShared.ECellType.RED:

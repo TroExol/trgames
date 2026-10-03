@@ -11,8 +11,10 @@ import { LucidShared } from '@trgames/shared';
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
+import { LawsStrip } from '@/routes/games/lucid/PartyPage/components/LawsStrip';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
+import { CardPick } from '@/routes/games/lucid/PartyPage/components/CardPick';
 import { pluralizeSteps } from '@/lib/lucid/pluralize';
 import { ZONE_LABEL } from '@/lib/lucid/cellLook';
 import { Button } from '@/components/ui/Button';
@@ -48,8 +50,8 @@ export const Hud = observer(function Hud() {
   // хуки безусловно, а state ниже вычисляется уже после возможного раннего return
   const prevEventCellRef = useRef<number>();
   const { state, view } = partyStore;
-  const currentEventCellId = state && state.ctx.phase === LucidShared.EPhase.CHOICE
-    ? state.G.events[state.G.players[state.ctx.currentPlayer].position]?.cellId
+  const currentEventCellId = state && state.ctx.phase === LucidShared.EPhase.CHOICE && !state.G.turn.lawEvent
+    ? state.G.events[state.G.turn.eventCellId ?? state.G.players[state.ctx.currentPlayer].position]?.cellId
     : undefined;
 
   useEffect(() => {
@@ -90,7 +92,9 @@ export const Hud = observer(function Hud() {
   const hasAnyRole = state.G.order.some(playerId => Boolean(state.G.players[playerId].role));
   // Событие берётся по клетке ходящего игрока: его читают все, а не только тот,
   // чей ход
-  const event = state.ctx.phase === EPhase.CHOICE ? state.G.events[current.position] : undefined;
+  const event = state.ctx.phase === EPhase.CHOICE
+    ? state.G.turn.lawEvent ?? state.G.events[state.G.turn.eventCellId ?? current.position]
+    : undefined;
   const isCollapsed = event !== undefined && collapsedCell === event.cellId;
 
   const handleRoll = (): void => {
@@ -139,6 +143,16 @@ export const Hud = observer(function Hud() {
     });
   };
 
+  const handleChooseLaw = (index: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      index,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.CHOOSE_LAW,
+    });
+  };
+
   // Невозможное нельзя нажать: не твой ход — кнопок нет вовсе. Тогда отказ
   // сервера перестаёт быть событием для человека
   const renderAction = (): ReactNode => {
@@ -146,6 +160,10 @@ export const Hud = observer(function Hud() {
       const winner = state.G.winner && state.G.players[state.G.winner];
 
       return <p className="font-unbounded text-base">{winner ? `Побеждает ${winner.nickname}` : 'Партия окончена'}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.LAW) {
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} выбирает закон`}</p>;
     }
 
     // Остаток шагов у развилки виден всем, не только ходящему: ждущие видят,
@@ -329,6 +347,8 @@ export const Hud = observer(function Hud() {
             </li>
           ))}
         </ul>
+
+        <LawsStrip />
       </header>
 
       <div
@@ -358,6 +378,20 @@ export const Hud = observer(function Hud() {
           <div className="min-w-0 grow">{renderAction()}</div>
         </div>
       </div>
+
+      {state.ctx.phase === EPhase.LAW && isMyTurn && (
+        <CardPick
+          isSent={isSent || isRevealing}
+          items={state.G.cards.lawDraw.map(law => ({
+            actionLabel: 'Ввести',
+            key: law,
+            name: LucidShared.LAW_TEXT[law].name,
+            rule: LucidShared.LAW_TEXT[law].rule(theme.resourceName),
+          }))}
+          onPick={handleChooseLaw}
+          title="Закон: какой ввести?"
+        />
+      )}
 
       {event && !isCollapsed && (
         <EventCard
