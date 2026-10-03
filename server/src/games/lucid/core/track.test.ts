@@ -1,10 +1,9 @@
-import type { LucidShared } from '@trgames/shared';
-
 import {
   describe,
   expect,
   it,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
 import {
   buildTrack,
@@ -37,8 +36,10 @@ const someSeeds = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
 describe('buildTrack', () => {
   it('длина трека убывает с ростом числа игроков', () => {
-    expect(cellCountForPlayers(2)).toBe(50);
-    expect(cellCountForPlayers(6)).toBe(30);
+    expect(cellCountForPlayers(2)).toBe(75);
+    expect(cellCountForPlayers(3)).toBe(68);
+    expect(cellCountForPlayers(5)).toBe(53);
+    expect(cellCountForPlayers(6)).toBe(45);
   });
 
   it('трек имеет заданную длину', () => {
@@ -104,7 +105,9 @@ describe('buildTrack', () => {
   it('клетки событий — это все клетки, кроме старта и финиша', () => {
     const track = buildTrack({ random: createRandom('events'), playerCount: 3 });
 
-    expect(eventCellIds(track)).toHaveLength(track.cells.length - 2);
+    const eventCount = track.cells.filter(cell => cell.type === LucidShared.ECellType.EVENT).length;
+
+    expect(eventCellIds(track)).toHaveLength(eventCount);
     expect(eventCellIds(track)).not.toContain(track.startId);
     expect(eventCellIds(track)).not.toContain(track.finishId);
   });

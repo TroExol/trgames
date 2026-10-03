@@ -27,7 +27,7 @@ describe('loadFallbackContent', () => {
     // так что раскладка захватывает весь пул целиком, без остатка
     const { events } = loadFallbackContent(trackEventCellIds(2), 'fallback');
 
-    expect(Object.values(events)).toHaveLength(48);
+    expect(Object.values(events)).toHaveLength(trackEventCellIds(2).length);
     Object.values(events).forEach(event => {
       expect(eventSchema.safeParse(event).success).toBe(true);
     });

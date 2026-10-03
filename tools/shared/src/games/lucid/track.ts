@@ -37,3 +37,15 @@ export const regionForDepth = <TItem>(
 
   return items[Math.min(Math.max(index, 0), items.length - 1)];
 };
+
+export enum EDiceZone {
+  ONE = 'ONE',
+  PICK = 'PICK',
+  SUM = 'SUM',
+}
+
+const DICE_ZONES = [EDiceZone.ONE, EDiceZone.PICK, EDiceZone.SUM];
+
+// Зона кубика — треть пути по глубине: один кубик, два на выбор, сумма двух
+export const diceZoneForDepth = (depth: number, maxDepth: number): EDiceZone =>
+  regionForDepth(DICE_ZONES, depth, maxDepth) ?? EDiceZone.ONE;

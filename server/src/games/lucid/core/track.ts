@@ -1,6 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
 import { randomInt } from '@/games/lucid/core/random';
+import { assignCellTypes } from '@/games/lucid/core/cellTypes';
 
 const MIN_FORKS = 3;
 const MAX_FORKS = 5;
@@ -14,7 +15,7 @@ interface TBuildTrackParams {
 
 // Чем больше игроков, тем короче трек: иначе партия растягивается
 export const cellCountForPlayers = (playerCount: number): number => {
-  return 60 - Math.min(Math.max(playerCount, 2), 6) * 5;
+  return Math.round(90 - Math.min(Math.max(playerCount, 2), 6) * 7.5);
 };
 
 export const eventCellIds = (track: LucidShared.TTrack): number[] => {
@@ -70,7 +71,7 @@ export const buildTrack = ({ random, playerCount }: TBuildTrackParams): LucidSha
 
   const addStraight = (length: number): void => {
     for (let i = 0; i < length; i++) {
-      const id = addCell(LucidShared.ECellType.EVENT);
+      const id = addCell(LucidShared.ECellType.EMPTY);
       linkTo(tails, id);
       tails = [id];
     }
@@ -84,7 +85,7 @@ export const buildTrack = ({ random, playerCount }: TBuildTrackParams): LucidSha
       let head = 0;
 
       for (let step = 0; step < FORK_BRANCH_LENGTH; step++) {
-        const id = addCell(LucidShared.ECellType.EVENT);
+        const id = addCell(LucidShared.ECellType.EMPTY);
         linkTo(previous, id);
         previous = [id];
         head = id;
@@ -105,5 +106,5 @@ export const buildTrack = ({ random, playerCount }: TBuildTrackParams): LucidSha
   const finishId = addCell(LucidShared.ECellType.FINISH);
   linkTo(tails, finishId);
 
-  return { cells, startId: 0, finishId };
+  return assignCellTypes({ cells, startId: 0, finishId }, current).track;
 };
