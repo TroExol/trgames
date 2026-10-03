@@ -102,7 +102,7 @@ describe('buildTrack', () => {
     expect(merges).toHaveLength(forks.length);
   });
 
-  it('клетки событий — это все клетки, кроме старта и финиша', () => {
+  it('eventCellIds возвращает ровно клетки событий, без старта и финиша', () => {
     const track = buildTrack({ random: createRandom('events'), playerCount: 3 });
 
     const eventCount = track.cells.filter(cell => cell.type === LucidShared.ECellType.EVENT).length;
