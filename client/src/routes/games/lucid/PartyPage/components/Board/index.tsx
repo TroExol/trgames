@@ -196,6 +196,18 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
 
       return cell ? [{ x: cell.x, y: cell.y - LABEL_GAP }] : [];
     }),
+    ...zoneStarts(track).flatMap(start => {
+      const cell = layout.byId[start.cellId];
+
+      if (!cell) {
+        return [];
+      }
+
+      const halfWidth = (ZONE_LABEL[start.zone].length * textSize * 0.85) / 3;
+      const y = cell.y + TILE_ACROSS / 2 + 4 + textSize * 0.4;
+
+      return [cell.x - halfWidth, cell.x, cell.x + halfWidth].map(x => ({ x, y }));
+    }),
   ];
 
   // Подпись края стоит у его первой клетки и отходит поперёк пути: на ленте её
@@ -339,6 +351,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                   cy={ring.y}
                   fill="none"
                   key={`ring-${ring.id}`}
+                  pointerEvents="none"
                   r={TILE_ACROSS / 2 - 3}
                   stroke={ring.color}
                   strokeWidth={4}
