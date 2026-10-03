@@ -114,7 +114,7 @@ describe('resolveOption', () => {
       text: 'Заплатить',
       cost: 2,
       success: { atoms: [gain(5)] },
-    });
+    }, 1);
 
     expect(G?.cellHistory[1]).toEqual([{
       playerId: 'a',
@@ -132,7 +132,7 @@ describe('resolveOption', () => {
       threshold: 1,
       success: { atoms: [gain(5)] },
       failure: { atoms: [gain(-4)] },
-    });
+    }, 1);
 
     expect(G?.cellHistory[1]).toHaveLength(1);
     expect(G?.cellHistory[1][0].branch).toBe('success');
@@ -145,7 +145,7 @@ describe('resolveOption', () => {
       threshold: 7,
       success: { atoms: [gain(5)] },
       failure: { atoms: [gain(-4)] },
-    });
+    }, 1);
 
     expect(G?.cellHistory[1]).toHaveLength(1);
     expect(G?.cellHistory[1][0].branch).toBe('failure');
@@ -157,14 +157,23 @@ describe('resolveOption', () => {
       text: 'Заплатить',
       cost: 2,
       success: { atoms: [gain(1)] },
-    });
+    }, 1);
 
     const second = resolveOption(first!, 'a', 0, {
       text: 'Заплатить',
       cost: 2,
       success: { atoms: [gain(1)] },
-    });
+    }, 1);
 
     expect(second?.cellHistory[1]).toHaveLength(2);
+  });
+
+  it('без номера клетки история не пишется', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Заплатить',
+      success: { atoms: [gain(1)] },
+    });
+
+    expect(G?.cellHistory).toEqual({});
   });
 });

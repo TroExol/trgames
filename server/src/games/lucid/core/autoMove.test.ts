@@ -117,4 +117,21 @@ describe('chooseAutoMove', () => {
       index: 0,
     });
   });
+
+  it('в фазе выбора берёт вариант вытянутого события, а не клетки игрока', () => {
+    const state = makeFallbackParty({ seed: 'auto-drawn' });
+    const playerId = state.ctx.currentPlayer;
+    const free = (text: string): LucidShared.TEvent => ({
+      cellId: 0, title: text, text, options: [{ text, success: { atoms: [] } }],
+    });
+    const costly: LucidShared.TEvent = {
+      ...free('дорогое'),
+      options: [{ text: 'дорого', cost: 99, success: { atoms: [] } }, { text: 'дёшево', success: { atoms: [] } }],
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+    state.G.events = { [state.G.players[playerId].position]: free('своё'), 2: { ...costly, cellId: 2 } };
+    state.G.turn = { ...state.G.turn, eventCellId: 2 };
+
+    expect(chooseAutoMove(state)).toMatchObject({ optionIndex: 1 });
+  });
 });

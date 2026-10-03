@@ -9,6 +9,7 @@ export const resolveOption = (
   actorId: LucidShared.TPlayerId,
   optionIndex: number,
   option: LucidShared.TOption,
+  cellId?: number,
 ): LucidShared.TG | null => {
   const player = G.players[actorId];
 
@@ -16,9 +17,6 @@ export const resolveOption = (
     return null;
   }
 
-  // Клетка ветки — позиция игрока на момент выбора, а не после эффекта:
-  // MOVE-атом может увести его дальше, а раскрывать нужно клетку события
-  const cellId = player.position;
   const logStart = G.log.length;
 
   // Что выбрано — первая строка ленты по этому ходу, раньше броска и эффекта
@@ -69,11 +67,12 @@ export const resolveOption = (
     lines: resolved.log.slice(logStart),
   };
 
+  if (cellId === undefined) {
+    return resolved;
+  }
+
   return {
     ...resolved,
-    cellHistory: {
-      ...resolved.cellHistory,
-      [cellId]: [...(resolved.cellHistory[cellId] ?? []), entry],
-    },
+    cellHistory: { ...resolved.cellHistory, [cellId]: [...(resolved.cellHistory[cellId] ?? []), entry] },
   };
 };

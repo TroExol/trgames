@@ -1,5 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
+import { currentEvent } from '@/games/lucid/core/turn';
+
 // Ход за отсутствующего игрока: кубик (у сейфа — попытка без доплаты), первый кубик на выбор, первая ветка на развилке, первый
 // доступный по цене вариант события. Недоступный вариант брать нельзя —
 // движок такой ход отклонит, и автопилот застрянет на нём навсегда
@@ -33,7 +35,7 @@ export const chooseAutoMove = (state: LucidShared.TState): LucidShared.TMove | n
 
   if (state.ctx.phase === LucidShared.EPhase.CHOICE) {
     const player = state.G.players[playerId];
-    const options = state.G.events[player.position]?.options ?? [];
+    const options = currentEvent(state.G, playerId)?.options ?? [];
     const optionIndex = options.findIndex(option => !option.cost || option.cost <= player.resource);
 
     return optionIndex === -1

@@ -153,13 +153,15 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
     }
 
     const player = state.G.players[state.ctx.currentPlayer];
-    const option = currentEvent(state.G, player.id)?.options[move.optionIndex];
+    const event = currentEvent(state.G, player.id);
+    const option = event?.options[move.optionIndex];
 
-    if (!option) {
+    if (!event || !option) {
       return null;
     }
 
-    const G = resolveOption(state.G, player.id, move.optionIndex, option);
+    const cellId = state.G.turn.lawEvent ? undefined : event.cellId;
+    const G = resolveOption(state.G, player.id, move.optionIndex, option, cellId);
 
     // Вариант недоступен, например не хватает ресурса: ход не состоялся,
     // игрок не теряет право выбрать другой

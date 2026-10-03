@@ -11,7 +11,7 @@ import {
   lineTrack,
   makeG,
 } from '@/games/lucid/vitest/factories';
-import { land } from '@/games/lucid/core/turn';
+import { land, withTurn } from '@/games/lucid/core/turn';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { createRandom } from '@/games/lucid/core/random';
@@ -810,5 +810,43 @@ describe('клетка «Закон»', () => {
     expect(chosen.G.cards.laws[0]).toBe(LucidShared.ELaw.RED_BAD);
     expect(chosen.ctx.currentPlayer).toBe('b');
     expect(chosen.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+  });
+});
+
+describe('вытянутые события', () => {
+  const drawnEvent: LucidShared.TEvent = {
+    cellId: 2,
+    title: 'Вытянутое',
+    text: 'Текст',
+    options: [{
+      text: 'Взять',
+      success: { atoms: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, value: 2 }] },
+    }],
+  };
+
+  it('вытянутое событие разыгрывается вместо клетки игрока и пишет историю своей клетки', () => {
+    const base = makeG({ events: { 2: drawnEvent } });
+    const state: LucidShared.TState = {
+      G: withTurn(base, { step: LucidShared.ETurnStep.LANDED, eventCellId: 2 }),
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.CHOICE },
+      stateId: 0,
+    };
+    const next = applyMove(state, { type: EMoveType.CHOOSE_OPTION, playerId: 'a', stateId: 0, optionIndex: 0 });
+
+    expect(next.G.cellHistory[2]).toHaveLength(1);
+    expect(next.G.turn.eventCellId).toBeUndefined();
+    expect(next.ctx.currentPlayer).toBe('b');
+  });
+
+  it('выбор закона не пишет историю клеток', () => {
+    const state: LucidShared.TState = {
+      G: withTurn(makeG(), { step: LucidShared.ETurnStep.LANDED, lawEvent: { ...drawnEvent, cellId: -1 } }),
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.CHOICE },
+      stateId: 0,
+    };
+    const next = applyMove(state, { type: EMoveType.CHOOSE_OPTION, playerId: 'a', stateId: 0, optionIndex: 0 });
+
+    expect(next.G.cellHistory).toEqual({});
+    expect(next.G.turn.lawEvent).toBeUndefined();
   });
 });
