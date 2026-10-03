@@ -37,6 +37,20 @@ const toEventView = (
   options: event.options.map((option, index) => toOptionView(option, cellHistory[event.cellId] ?? [], index)),
 });
 
+const toOpenEventView = (event: LucidShared.TEvent): LucidShared.TEventView => ({
+  cellId: event.cellId,
+  title: event.title,
+  text: event.text,
+  options: event.options.map(option => ({
+    text: option.text,
+    threshold: option.threshold,
+    cost: option.cost,
+    revealed: { success: true, failure: Boolean(option.failure) },
+    success: option.success,
+    failure: option.failure,
+  })),
+});
+
 export const formatForPlayer = (
   state: LucidShared.TState,
   playerId: LucidShared.TPlayerId,
@@ -54,7 +68,7 @@ export const formatForPlayer = (
   // Журнал партии тоже не отдаётся целиком — лента собирается из его прироста
   // на стороне комнаты (см. Party.takeRibbonDelta). events уходят в форме TEventView:
   // исход варианта виден только по раскрытым веткам (5.5)
-  const G: { events: Record<number, LucidShared.TEventView> } & Omit<LucidShared.TG, 'log' | 'random' | 'events'> = {
+  const G: LucidShared.TStateForPlayer['G'] = {
     players: state.G.players,
     order: state.G.order,
     track: state.G.track,
@@ -66,6 +80,8 @@ export const formatForPlayer = (
     pendingSteps: state.G.pendingSteps,
     lastRoll: state.G.lastRoll,
     cellHistory: state.G.cellHistory,
+    cards: { laws: state.G.cards.laws, lawDraw: state.G.cards.lawDraw },
+    turn: { ...state.G.turn, lawEvent: state.G.turn.lawEvent && toOpenEventView(state.G.turn.lawEvent) },
   };
 
   return {

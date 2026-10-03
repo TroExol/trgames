@@ -24,6 +24,7 @@ const PHASE_FOR_MOVE: Record<EMoveType, LucidShared.EPhase> = {
   [EMoveType.CHOOSE_DIE]: LucidShared.EPhase.DICE,
   [EMoveType.CHOOSE_OPTION]: LucidShared.EPhase.CHOICE,
   [EMoveType.OPEN_SAFE]: LucidShared.EPhase.ROLL,
+  [EMoveType.CHOOSE_LAW]: LucidShared.EPhase.LAW,
 };
 
 // null означает «ход невозможен»: состояние остаётся прежним
@@ -84,6 +85,7 @@ const skipTurn = (state: LucidShared.TState, player: LucidShared.TPlayer): Lucid
 };
 
 const HANDLERS: Record<EMoveType, TMoveHandler> = {
+  [EMoveType.CHOOSE_LAW]: () => null,
   [EMoveType.ROLL]: state => {
     const player = state.G.players[state.ctx.currentPlayer];
 

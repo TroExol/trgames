@@ -5,7 +5,11 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
-import { lineTrack, makeG } from '@/games/lucid/vitest/factories';
+import {
+  lineTrack,
+  makeFallbackParty,
+  makeG,
+} from '@/games/lucid/vitest/factories';
 import { setupParty } from '@/games/lucid/core/setup';
 import { formatForPlayer } from '@/games/lucid/core/formatForPlayer';
 
@@ -168,5 +172,16 @@ describe('formatForPlayer — раскрытие веток варианта', (
     const state = stateWith(event, { 1: [entry] });
 
     expect(formatForPlayer(state, 'a').G.cellHistory).toEqual({ 1: [entry] });
+  });
+});
+
+describe('formatForPlayer: законы', () => {
+  it('колода законов не уходит игроку', () => {
+    const state = makeFallbackParty({ seed: 'secret' });
+    const view = formatForPlayer(state, 'p0');
+
+    expect(view.G.cards).toEqual({ laws: [null, null, null], lawDraw: [] });
+    expect(JSON.stringify(view)).not.toContain('lawDeck');
+    expect(JSON.stringify(view)).not.toContain('lawDiscard');
   });
 });

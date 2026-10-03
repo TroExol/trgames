@@ -3,6 +3,7 @@ import type { TPlayerId } from './state';
 export enum EMoveType {
   CHOOSE_BRANCH = 'CHOOSE_BRANCH',
   CHOOSE_DIE = 'CHOOSE_DIE',
+  CHOOSE_LAW = 'CHOOSE_LAW',
   CHOOSE_OPTION = 'CHOOSE_OPTION',
   OPEN_SAFE = 'OPEN_SAFE',
   ROLL = 'ROLL',
@@ -14,5 +15,6 @@ export type TMove =
   | { type: EMoveType.ROLL; playerId: TPlayerId; stateId: number }
   | { type: EMoveType.CHOOSE_BRANCH; playerId: TPlayerId; stateId: number; cellId: number }
   | { type: EMoveType.CHOOSE_DIE; playerId: TPlayerId; stateId: number; dieIndex: number }
+  | { type: EMoveType.CHOOSE_LAW; playerId: TPlayerId; stateId: number; index: number }
   | { type: EMoveType.CHOOSE_OPTION; playerId: TPlayerId; stateId: number; optionIndex: number }
   | { type: EMoveType.OPEN_SAFE; playerId: TPlayerId; stateId: number; bonus: number };

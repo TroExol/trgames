@@ -1,6 +1,7 @@
 import type { TTrack } from './track';
 import type { TRandomState } from './random';
 import type { TEvent, TTheme } from './content';
+import type { TCards, TTurn } from './cards';
 
 export type TPlayerId = string;
 
@@ -21,6 +22,7 @@ export enum EPhase {
   CHOICE = 'CHOICE',
   DICE = 'DICE',
   ENDED = 'ENDED',
+  LAW = 'LAW',
   ROLL = 'ROLL',
 }
 
@@ -85,6 +87,8 @@ export interface TG {
   // (какая из success/failure уже случалась на этой клетке) и посещённой
   // истории для просмотра клетки. Ключ — cellId
   cellHistory: Record<number, THistoryEntry[]>;
+  cards: TCards;
+  turn: TTurn;
 }
 
 export interface TCtx {

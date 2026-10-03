@@ -1,7 +1,9 @@
 import { LucidShared } from '@trgames/shared';
 
+import { freshTurn } from '@/games/lucid/core/turn';
 import { buildTrack } from '@/games/lucid/core/track';
 import { createRandom } from '@/games/lucid/core/random';
+import { createCards } from '@/games/lucid/core/cards';
 
 const START_RESOURCE = 10;
 
@@ -56,6 +58,8 @@ export const setupParty = ({
       branchChoices: [],
       pendingSteps: 0,
       cellHistory: {},
+      cards: createCards(createRandom(`${seed}:cards`)),
+      turn: freshTurn(),
     },
     ctx: {
       currentPlayer: players[0].id,

@@ -1,12 +1,12 @@
-import type { LucidShared } from '@trgames/shared';
-
 import {
   describe,
   expect,
   it,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
 import { setupParty } from '@/games/lucid/core/setup';
+import { LAW_DECK } from '@/games/lucid/core/cards';
 
 const content = (roles?: LucidShared.TRole[]): LucidShared.TPartyContent => ({
   theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#001122'] },
@@ -70,5 +70,20 @@ describe('setupParty: роли игроков', () => {
     });
 
     expect(state.G.players.a.role).toBe('вторая роль');
+  });
+});
+
+describe('setupParty: законы', () => {
+  it('колода законов перемешана, без «Подарка», ячейки пусты', () => {
+    const state = setupParty({
+      seed: 'laws',
+      players: [{ id: 'a', nickname: 'Аня' }, { id: 'b', nickname: 'Боря' }],
+      content: { theme: { name: 'Т', resourceName: 'монеты', palette: ['#111111', '#222222', '#333333'] }, events: {} },
+    });
+
+    expect(state.G.cards.laws).toEqual([null, null, null]);
+    expect([...state.G.cards.lawDeck].sort()).toEqual([...LAW_DECK].sort());
+    expect(state.G.cards.lawDeck).not.toContain(LucidShared.ELaw.LAST_START_FREE_CARD);
+    expect(state.G.turn.step).toBe(LucidShared.ETurnStep.START);
   });
 });

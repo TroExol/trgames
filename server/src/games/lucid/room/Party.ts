@@ -1,5 +1,6 @@
 import { LucidShared } from '@trgames/shared';
 
+import { upgradeG } from '@/games/lucid/core/upgrade';
 import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove as applyMoveToState } from '@/games/lucid/core/reducer';
@@ -311,12 +312,9 @@ export class Party {
 
     party.phase = snapshot.phase;
     party.theme = snapshot.theme;
-    // Партии из базы старше истории клетки не имеют cellHistory вовсе —
-    // подставляем пусто, чтобы формату и редьюсеру не пришлось знать про
-    // старые снимки
     party.state = snapshot.state && {
       ...snapshot.state,
-      G: { ...snapshot.state.G, cellHistory: snapshot.state.G.cellHistory ?? {} },
+      G: upgradeG(snapshot.state.G),
     };
     party.usedFallback = snapshot.usedFallback;
     party.sentRibbonLines = snapshot.sentRibbonLines;

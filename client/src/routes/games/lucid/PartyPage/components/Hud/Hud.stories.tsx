@@ -80,6 +80,8 @@ const setupHud = (
         pendingSteps: 0,
         lastRoll: dice?.lastRoll,
         cellHistory: {},
+        cards: { laws: [null, null, null], lawDraw: [] },
+        turn: { step: LucidShared.ETurnStep.START, fired: [], extraTurn: false },
       },
       ctx: {
         currentPlayer: order[0],

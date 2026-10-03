@@ -5,7 +5,9 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
+import { freshTurn } from '@/games/lucid/core/turn';
 import { landOnCell } from '@/games/lucid/core/cells';
+import { emptyCards } from '@/games/lucid/core/cards';
 
 const ECellType = LucidShared.ECellType;
 
@@ -36,6 +38,8 @@ const makeG = (type: LucidShared.ECellType, resource = 10): LucidShared.TG => ({
   branchChoices: [],
   pendingSteps: 0,
   cellHistory: {},
+  cards: emptyCards(),
+  turn: freshTurn(),
 });
 
 describe('landOnCell', () => {

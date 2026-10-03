@@ -119,6 +119,8 @@ const makeParty = ({
       pendingSteps: 2,
       lastRoll: { playerId: walker, value: 5 },
       cellHistory: {},
+      cards: { laws: [null, null, null], lawDraw: [] },
+      turn: { step: LucidShared.ETurnStep.START, fired: [], extraTurn: false },
     },
     ctx: {
       currentPlayer: walker,

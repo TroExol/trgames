@@ -4,6 +4,11 @@ import type {
   TPlayerId,
 } from './state';
 import type { TEventView, TTheme } from './content';
+import type { TCards, TTurn } from './cards';
+
+export type TCardsView = Pick<TCards, 'laws' | 'lawDraw'>;
+
+export type TTurnView = { lawEvent?: TEventView } & Omit<TTurn, 'lawEvent'>;
 
 // Состояние глазами одного игрока. Ни состояния генератора случайных чисел,
 // ни журнала партии здесь нет: первое позволило бы предсказать все броски,
@@ -11,7 +16,8 @@ import type { TEventView, TTheme } from './content';
 // events — в форме TEventView: исход варианта виден только по раскрытым
 // веткам (5.5), обычный TEvent целиком уехал бы со спойлером
 export interface TStateForPlayer {
-  G: { events: Record<number, TEventView> } & Omit<TG, 'log' | 'random' | 'events'>;
+  G: { events: Record<number, TEventView>; cards: TCardsView; turn: TTurnView }
+    & Omit<TG, 'log' | 'random' | 'events' | 'cards' | 'turn'>;
   ctx: TCtx;
   stateId: number;
   you: TPlayerId;

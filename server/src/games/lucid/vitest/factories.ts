@@ -1,9 +1,11 @@
 import { LucidShared } from '@trgames/shared';
 
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
+import { freshTurn } from '@/games/lucid/core/turn';
 import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
 import { setupParty } from '@/games/lucid/core/setup';
 import { createRandom } from '@/games/lucid/core/random';
+import { emptyCards } from '@/games/lucid/core/cards';
 
 // Прямой трек: 0 → 1 → 2 → 3 → 4, где 0 старт и 4 финиш
 export const lineTrack = (): LucidShared.TTrack => ({
@@ -85,6 +87,8 @@ export const makeG = ({
   branchChoices: [],
   pendingSteps: 0,
   cellHistory: {},
+  cards: emptyCards(),
+  turn: freshTurn(),
 });
 
 interface TMakeFallbackPartyParams {

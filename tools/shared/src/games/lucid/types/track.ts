@@ -3,6 +3,7 @@ export enum ECellType {
   EVENT = 'EVENT',
   FINISH = 'FINISH',
   GREEN = 'GREEN',
+  LAW = 'LAW',
   PORTAL = 'PORTAL',
   RED = 'RED',
   START = 'START',
