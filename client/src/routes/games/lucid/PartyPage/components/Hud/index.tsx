@@ -42,7 +42,7 @@ export const Hud = observer(function Hud() {
   const [sentStateId, setSentStateId] = useState<number>();
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
-  const [pendingBuy, setPendingBuy] = useState<number>();
+  const [pendingBuy, setPendingBuy] = useState<{ index: number; stateId: number }>();
   const [collapsedCell, setCollapsedCell] = useState<number>();
   // Итог только что разыгранного варианта — своя клетка и запись истории,
   // не флаг: пока он висит, следующее событие всё равно открывается само
@@ -336,7 +336,7 @@ export const Hud = observer(function Hud() {
     const hand = state.G.cards.hands[state.you] ?? [];
     const { resourceName } = theme;
 
-    if (pendingBuy !== undefined) {
+    if (pendingBuy && pendingBuy.stateId === state.stateId) {
       return (
         <CardPick
           isSent={isSent || isRevealing}
@@ -346,7 +346,9 @@ export const Hud = observer(function Hud() {
             name: LucidShared.cardName(state.G, item.card),
             rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
           }))}
-          onPick={index => handleBuy(pendingBuy, hand[index].uid)}
+          onPick={index => handleBuy(pendingBuy.index, hand[index].uid)}
+          onSkip={() => setPendingBuy(undefined)}
+          skipLabel="Назад"
           title="Рука полна: что сбросить?"
         />
       );
@@ -363,7 +365,13 @@ export const Hud = observer(function Hud() {
           name: LucidShared.cardName(state.G, item.card),
           rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
         }))}
-        onPick={index => (hand.length >= LucidShared.HAND_LIMIT ? setPendingBuy(index) : handleBuy(index))}
+        onPick={index => {
+          if (hand.length >= LucidShared.HAND_LIMIT) {
+            setPendingBuy({ index, stateId: state.stateId });
+          } else {
+            handleBuy(index);
+          }
+        }}
         onSkip={() => handleBuy(null)}
         skipLabel="Ничего не беру"
         title={`Лавка: одна карта за ${LucidShared.SHOP_PRICE}`}
@@ -434,17 +442,19 @@ export const Hud = observer(function Hud() {
                   text={`— ${state.G.players[playerId].role}`}
                 />
               )}
-              <span className="shrink-0">{`· ${state.G.players[playerId].resource}`}</span>
-              {(state.G.cards.hands[playerId] ?? []).map(item => (
-                <span
-                  className="shrink-0 rounded border px-1 leading-tight"
-                  key={item.uid}
-                  style={{ borderColor: 'var(--lucid-muted)' }}
-                  title={`${LucidShared.cardName(state.G, item.card)}: ${LucidShared.SHOP_TEXT[item.card].rule(theme.resourceName)}`}
-                >
-                  {LucidShared.cardName(state.G, item.card).charAt(0)}
-                </span>
-              ))}
+              <span className="flex min-w-0 shrink items-center gap-1 overflow-hidden whitespace-nowrap">
+                <span className="shrink-0">{`· ${state.G.players[playerId].resource}`}</span>
+                {(state.G.cards.hands[playerId] ?? []).map(item => (
+                  <span
+                    className="shrink-0 rounded border px-1 leading-tight"
+                    key={item.uid}
+                    style={{ borderColor: 'var(--lucid-muted)' }}
+                    title={`${LucidShared.cardName(state.G, item.card)}: ${LucidShared.SHOP_TEXT[item.card].rule(theme.resourceName)}`}
+                  >
+                    {LucidShared.cardName(state.G, item.card).charAt(0)}
+                  </span>
+                ))}
+              </span>
               {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
             </li>
           ))}
