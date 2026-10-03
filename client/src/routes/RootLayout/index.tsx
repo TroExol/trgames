@@ -16,7 +16,7 @@ export const RootLayout: FC<TProps> = observer(function RootLayout({ children })
   const { isSm } = useDeviceWidth();
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-dvh w-full flex-col">
       <div id="bg" />
       <Header />
       <main className="mb-2 flex grow px-2 sm:px-4 [@media(max-height:620px)]:py-2">
