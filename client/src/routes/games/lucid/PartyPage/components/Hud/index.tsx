@@ -14,6 +14,7 @@ import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
 import { pluralizeSteps } from '@/lib/lucid/pluralize';
+import { ZONE_LABEL } from '@/lib/lucid/cellLook';
 import { Button } from '@/components/ui/Button';
 
 import { Outcome } from './Outcome';
@@ -98,6 +99,16 @@ export const Hud = observer(function Hud() {
     socketService.makeMove({ playerId: state.you, stateId: state.stateId, type: EMoveType.ROLL });
   };
 
+  const handleChooseDie = (dieIndex: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      dieIndex,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.CHOOSE_DIE,
+    });
+  };
+
   const handleChooseBranch = (cellId: number): void => {
     setSentStateId(state.stateId);
     socketService.makeMove({
@@ -167,11 +178,40 @@ export const Hud = observer(function Hud() {
       );
     }
 
+    if (state.ctx.phase === EPhase.DICE) {
+      const values = state.G.lastRoll?.values ?? [];
+
+      if (!isMyTurn) {
+        return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} выбирает кубик`}</p>;
+      }
+
+      return (
+        <div className="flex flex-wrap gap-2">
+          {values.map((value, index) => (
+            <Button
+              className="whitespace-normal border-2 bg-transparent hover:bg-transparent"
+              disabled={isSent || isRevealing}
+              key={index}
+              onClick={() => handleChooseDie(index)}
+              size="sm"
+              style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+              variant="outline"
+            >
+              {`Идти на ${value}`}
+            </Button>
+          ))}
+        </div>
+      );
+    }
+
     if (!isMyTurn) {
       return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
     }
 
     if (state.ctx.phase === EPhase.ROLL) {
+      const depths = LucidShared.trackDepths(state.G.track);
+      const zone = LucidShared.diceZoneForDepth(depths[current.position] ?? 0, depths[state.G.track.finishId] ?? 0);
+
       return (
         <Button
           className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
@@ -180,7 +220,7 @@ export const Hud = observer(function Hud() {
           style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
           variant="outline"
         >
-          Бросить кубик
+          {zone === LucidShared.EDiceZone.ONE ? 'Бросить кубик' : `Бросить: ${ZONE_LABEL[zone]}`}
         </Button>
       );
     }

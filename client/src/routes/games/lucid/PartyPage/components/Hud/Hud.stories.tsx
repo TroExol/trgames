@@ -36,7 +36,12 @@ interface TPlayerSetup {
 // HUD читает партию из partyStore напрямую, не пропсами (как и боевой
 // SocketService.connect → partyStore.applyView) — история наполняет тот же
 // синглтон-стор, а не подменяет компонент
-const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = false): void => {
+const setupHud = (
+  players: TPlayerSetup[],
+  ribbon: string[],
+  usedFallback = false,
+  dice?: { phase: LucidShared.EPhase; lastRoll: LucidShared.TRoll },
+): void => {
   const withIds = players.map((player, index) => ({ id: `p${index + 1}`, ...player }));
   const order = withIds.map(player => player.id);
   const theme: LucidShared.TTheme = { name: WORLD_NAME, resourceName: 'заряды', palette: PALETTE };
@@ -72,14 +77,14 @@ const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = fals
         visited: [0],
         branchChoices: [],
         pendingSteps: 0,
-        lastRoll: undefined,
+        lastRoll: dice?.lastRoll,
         cellHistory: {},
       },
       ctx: {
         currentPlayer: order[0],
         turn: 1,
         numPlayers: order.length,
-        phase: EPhase.ROLL,
+        phase: dice?.phase ?? EPhase.ROLL,
       },
       stateId: 1,
       you: order[0],
@@ -156,6 +161,20 @@ export const NoRoles: Story = {
       { nickname: 'Борис' },
       { nickname: 'Вика' },
     ], ['Придумать ваш мир не получилось, играем на запасном.'], true);
+
+    return <HudFrame />;
+  },
+};
+
+export const PickDie: Story = {
+  name: 'Два кубика на выбор',
+  render: () => {
+    setupHud(
+      [{ nickname: 'Ваня' }, { nickname: 'Аня' }],
+      ['Ваня бросил два кубика.'],
+      false,
+      { phase: EPhase.DICE, lastRoll: { playerId: 'p1', value: 2, values: [2, 5], pending: true, stateId: 1 } },
+    );
 
     return <HudFrame />;
   },
