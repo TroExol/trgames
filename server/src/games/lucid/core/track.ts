@@ -15,7 +15,7 @@ interface TBuildTrackParams {
 
 // Чем больше игроков, тем короче трек: иначе партия растягивается
 export const cellCountForPlayers = (playerCount: number): number => {
-  return Math.round(90 - Math.min(Math.max(playerCount, 2), 6) * 7.5);
+  return Math.round(120 - Math.min(Math.max(playerCount, 2), 6) * 10);
 };
 
 export const eventCellIds = (track: LucidShared.TTrack): number[] => {
