@@ -36,10 +36,10 @@ const someSeeds = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
 describe('buildTrack', () => {
   it('длина трека убывает с ростом числа игроков', () => {
-    expect(cellCountForPlayers(2)).toBe(75);
-    expect(cellCountForPlayers(3)).toBe(68);
-    expect(cellCountForPlayers(5)).toBe(53);
-    expect(cellCountForPlayers(6)).toBe(45);
+    expect(cellCountForPlayers(2)).toBe(100);
+    expect(cellCountForPlayers(3)).toBe(90);
+    expect(cellCountForPlayers(5)).toBe(70);
+    expect(cellCountForPlayers(6)).toBe(60);
   });
 
   it('трек имеет заданную длину', () => {
