@@ -26,7 +26,7 @@ interface TLawEffect {
 
 const { ECellType, ELaw } = LucidShared;
 
-const log = (G: LucidShared.TG, line: string): LucidShared.TG => ({ ...G, log: [...G.log, line] });
+export const log = (G: LucidShared.TG, line: string): LucidShared.TG => ({ ...G, log: [...G.log, line] });
 
 const lawLine = (
   law: LucidShared.ELaw,
@@ -35,7 +35,7 @@ const lawLine = (
   what: string,
 ): string => `закон «${LucidShared.LAW_TEXT[law].name}»: ${G.players[playerId].nickname} — ${what}`;
 
-const addResource = (G: LucidShared.TG, playerId: LucidShared.TPlayerId, delta: number): LucidShared.TG => ({
+export const addResource = (G: LucidShared.TG, playerId: LucidShared.TPlayerId, delta: number): LucidShared.TG => ({
   ...G,
   players: {
     ...G.players,

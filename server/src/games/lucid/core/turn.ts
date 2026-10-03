@@ -2,6 +2,7 @@ import { LucidShared } from '@trgames/shared';
 
 import type { TLawRun, TLawTiming } from '@/games/lucid/core/lawEffects';
 
+import { runPassives } from '@/games/lucid/core/passiveCards';
 import { runLaws } from '@/games/lucid/core/lawEffects';
 import { hasPlayable } from '@/games/lucid/core/handCards';
 import { landOnCell } from '@/games/lucid/core/cells';
@@ -51,7 +52,8 @@ const settle = (
   timing: TLawTiming,
   onClear: (state: LucidShared.TState) => LucidShared.TState,
 ): LucidShared.TState => {
-  const run = runLaws(state.G, state.ctx.currentPlayer, timing);
+  const lawRun = runLaws(state.G, state.ctx.currentPlayer, timing);
+  const run = timing === 'LANDED' && !lawRun.pause ? runPassives(lawRun.G, state.ctx.currentPlayer) : lawRun;
 
   return applyPause(state, run) ?? onClear({ ...state, G: run.G });
 };

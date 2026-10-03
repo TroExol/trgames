@@ -3,6 +3,7 @@ import { LucidShared } from '@trgames/shared';
 import type { TWalkResult } from '@/games/lucid/core/movement';
 
 import { rollDie } from '@/games/lucid/core/random';
+import { rollBonus } from '@/games/lucid/core/passiveCards';
 import { walkForward } from '@/games/lucid/core/movement';
 
 const applyWalk = (
@@ -26,13 +27,14 @@ const walkWith = (
   lastRoll: LucidShared.TRoll,
   line: string,
 ): LucidShared.TG => {
+  const bonus = rollBonus(G, playerId);
   const moved = applyWalk(
     { ...G, lastRoll },
     playerId,
-    walkForward(G.track, G.players[playerId].position, lastRoll.value),
+    walkForward(G.track, G.players[playerId].position, lastRoll.value + bonus),
   );
 
-  return { ...moved, log: [...moved.log, line] };
+  return { ...moved, log: [...moved.log, bonus > 0 ? `${line} (+${bonus} от карт)` : line] };
 };
 
 export const rollAndMove = (
