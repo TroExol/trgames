@@ -43,32 +43,12 @@ const makeG = (type: LucidShared.ECellType, resource = 10): LucidShared.TG => ({
 });
 
 describe('landOnCell', () => {
-  it('зелёная клетка даёт +3 Ресурса и строку в ленту', () => {
-    const G = landOnCell(makeG(ECellType.GREEN), 'p1');
+  it('зелёная и красная клетки не меняют Ресурс и не пишут ленту', () => {
+    [ECellType.GREEN, ECellType.RED].forEach(type => {
+      const before = makeG(type);
 
-    expect(G.players.p1.resource).toBe(13);
-    expect(G.log).toEqual(['Ваня: зелёная клетка, заряды +3']);
-  });
-
-  it('красная клетка отнимает 3 Ресурса', () => {
-    const G = landOnCell(makeG(ECellType.RED), 'p1');
-
-    expect(G.players.p1.resource).toBe(7);
-    expect(G.log).toEqual(['Ваня: красная клетка, заряды −3']);
-  });
-
-  it('красная клетка не уводит Ресурс в минус и пишет фактическую потерю', () => {
-    const G = landOnCell(makeG(ECellType.RED, 1), 'p1');
-
-    expect(G.players.p1.resource).toBe(0);
-    expect(G.log).toEqual(['Ваня: красная клетка, заряды −1']);
-  });
-
-  it('красная клетка при нулевом Ресурсе пишет нулевую потерю', () => {
-    const G = landOnCell(makeG(ECellType.RED, 0), 'p1');
-
-    expect(G.players.p1.resource).toBe(0);
-    expect(G.log).toEqual(['Ваня: красная клетка, заряды −0']);
+      expect(landOnCell(before, 'p1')).toBe(before);
+    });
   });
 
   it('портал переносит на парную клетку и отмечает её посещённой', () => {

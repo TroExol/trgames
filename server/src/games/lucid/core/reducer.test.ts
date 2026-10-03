@@ -482,14 +482,14 @@ describe('клетка после хода', () => {
     })),
   });
 
-  it('зелёная клетка даёт Ресурс, ход переходит дальше', () => {
+  it('зелёная клетка без законов не даёт Ресурс, ход переходит дальше', () => {
     const state = makeParty('green');
     state.G.track = longTrack(LucidShared.ECellType.GREEN);
     const before = state.G.players.a.resource;
 
     const next = roll(state);
 
-    expect(next.G.players.a.resource).toBe(before + 3);
+    expect(next.G.players.a.resource).toBe(before);
     expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
     expect(next.ctx.currentPlayer).toBe('b');
   });
