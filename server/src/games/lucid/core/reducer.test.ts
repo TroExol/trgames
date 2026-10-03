@@ -448,3 +448,47 @@ describe('события', () => {
     expect(next.ctx.phase).toBe(LucidShared.EPhase.ENDED);
   });
 });
+
+describe('клетка после хода', () => {
+  const longTrack = (type: LucidShared.ECellType): LucidShared.TTrack => ({
+    startId: 0,
+    finishId: 10,
+    cells: Array.from({ length: 11 }, (_, id) => ({
+      id,
+      type: id === 0 ? LucidShared.ECellType.START : id === 10 ? LucidShared.ECellType.FINISH : type,
+      next: id === 10 ? [] : [id + 1],
+    })),
+  });
+
+  it('зелёная клетка даёт Ресурс, ход переходит дальше', () => {
+    const state = makeParty('green');
+    state.G.track = longTrack(LucidShared.ECellType.GREEN);
+    const before = state.G.players.a.resource;
+
+    const next = roll(state);
+
+    expect(next.G.players.a.resource).toBe(before + 3);
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(next.ctx.currentPlayer).toBe('b');
+  });
+
+  it('клетка события даёт выбор и не трогает Ресурс', () => {
+    const state = makeParty('event');
+    state.G.track = longTrack(LucidShared.ECellType.EVENT);
+    state.G.events = Object.fromEntries(Array.from({ length: 9 }, (_, index) => [
+      index + 1,
+      {
+        cellId: index + 1,
+        title: 'Развилка судьбы',
+        text: 'Что выберешь',
+        options: [{ text: 'Взять', success: { atoms: [] } }],
+      },
+    ]));
+    const before = state.G.players.a.resource;
+
+    const next = roll(state);
+
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.CHOICE);
+    expect(next.G.players.a.resource).toBe(before);
+  });
+});

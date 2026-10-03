@@ -2,6 +2,7 @@ import { LucidShared } from '@trgames/shared';
 
 import { resolveOption } from '@/games/lucid/core/options';
 import { rollAndMove, takeBranch } from '@/games/lucid/core/moves';
+import { landOnCell } from '@/games/lucid/core/cells';
 
 // @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
 // плоского реэкспорта не существует — извлекаем сами, чтобы обращения
@@ -75,7 +76,9 @@ const afterMove = (state: LucidShared.TState): LucidShared.TState => {
     return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.CHOICE } };
   }
 
-  return { ...state, ctx: nextPlayer(state) };
+  const landed = { ...state, G: landOnCell(state.G, player.id) };
+
+  return { ...landed, ctx: nextPlayer(landed) };
 };
 
 const HANDLERS: Record<EMoveType, TMoveHandler> = {
