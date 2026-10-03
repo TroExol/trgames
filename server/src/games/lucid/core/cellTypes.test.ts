@@ -52,15 +52,30 @@ describe('assignCellTypes через buildTrack', () => {
     }));
   });
 
-  it('порталы пары разнесены по треку', () => {
-    someSeeds.forEach(seed => {
-      const track = buildTrack({ random: createRandom(seed), playerCount: 6 });
+  it('портал переносит на 4–9 уровней глубины', () => {
+    allPlayerCounts.forEach(playerCount => someSeeds.forEach(seed => {
+      const track = buildTrack({ random: createRandom(seed), playerCount });
       const depths = LucidShared.trackDepths(track);
 
       track.cells.filter(cell => cell.type === ECellType.PORTAL).forEach(cell => {
-        expect(Math.abs(depths[cell.id] - depths[cell.portal!.to])).toBeGreaterThanOrEqual(5);
+        const distance = Math.abs(depths[cell.id] - depths[cell.portal!.to]);
+
+        expect(distance).toBeGreaterThanOrEqual(4);
+        expect(distance).toBeLessThanOrEqual(9);
       });
-    });
+    }));
+  });
+
+  it('обе клетки первой пары раньше обеих клеток второй пары', () => {
+    allPlayerCounts.forEach(playerCount => someSeeds.forEach(seed => {
+      const track = buildTrack({ random: createRandom(seed), playerCount });
+      const depths = LucidShared.trackDepths(track);
+      const portals = track.cells.filter(cell => cell.type === ECellType.PORTAL);
+      const depthsOf = (pair: number): number[] =>
+        portals.filter(cell => cell.portal!.pair === pair).map(cell => depths[cell.id]);
+
+      expect(Math.max(...depthsOf(0))).toBeLessThan(Math.min(...depthsOf(1)));
+    }));
   });
 
   it('доли: событий 40%, зелёных и красных по 15% от внутренних клеток без порталов', () => {

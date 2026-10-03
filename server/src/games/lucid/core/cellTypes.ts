@@ -11,8 +11,8 @@ interface TAssignResult {
   random: LucidShared.TRandomState;
 }
 
-// Порталы — на прямых клетках, по одной из каждой четверти пути: пары
-// 1–3 и 2–4 четвертей, так что пара всегда разнесена по треку
+// Порталы — на прямых клетках, по паре в каждой половине пути; клетки пары
+// разнесены на 4–9 уровней глубины, то есть перенос не дальше 8 клеток
 const pickPortals = (
   track: LucidShared.TTrack,
   random: LucidShared.TRandomState,
@@ -28,24 +28,34 @@ const pickPortals = (
     .sort((first, second) => depths[first.id] - depths[second.id]);
 
   let current = random;
-  const picks = [0, 1, 2, 3].map(index => {
-    const quarter = straight.slice(
-      Math.floor((index * straight.length) / 4),
-      Math.floor(((index + 1) * straight.length) / 4),
+  const portals = new Map<number, LucidShared.TPortal>();
+
+  [0, 1].forEach(pair => {
+    const half = straight.slice(
+      Math.floor((pair * straight.length) / 2),
+      Math.floor(((pair + 1) * straight.length) / 2),
     );
-    const picked = randomInt(current, 0, quarter.length - 1);
+    const order = shuffle(current, half);
 
-    current = picked.state;
+    current = order.state;
 
-    return quarter[picked.value].id;
+    for (const first of order.value) {
+      const candidates = half.filter(cell => {
+        const distance = depths[cell.id] - depths[first.id];
+
+        return distance >= 4 && distance <= 9;
+      });
+
+      if (candidates.length > 0) {
+        const picked = randomInt(current, 0, candidates.length - 1);
+
+        current = picked.state;
+        portals.set(first.id, { pair, to: candidates[picked.value].id });
+        portals.set(candidates[picked.value].id, { pair, to: first.id });
+        break;
+      }
+    }
   });
-
-  const portals = new Map<number, LucidShared.TPortal>([
-    [picks[0], { pair: 0, to: picks[2] }],
-    [picks[2], { pair: 0, to: picks[0] }],
-    [picks[1], { pair: 1, to: picks[3] }],
-    [picks[3], { pair: 1, to: picks[1] }],
-  ]);
 
   return { portals, random: current };
 };
