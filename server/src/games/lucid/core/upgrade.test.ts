@@ -22,6 +22,15 @@ describe('upgradeG', () => {
     expect(upgraded.turn).toEqual({ step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] });
   });
 
+  it('старая партия в фазе выбора начинает с шага LANDED', () => {
+    const old: Partial<LucidShared.TG> = makeG();
+
+    delete old.turn;
+
+    expect(upgradeG(old as LucidShared.TG, LucidShared.EPhase.CHOICE).turn.step).toBe(LucidShared.ETurnStep.LANDED);
+    expect(upgradeG(old as LucidShared.TG, LucidShared.EPhase.ROLL).turn.step).toBe(LucidShared.ETurnStep.START);
+  });
+
   it('ход без used получает пустой used', () => {
     const G = makeG();
     const { used, ...rest } = G.turn;

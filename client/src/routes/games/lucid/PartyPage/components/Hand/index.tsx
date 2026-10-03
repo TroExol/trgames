@@ -30,17 +30,15 @@ export const Hand = observer(function Hand({ canPlay, isSent, onPlay }: THandPro
   }
 
   const { resourceName } = state.G.theme;
-  const { finishId } = state.G.track;
-  const targets = state.G.order.filter(
-    playerId => playerId !== state.you && state.G.players[playerId].position !== finishId,
-  );
+  const targets = opened
+    ? state.G.order.filter(playerId => LucidShared.canPlay(state.G, state.you, opened, playerId))
+    : [];
   const text = opened && LucidShared.SHOP_TEXT[opened.card];
   const isPlayable = Boolean(
     opened
     && text?.kind === 'active'
     && canPlay
-    && !state.G.turn.used.includes(opened.uid)
-    && state.G.players[state.you].resource >= LucidShared.CARD_USE_PRICE,
+    && LucidShared.canPlay(state.G, state.you, opened),
   );
 
   const handlePlay = (): void => {

@@ -5,9 +5,7 @@ import {
   proceed,
   withTurn,
 } from '@/games/lucid/core/turn';
-import { nearestAhead } from '@/games/lucid/core/targets';
 import { moveBy } from '@/games/lucid/core/movement';
-import { canPlay } from '@/games/lucid/core/handCards';
 
 const { EShopCard } = LucidShared;
 
@@ -29,12 +27,14 @@ export const playCard = (
   const { G } = state;
   const item = (G.cards.hands[actorId] ?? []).find(card => card.uid === uid);
 
-  if (!item || !canPlay(G, actorId, item, targetId) || (item.card === EShopCard.HAND_OF_FATE && !targetId)) {
+  const isFateWithoutTarget = item?.card === EShopCard.HAND_OF_FATE && !targetId;
+
+  if (!item || !LucidShared.canPlay(G, actorId, item, targetId) || isFateWithoutTarget) {
     return null;
   }
 
   const actor = G.players[actorId];
-  const ahead = nearestAhead(G, actorId);
+  const ahead = LucidShared.nearestAhead(G, actorId);
   const victimId = item.card === EShopCard.HAND_OF_FATE ? targetId : ahead?.id;
   const victim = victimId === undefined ? undefined : G.players[victimId];
   const paid = withTurn(G, { used: [...G.turn.used, uid] });

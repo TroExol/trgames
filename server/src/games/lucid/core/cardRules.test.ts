@@ -7,10 +7,8 @@ import { LucidShared } from '@trgames/shared';
 
 import { makeG } from '@/games/lucid/vitest/factories';
 import { withTurn } from '@/games/lucid/core/turn';
-import { nearestAhead } from '@/games/lucid/core/targets';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { playCard } from '@/games/lucid/core/playCard';
-import { canPlay } from '@/games/lucid/core/handCards';
 
 const { ECellType, EPhase, EShopCard } = LucidShared;
 
@@ -58,23 +56,44 @@ const cardsState = (
   };
 };
 
+describe('canPlay', () => {
+  const check = (positions: Record<string, number>, card: LucidShared.EShopCard): boolean => {
+    const state = cardsState(positions, [card]);
+
+    return LucidShared.canPlay(state.G, 'a', state.G.cards.hands.a[0]);
+  };
+
+  it('«Обвал» без игроков впереди — нельзя', () => {
+    expect(check({ a: 9, b: 2 }, EShopCard.GRENADE)).toBe(false);
+    expect(check({ a: 2, b: 9 }, EShopCard.GRENADE)).toBe(true);
+  });
+
+  it('«Аркан» с ближайшим впереди в 12 клетках — нельзя', () => {
+    expect(check({ a: 2, b: 14 }, EShopCard.HARPOON)).toBe(false);
+  });
+
+  it('«Рывок» на финише — нельзя', () => {
+    expect(check({ a: LENGTH + 1, b: 0 }, EShopCard.ROCKET)).toBe(false);
+  });
+});
+
 describe('nearestAhead', () => {
   it('находит ближайшего впереди', () => {
     const { G } = cardsState({ a: 2, b: 9 }, []);
 
-    expect(nearestAhead(G, 'a')).toEqual({ id: 'b', distance: 7 });
+    expect(LucidShared.nearestAhead(G, 'a')).toEqual({ id: 'b', distance: 7 });
   });
 
   it('позади никого — undefined', () => {
     const { G } = cardsState({ a: 9, b: 2 }, []);
 
-    expect(nearestAhead(G, 'a')).toBeUndefined();
+    expect(LucidShared.nearestAhead(G, 'a')).toBeUndefined();
   });
 
   it('игрок у сейфа не считается', () => {
     const { G } = cardsState({ a: 2, b: LENGTH + 1 }, []);
 
-    expect(nearestAhead(G, 'a')).toBeUndefined();
+    expect(LucidShared.nearestAhead(G, 'a')).toBeUndefined();
   });
 });
 
@@ -104,7 +123,7 @@ describe('активные карты', () => {
   it('Ресурс 2 — карта не играется, фазы карт нет', () => {
     const state = cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET], 2);
 
-    expect(canPlay(state.G, 'a', state.G.cards.hands.a[0])).toBe(false);
+    expect(LucidShared.canPlay(state.G, 'a', state.G.cards.hands.a[0])).toBe(false);
     expect(playCard(state, 0)).toBeNull();
   });
 

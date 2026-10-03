@@ -314,7 +314,7 @@ export class Party {
     party.theme = snapshot.theme;
     party.state = snapshot.state && {
       ...snapshot.state,
-      G: upgradeG(snapshot.state.G),
+      G: upgradeG(snapshot.state.G, snapshot.state.ctx.phase),
     };
     party.usedFallback = snapshot.usedFallback;
     party.sentRibbonLines = snapshot.sentRibbonLines;

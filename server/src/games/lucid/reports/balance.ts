@@ -2,7 +2,6 @@ import { LucidShared } from '@trgames/shared';
 
 import { makeFallbackParty } from '@/games/lucid/vitest/factories';
 import { applyMove } from '@/games/lucid/core/reducer';
-import { canPlay } from '@/games/lucid/core/handCards';
 import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 
 const MAX_MOVES = 5000;
@@ -48,7 +47,7 @@ const chooseBuyerMove = (state: LucidShared.TState): LucidShared.TMove | null =>
     for (const item of hand) {
       const isFate = item.card === LucidShared.EShopCard.HAND_OF_FATE;
 
-      if (canPlay(G, playerId, item, isFate ? targetId : undefined)) {
+      if (LucidShared.canPlay(G, playerId, item, isFate ? targetId : undefined)) {
         return {
           type: LucidShared.EMoveType.PLAY_CARD,
           playerId,

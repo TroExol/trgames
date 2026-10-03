@@ -4,7 +4,6 @@ import type { TLawRun, TLawTiming } from '@/games/lucid/core/lawEffects';
 
 import { runPassives } from '@/games/lucid/core/passiveCards';
 import { runLaws } from '@/games/lucid/core/lawEffects';
-import { hasPlayable } from '@/games/lucid/core/handCards';
 import { landOnCell } from '@/games/lucid/core/cells';
 import { drawLaws, openShop } from '@/games/lucid/core/cards';
 import { drawEvent } from '@/games/lucid/core/calamity';
@@ -152,7 +151,7 @@ export const land = (state: LucidShared.TState): LucidShared.TState => {
 export const proceed = (state: LucidShared.TState): LucidShared.TState => {
   switch (state.G.turn.step) {
     case LucidShared.ETurnStep.CARDS:
-      return hasPlayable(state.G, state.ctx.currentPlayer)
+      return LucidShared.hasPlayable(state.G, state.ctx.currentPlayer)
         ? withPhase(state, LucidShared.EPhase.CARDS)
         : proceed({ ...state, G: withTurn(state.G, { step: LucidShared.ETurnStep.END }) });
     case LucidShared.ETurnStep.END:
