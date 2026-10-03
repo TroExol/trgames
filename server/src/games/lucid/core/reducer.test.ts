@@ -102,7 +102,12 @@ describe('applyMove', () => {
     const state = makeParty();
     state.G.players.a.position = state.G.track.finishId - 1;
 
-    const next = roll(state);
+    const next = applyMove(roll(state), {
+      type: EMoveType.CHOOSE_DIE,
+      playerId: 'a',
+      stateId: roll(state).stateId,
+      dieIndex: 0,
+    });
 
     expect(next.G.winner).toBe('a');
     expect(next.ctx.phase).toBe(LucidShared.EPhase.ENDED);

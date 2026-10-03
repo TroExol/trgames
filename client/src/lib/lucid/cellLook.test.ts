@@ -35,7 +35,7 @@ describe('cellLook', () => {
 });
 
 describe('zoneStarts', () => {
-  it('отмечает первую клетку зон «выбор» и «сумма»', () => {
+  it('отмечает первую клетку зоны «выбор» один раз', () => {
     const cells = Array.from({ length: 31 }, (_, id) => ({
       id,
       type: ECellType.EMPTY,
@@ -44,7 +44,7 @@ describe('zoneStarts', () => {
     const track = { cells, startId: 0, finishId: 30 };
     const starts = zoneStarts(track);
 
-    expect(starts.map(start => start.zone)).toEqual([LucidShared.EDiceZone.PICK, LucidShared.EDiceZone.SUM]);
+    expect(starts.map(start => start.zone)).toEqual([LucidShared.EDiceZone.PICK]);
     starts.forEach(start => {
       expect(LucidShared.diceZoneForDepth(start.cellId - 1, 30)).not.toBe(start.zone);
       expect(LucidShared.diceZoneForDepth(start.cellId, 30)).toBe(start.zone);

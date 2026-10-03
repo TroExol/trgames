@@ -7,7 +7,6 @@ const PORTAL_RINGS = ['#8e5bd0', '#2f8fd8'];
 export const ZONE_LABEL: Record<LucidShared.EDiceZone, string> = {
   [LucidShared.EDiceZone.ONE]: '1 кубик',
   [LucidShared.EDiceZone.PICK]: '2 кубика · выбор',
-  [LucidShared.EDiceZone.SUM]: '2 кубика · сумма',
 };
 
 export interface TCellLook {
@@ -46,9 +45,7 @@ export const zoneStarts = (track: LucidShared.TTrack): { cellId: number; zone: L
     }
   });
 
-  return [LucidShared.EDiceZone.PICK, LucidShared.EDiceZone.SUM].flatMap(zone => {
-    const first = firstByZone.get(zone);
+  const first = firstByZone.get(LucidShared.EDiceZone.PICK);
 
-    return first ? [{ cellId: first.cellId, zone }] : [];
-  });
+  return first ? [{ cellId: first.cellId, zone: LucidShared.EDiceZone.PICK }] : [];
 };
