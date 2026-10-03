@@ -59,7 +59,7 @@
         },
         {
           "text": "Выровнять давление вручную",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -85,7 +85,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               }
             ]
           },
@@ -106,7 +106,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -173,7 +173,7 @@
         },
         {
           "text": "Запрыгнуть в кабину самому",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -198,7 +198,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               },
               {
                 "kind": "MOVE",
@@ -215,7 +215,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "ALL",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -229,7 +229,7 @@
       "options": [
         {
           "text": "Поменяться местами с лидером",
-          "cost": 3,
+          "cost": 5,
           "success": {
             "atoms": [
               {
@@ -247,7 +247,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -267,7 +267,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },
@@ -320,7 +320,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               },
               {
                 "kind": "MOVE",
@@ -334,7 +334,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -399,7 +399,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -435,7 +435,7 @@
         },
         {
           "text": "Обрушить решётку перед лидером",
-          "cost": 2,
+          "cost": 4,
           "success": {
             "atoms": [
               {
@@ -460,7 +460,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -472,7 +472,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "LAST",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -492,7 +492,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               }
             ]
           },
@@ -501,7 +501,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -513,7 +513,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -532,7 +532,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -564,7 +564,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },
@@ -585,7 +585,7 @@
         },
         {
           "text": "Заделать трещину герметиком",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -622,7 +622,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "ALL",
-                "value": -1
+                "value": -2
               }
             ]
           }
@@ -635,7 +635,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },
@@ -644,7 +644,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               },
               {
                 "kind": "SKIP_TURN",
@@ -669,7 +669,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           },
@@ -678,7 +678,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -690,7 +690,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "FIRST",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -715,7 +715,7 @@
             "condition": {
               "field": "RESOURCE",
               "operator": "LTE",
-              "value": 2
+              "value": 4
             },
             "otherwise": [
               {
@@ -759,7 +759,7 @@
         },
         {
           "text": "Перехватить частоту и навести спасателей на себя",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -779,7 +779,7 @@
       "options": [
         {
           "text": "Заблокировать лидера",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -817,7 +817,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               }
             ]
           },
@@ -826,7 +826,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -838,7 +838,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -850,7 +850,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "LAST",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -891,7 +891,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -917,7 +917,7 @@
         },
         {
           "text": "Подключить батарею и подняться самому",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -942,7 +942,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               },
               {
                 "kind": "MOVE",
@@ -953,7 +953,7 @@
             "condition": {
               "field": "RESOURCE",
               "operator": "GTE",
-              "value": 1
+              "value": 2
             },
             "otherwise": [
               {
@@ -991,7 +991,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },
@@ -1000,7 +1000,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -1041,14 +1041,14 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
         },
         {
           "text": "Сбить дрона с курса, чтобы лидер застрял",
-          "cost": 2,
+          "cost": 4,
           "success": {
             "atoms": [
               {
@@ -1066,7 +1066,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -1127,7 +1127,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               }
             ]
           },
@@ -1136,7 +1136,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -1148,7 +1148,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -1160,7 +1160,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "LAST",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -1180,7 +1180,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               }
             ]
           },
@@ -1189,20 +1189,20 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
         },
         {
           "text": "Подкормить замок зарядом",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -1274,7 +1274,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               },
               {
                 "kind": "SKIP_TURN",
@@ -1342,7 +1342,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },
@@ -1358,7 +1358,7 @@
         },
         {
           "text": "Отключить систему",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -1417,7 +1417,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               },
               {
                 "kind": "MOVE",
@@ -1458,7 +1458,7 @@
         },
         {
           "text": "Обесточить этаж лидера",
-          "cost": 2,
+          "cost": 4,
           "success": {
             "atoms": [
               {
@@ -1478,7 +1478,7 @@
       "options": [
         {
           "text": "Открыть дверь и срезать путь",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -1527,7 +1527,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -1563,7 +1563,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "LAST",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -1575,7 +1575,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -1604,7 +1604,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               },
               {
                 "kind": "SKIP_TURN",
@@ -1641,7 +1641,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               },
               {
                 "kind": "MOVE",
@@ -1655,7 +1655,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -1667,7 +1667,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -1693,7 +1693,7 @@
       "options": [
         {
           "text": "Сбросить вызов и отправить платформу вниз",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -1711,7 +1711,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 1
+                "value": 2
               }
             ]
           }
@@ -1784,7 +1784,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },
@@ -1839,7 +1839,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -1859,7 +1859,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 2
+                "value": 4
               }
             ]
           },
@@ -1868,7 +1868,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -2
+                "value": -4
               }
             ]
           }
@@ -1880,7 +1880,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "LAST",
-                "value": 2
+                "value": 4
               }
             ]
           }
@@ -1918,7 +1918,7 @@
         },
         {
           "text": "Перекрыть воздух лидеру",
-          "cost": 2,
+          "cost": 4,
           "success": {
             "atoms": [
               {
@@ -1979,7 +1979,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": 3
+                "value": 5
               },
               {
                 "kind": "MOVE",
@@ -1991,7 +1991,7 @@
         },
         {
           "text": "Отправить отчёт на Землю и срезать путь",
-          "cost": 1,
+          "cost": 2,
           "success": {
             "atoms": [
               {
@@ -2017,7 +2017,7 @@
               {
                 "kind": "RESOURCE",
                 "target": "SELF",
-                "value": -1
+                "value": -2
               }
             ]
           },

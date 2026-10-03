@@ -5,7 +5,7 @@ import { LucidShared } from '@trgames/shared';
 // и валидация, и описание словаря в промпте
 export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: number }> = {
   [LucidShared.EAtomKind.MOVE]: { min: -4, max: 4 },
-  [LucidShared.EAtomKind.RESOURCE]: { min: -3, max: 3 },
+  [LucidShared.EAtomKind.RESOURCE]: { min: -5, max: 5 },
   [LucidShared.EAtomKind.SKIP_TURN]: { min: 1, max: 2 },
   // Значение не используется: обмен всегда идёт между ходящим и лидером
   [LucidShared.EAtomKind.SWAP_WITH_FIRST]: { min: 0, max: 0 },
@@ -17,7 +17,7 @@ export const EVENT_TEXT_MAX = 200;
 export const OPTION_TEXT_MAX = 80;
 
 export const THRESHOLD_RANGE = { min: 2, max: 6 };
-export const COST_RANGE = { min: 1, max: 3 };
+export const COST_RANGE = { min: 2, max: 5 };
 
 // Края мира: участки пути со своими названиями и цветами
 export const REGION_RANGE = { min: 3, max: 5 } as const;
