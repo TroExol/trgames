@@ -32,7 +32,20 @@ export interface TCellPremise {
   // Клетки с «удар по лидеру» / «помощь отстающему» требуют от модели хотя бы
   // один вариант с атомом на этой цели — target подсказывает, какой
   target?: LucidShared.ETarget.FIRST | LucidShared.ETarget.LAST;
+  // «Беда»: ни один вариант не даёт чистого плюса. Не ставится на клетки
+  // с «удар по лидеру» / «помощь отстающему» — у тех обязательное требование
+  // к механике, которое с бедой спорит
+  calamity: boolean;
+  // «Платный»: один из вариантов стоит ресурса (cost, без threshold),
+  // на остальных клетках cost запрещён. От завязки и беды не зависит
+  paid: boolean;
 }
+
+// Выбор count клеток по индексам из candidates — отдельным сидом на каждую
+// пометку: так раскладка завязок остаётся прежней, а пометки друг от друга
+// и от неё не зависят
+const pickIndexes = (candidates: number[], count: number, seed: string): Set<number> =>
+  new Set(shuffle(createRandom(seed), candidates).value.slice(0, count));
 
 // Перестановка соседних одинаковых значений на уже перемешанном списке — без
 // рандома, чисто механический проход, поэтому результат остаётся детерминирован
@@ -55,7 +68,7 @@ const spreadAdjacent = (list: string[]): string[] => {
   return result;
 };
 
-// Раскладка завязок по всем клеткам партии разом, одним сидом: соседние куски
+// Раскладка завязок и пометок по всем клеткам партии разом, одним сидом: соседние куски
 // (Promise.all в pipeline.ts) не видят раскладку друг друга, но получают её
 // не пересекающейся, потому что она собрана заранее целиком
 export const assignPremises = (cellIds: number[], seed: string): TCellPremise[] => {
@@ -76,6 +89,16 @@ export const assignPremises = (cellIds: number[], seed: string): TCellPremise[] 
 
   const shuffled = spreadAdjacent(shuffle(createRandom(`${seed}:premises`), pool).value);
 
+  const calamityCandidates = shuffled
+    .map((premise, index) => (premise === PREMISE_LEADER || premise === PREMISE_LAST ? -1 : index))
+    .filter(index => index !== -1);
+  const calamityIndexes = pickIndexes(calamityCandidates, Math.round(total / 4), `${seed}:calamity`);
+  const paidIndexes = pickIndexes(
+    Array.from({ length: total }, (_unused, index) => index),
+    Math.round(total / 3),
+    `${seed}:paid`,
+  );
+
   return cellIds.map((cellId, index) => {
     const premise = shuffled[index];
 
@@ -87,6 +110,8 @@ export const assignPremises = (cellIds: number[], seed: string): TCellPremise[] 
         : premise === PREMISE_LAST
           ? LucidShared.ETarget.LAST
           : undefined,
+      calamity: calamityIndexes.has(index),
+      paid: paidIndexes.has(index),
     };
   });
 };

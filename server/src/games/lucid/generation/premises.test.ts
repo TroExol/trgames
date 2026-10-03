@@ -54,6 +54,40 @@ describe('assignPremises', () => {
     });
   });
 
+  it('беда — около четверти клеток, платный — около трети', () => {
+    const assigned = assignPremises(CELL_IDS, 'marks');
+
+    expect(assigned.filter(item => item.calamity)).toHaveLength(12);
+    expect(assigned.filter(item => item.paid)).toHaveLength(16);
+  });
+
+  it('беда не совпадает с «удар по лидеру» и «помощь отстающему»', () => {
+    ['a', 'b', 'c', 'd', 'e'].forEach(seed => {
+      assignPremises(CELL_IDS, seed).forEach(item => {
+        if (item.calamity) {
+          expect(item.premise).not.toBe(PREMISE_LEADER);
+          expect(item.premise).not.toBe(PREMISE_LAST);
+        }
+      });
+    });
+  });
+
+  it('платный независим от завязки и беды: встречается и с бедой, и без неё', () => {
+    const assigned = assignPremises(CELL_IDS, 'paid-independent');
+
+    expect(assigned.some(item => item.paid && item.calamity)).toBe(true);
+    expect(assigned.some(item => item.paid && !item.calamity)).toBe(true);
+    expect(assigned.some(item => !item.paid && item.calamity)).toBe(true);
+  });
+
+  it('на коротком треке беда не вылезает за допустимые клетки', () => {
+    const ids = [1, 2, 3, 4];
+    const assigned = assignPremises(ids, 'short');
+
+    expect(assigned.filter(item => item.calamity).length).toBeLessThanOrEqual(1);
+    expect(assigned.filter(item => item.paid).length).toBeLessThanOrEqual(1);
+  });
+
   it('у соседних клеток завязки разные', () => {
     const assigned = assignPremises(CELL_IDS, 'neighbours');
 

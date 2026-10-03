@@ -13,6 +13,8 @@ const cell = (overrides: Partial<TEventCellBrief> = {}): TEventCellBrief => ({
   cellId: 43,
   premise: 'находка',
   region: 'Подземный зал',
+  calamity: false,
+  paid: false,
   ...overrides,
 });
 
@@ -48,6 +50,31 @@ describe('buildEventsPrompt', () => {
     ], []);
 
     expect(prompt).toContain('завязка: помощь отстающему (хотя бы один вариант с атомом на LAST');
+  });
+
+  it('у беды в строке клетки — требование меньшего зла, платного без пометки нет', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'золото', [cell({ calamity: true })], []);
+
+    expect(prompt).toContain('завязка: находка (беда — все варианты с потерей');
+    expect(prompt).not.toContain('(один вариант платный');
+  });
+
+  it('у платного в строке клетки — пометка cost без threshold', () => {
+    const line = buildEventsPrompt('Подземелье', 'золото', [cell({ paid: true })], [])
+      .split('\n')
+      .find(row => row.startsWith('- клетка 43'));
+
+    expect(line).toContain('(один вариант платный — cost, без threshold)');
+    expect(line).not.toContain('беда');
+  });
+
+  it('беда и платный могут стоять на одной клетке, после требования к лидеру', () => {
+    const line = buildEventsPrompt('Подземелье', 'золото', [cell({ calamity: true, paid: true })], [])
+      .split('\n')
+      .find(row => row.startsWith('- клетка 43'));
+
+    expect(line).toContain('(беда');
+    expect(line).toContain('(один вариант платный');
   });
 
   it('предупреждает не повторять завязку дословно как заголовок', () => {

@@ -7,6 +7,11 @@ export interface TContentMetrics {
   antiLeaderShare: number;
   // Доля событий, где есть эффект в помощь последнему
   helpLastShare: number;
+  // Доля «бед»: ни в одной ветке ни одного варианта нет чистого плюса ходящему
+  calamityShare: number;
+  // Средняя длина текста события и варианта в символах — цель промпта ~140 и ~50
+  avgEventTextLength: number;
+  avgOptionTextLength: number;
 }
 
 const effectAtoms = (effect?: LucidShared.TEffect): LucidShared.TAtom[] =>
@@ -53,6 +58,31 @@ const isHelpForLast = (atom: LucidShared.TAtom): boolean => {
   }
 };
 
+// Чистый плюс ходящему: вперёд или ресурс себе (или всем — ходящий среди них),
+// либо обмен с лидером. Плюсы, выданные FIRST/LAST, не считаем: кто окажется
+// лидером или последним, заранее неизвестно, а у беды они и не нужны. Цена
+// (cost) плюсом не бывает, поэтому в расчёте её нет
+const isGainForMover = (atom: LucidShared.TAtom): boolean => {
+  if (atom.kind === LucidShared.EAtomKind.SWAP_WITH_FIRST) {
+    return true;
+  }
+
+  if (atom.target !== LucidShared.ETarget.SELF && atom.target !== LucidShared.ETarget.ALL) {
+    return false;
+  }
+
+  return (atom.kind === LucidShared.EAtomKind.MOVE || atom.kind === LucidShared.EAtomKind.RESOURCE)
+    && atom.value > 0;
+};
+
+// Беда — событие с вариантами, где все ветки всех вариантов (успех, провал,
+// обе стороны условия) обходятся без чистого плюса ходящему
+const isCalamity = (event: LucidShared.TEvent): boolean =>
+  event.options.length > 0 && !eventAtoms(event).some(isGainForMover);
+
+const average = (values: number[]): number =>
+  values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
+
 const share = (events: LucidShared.TEvent[], match: (event: LucidShared.TEvent) => boolean): number =>
   events.length === 0 ? 0 : events.filter(match).length / events.length;
 
@@ -66,5 +96,8 @@ export const computeContentMetrics = (content: LucidShared.TPartyContent): TCont
     paidOptionShare: share(events, event => event.options.some(option => option.cost !== undefined)),
     antiLeaderShare: share(events, event => eventAtoms(event).some(isAgainstLeader)),
     helpLastShare: share(events, event => eventAtoms(event).some(isHelpForLast)),
+    calamityShare: share(events, isCalamity),
+    avgEventTextLength: average(events.map(event => event.text.length)),
+    avgOptionTextLength: average(events.flatMap(event => event.options.map(option => option.text.length))),
   };
 };

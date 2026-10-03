@@ -38,6 +38,9 @@ describe('computeContentMetrics', () => {
       paidOptionShare: 0,
       antiLeaderShare: 0,
       helpLastShare: 0,
+      calamityShare: 0,
+      avgEventTextLength: 0,
+      avgOptionTextLength: 0,
     });
   });
 
@@ -124,5 +127,58 @@ describe('computeContentMetrics', () => {
     ]);
 
     expect(computeContentMetrics(content([inOtherwise, inFailure])).helpLastShare).toBe(1);
+  });
+
+  it('беда — когда ни одна ветка ни одного варианта не даёт чистого плюса ходящему', () => {
+    const calamity = event(1, [
+      option({
+        threshold: 4,
+        success: { atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, -1)] },
+        failure: { atoms: [atom(LucidShared.EAtomKind.SKIP_TURN, LucidShared.ETarget.SELF, 1)] },
+      }),
+      option({ cost: 2, success: { atoms: [atom(LucidShared.EAtomKind.RESOURCE, LucidShared.ETarget.SELF, -1)] } }),
+    ]);
+    const gainInSuccess = event(2, [
+      option({
+        threshold: 4,
+        success: { atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 2)] },
+        failure: { atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, -2)] },
+      }),
+    ]);
+    const gainInOtherwise = event(3, [
+      option({
+        success: {
+          atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, -1)],
+          condition: {
+            field: LucidShared.EConditionField.RESOURCE,
+            operator: LucidShared.EConditionOperator.GT,
+            value: 1,
+          },
+          otherwise: [atom(LucidShared.EAtomKind.RESOURCE, LucidShared.ETarget.ALL, 1)],
+        },
+      }),
+    ]);
+    const noOptions = event(4, []);
+
+    expect(computeContentMetrics(content([calamity, gainInSuccess, gainInOtherwise, noOptions])).calamityShare)
+      .toBe(0.25);
+  });
+
+  it('плюс другому игроку бедой быть не мешает', () => {
+    const calamity = event(1, [
+      option({ success: { atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.LAST, 2)] } }),
+    ]);
+
+    expect(computeContentMetrics(content([calamity])).calamityShare).toBe(1);
+  });
+
+  it('считает среднюю длину текста события и варианта', () => {
+    const first = { ...event(1, [option({ text: 'abcd', success: { atoms: [] } })]), text: '12345678' };
+    const second = { ...event(2, [option({ text: 'ab', success: { atoms: [] } })]), text: '1234' };
+
+    const metrics = computeContentMetrics(content([first, second]));
+
+    expect(metrics.avgEventTextLength).toBe(6);
+    expect(metrics.avgOptionTextLength).toBe(3);
   });
 });

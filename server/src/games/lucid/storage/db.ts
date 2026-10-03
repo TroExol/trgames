@@ -23,7 +23,7 @@ type TSaveGenerationParams = {
   // Своя колонка, а не джойн на parties: строка партии удаляется через
   // CLEANUP_DELAY_MS после опустения комнаты, а строка генерации остаётся
   worldName: string;
-} & TContentMetrics;
+} & Pick<TContentMetrics, 'paidOptionShare' | 'antiLeaderShare' | 'helpLastShare'>;
 
 export interface TUsageTotals {
   generations: number;
