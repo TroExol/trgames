@@ -37,13 +37,14 @@ const onTrack = (position: number) => makeG({
 });
 
 describe('зоны кубиков', () => {
-  it('зоны трека из 31 клетки: 0 — один кубик, 15 — выбор, 22 — сумма', () => {
+  it('зоны трека из 31 клетки: 0 — один кубик, 15 и 30 — выбор', () => {
     const depths = LucidShared.trackDepths(straight(31));
     const zone = (id: number) => LucidShared.diceZoneForDepth(depths[id], depths[30]);
 
     expect(zone(0)).toBe(LucidShared.EDiceZone.ONE);
     expect(zone(15)).toBe(LucidShared.EDiceZone.PICK);
-    expect(zone(22)).toBe(LucidShared.EDiceZone.SUM);
+    expect(zone(22)).toBe(LucidShared.EDiceZone.PICK);
+    expect(zone(30)).toBe(LucidShared.EDiceZone.PICK);
   });
 
   it('в зоне одного кубика двигает на выпавшее', () => {
@@ -63,14 +64,6 @@ describe('зоны кубиков', () => {
       expect(value).toBeGreaterThanOrEqual(1);
       expect(value).toBeLessThanOrEqual(6);
     });
-  });
-
-  it('в зоне суммы двигает на сумму двух кубиков', () => {
-    const after = rollAndMove(onTrack(22), 'p1');
-    const [first, second] = after.lastRoll?.values ?? [];
-
-    expect(after.players.p1.position).toBe(Math.min(22 + first + second, 30));
-    expect(after.lastRoll?.value).toBe(first + second);
   });
 
   it('pickDie двигает на выбранный кубик и заводит новый lastRoll', () => {

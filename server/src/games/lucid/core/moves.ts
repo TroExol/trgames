@@ -56,23 +56,12 @@ export const rollAndMove = (
   const second = rollDie(first.state);
   const values = [first.value, second.value];
 
-  if (zone === LucidShared.EDiceZone.PICK) {
-    return {
-      ...G,
-      random: second.state,
-      lastRoll: { playerId, value: first.value, values, pending: true },
-      log: [...G.log, `${player.nickname} выбрасывает ${first.value} и ${second.value}`],
-    };
-  }
-
-  const sum = first.value + second.value;
-
-  return walkWith(
-    { ...G, random: second.state },
-    playerId,
-    { playerId, value: sum, values },
-    `${player.nickname} выбрасывает ${first.value} + ${second.value} = ${sum}`,
-  );
+  return {
+    ...G,
+    random: second.state,
+    lastRoll: { playerId, value: first.value, values, pending: true },
+    log: [...G.log, `${player.nickname} выбрасывает ${first.value} и ${second.value}`],
+  };
 };
 
 // null — выбирать нечего: бросок не ждёт выбора или такого кубика нет
