@@ -4,7 +4,6 @@ const FIELD_READERS: Record<
   LucidShared.EConditionField,
   (player: LucidShared.TPlayer) => number
 > = {
-  [LucidShared.EConditionField.POSITION]: player => player.position,
   [LucidShared.EConditionField.RESOURCE]: player => player.resource,
 };
 
@@ -23,5 +22,7 @@ export const checkCondition = (
   player: LucidShared.TPlayer,
   condition: LucidShared.TCondition,
 ): boolean => {
-  return OPERATORS[condition.operator](FIELD_READERS[condition.field](player), condition.value);
+  const read = FIELD_READERS[condition.field] as ((player: LucidShared.TPlayer) => number) | undefined;
+
+  return read ? OPERATORS[condition.operator](read(player), condition.value) : false;
 };

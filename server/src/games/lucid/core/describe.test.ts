@@ -75,13 +75,13 @@ describe('describeEffect', () => {
   it('с условием без запасной ветки — «иначе: ничего»', () => {
     const effect: LucidShared.TEffect = {
       condition: {
-        field: LucidShared.EConditionField.POSITION,
+        field: LucidShared.EConditionField.RESOURCE,
         operator: LucidShared.EConditionOperator.LT,
         value: 10,
       },
       atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 1)],
     };
 
-    expect(LucidShared.describeEffect(effect, 'монеты')).toBe('если клетка < 10: ты: +1 клетка, иначе: ничего');
+    expect(LucidShared.describeEffect(effect, 'монеты')).toBe('если монеты < 10: ты: +1 клетка, иначе: ничего');
   });
 });

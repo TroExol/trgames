@@ -55,7 +55,6 @@ export const describeAtom = (atom: TAtom, resourceName: string): string => {
 };
 
 const CONDITION_FIELD_LABELS: Record<EConditionField, (resourceName: string) => string> = {
-  [EConditionField.POSITION]: () => 'клетка',
   [EConditionField.RESOURCE]: resourceName => resourceName,
 };
 

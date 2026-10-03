@@ -111,7 +111,7 @@ describe('computeContentMetrics', () => {
         success: {
           atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 1)],
           condition: {
-            field: LucidShared.EConditionField.POSITION,
+            field: LucidShared.EConditionField.RESOURCE,
             operator: LucidShared.EConditionOperator.GT,
             value: 3,
           },
