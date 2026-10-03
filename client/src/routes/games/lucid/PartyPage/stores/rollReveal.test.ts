@@ -4,7 +4,7 @@ import {
   it,
 } from 'vitest';
 
-import { isNewRoll } from '@/routes/games/lucid/PartyPage/stores/rollReveal';
+import { isNewRoll, revealPlan } from '@/routes/games/lucid/PartyPage/stores/rollReveal';
 
 describe('isNewRoll', () => {
   it('броска не было — нового броска нет', () => {
@@ -36,5 +36,23 @@ describe('isNewRoll', () => {
 
   it('первый бросок с клеймом после старых без него — новый', () => {
     expect(isNewRoll({ playerId: 'a', value: 4 }, { playerId: 'b', value: 2, stateId: 7 })).toBe(true);
+  });
+});
+
+describe('revealPlan', () => {
+  it('обычный бросок хода: крутим и идём', () => {
+    expect(revealPlan({ playerId: 'p', value: 4 })).toEqual({ spin: true, walk: true });
+  });
+
+  it('порог варианта: крутим, не идём', () => {
+    expect(revealPlan({ playerId: 'p', value: 4, threshold: 3 })).toEqual({ spin: true, walk: false });
+  });
+
+  it('два кубика на выбор: крутим, фишка ждёт выбора', () => {
+    expect(revealPlan({ playerId: 'p', value: 2, values: [2, 5], pending: true })).toEqual({ spin: true, walk: false });
+  });
+
+  it('выбранный кубик: не крутим заново, сразу идём', () => {
+    expect(revealPlan({ playerId: 'p', value: 5, values: [2, 5], picked: 1 })).toEqual({ spin: false, walk: true });
   });
 });

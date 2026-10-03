@@ -5,7 +5,7 @@ import { makeAutoObservable } from 'mobx';
 import { lucidSoundService } from '@/services/LucidSoundService';
 import { walkPath } from '@/lib/lucid/walkPath';
 
-import { isNewRoll } from './rollReveal';
+import { isNewRoll, revealPlan } from './rollReveal';
 
 // Лента отвечает на вопрос «я отвлёкся, что я пропустил», а не хранит историю:
 // старое уходит безвозвратно
@@ -165,6 +165,12 @@ export class PartyStore {
     const roll = incoming.state!.G.lastRoll!;
     const reduced = prefersReducedMotion();
 
+    if (!revealPlan(roll).spin) {
+      this.finishReveal(previous, incoming, roll, reduced);
+
+      return;
+    }
+
     this.pendingRoll = roll;
     this.dicePhase = reduced ? 'settled' : 'spinning';
     // Звук броска — здесь, в начале показа, а не при финальном применении
@@ -198,7 +204,7 @@ export class PartyStore {
     // пути: движение эффектом (MOVE с минусом), обмен и всё остальное после
     // порога — путь неочевиден, там достаточно одного плавного перехода
     // (его даёт CSS-переход токена в Board)
-    const path = !reduced && roll.threshold === undefined && previous.state && from !== undefined
+    const path = !reduced && revealPlan(roll).walk && previous.state && from !== undefined
       ? walkPath(previous.state.G.track, from, roll.value)
       : [];
 
