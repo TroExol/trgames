@@ -56,6 +56,13 @@ describe('buildEventsPrompt', () => {
     expect(prompt).toContain('не повторяй её название дословно');
   });
 
+  it('просит короткие тексты события и варианта', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], []);
+
+    expect(prompt).toContain('до 140 символов');
+    expect(prompt).toContain('до 50 символов');
+  });
+
   it('передаёт роли игроков как контекст, не привязывая событие к конкретному', () => {
     const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], [
       { nickname: 'Джек', role: 'хранитель компаса' },

@@ -11,6 +11,11 @@ export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: numb
   [LucidShared.EAtomKind.SWAP_WITH_FIRST]: { min: 0, max: 0 },
 };
 
+// Потолок выше цели из промпта (140 / 50): перебор модели не должен
+// отправлять всю партию на запасную
+export const EVENT_TEXT_MAX = 200;
+export const OPTION_TEXT_MAX = 80;
+
 export const THRESHOLD_RANGE = { min: 2, max: 6 };
 export const COST_RANGE = { min: 1, max: 3 };
 
@@ -45,7 +50,7 @@ const effectSchema = z.strictObject({
 });
 
 const optionSchema = z.strictObject({
-  text: z.string().min(1).max(160),
+  text: z.string().min(1).max(OPTION_TEXT_MAX),
   threshold: z.number().int().min(THRESHOLD_RANGE.min).max(THRESHOLD_RANGE.max).optional(),
   cost: z.number().int().min(COST_RANGE.min).max(COST_RANGE.max).optional(),
   success: effectSchema,
@@ -55,7 +60,7 @@ const optionSchema = z.strictObject({
 export const eventSchema = z.strictObject({
   cellId: z.number().int().min(0),
   title: z.string().min(1).max(80),
-  text: z.string().min(1).max(400),
+  text: z.string().min(1).max(EVENT_TEXT_MAX),
   options: z.array(optionSchema).max(3),
 });
 
