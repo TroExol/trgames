@@ -215,6 +215,46 @@ export const LongTrack: Story = {
   },
 };
 
+const CELL_TYPE_CYCLE = [ECellType.EVENT, ECellType.EMPTY, ECellType.GREEN, ECellType.RED];
+const PORTAL_PAIRS = [[3, 20], [9, 28]];
+
+const withCellTypes = (track: LucidShared.TTrack): LucidShared.TTrack => ({
+  ...track,
+  cells: track.cells.map(cell => {
+    const pair = PORTAL_PAIRS.findIndex(ids => ids.includes(cell.id));
+
+    if (pair >= 0) {
+      const to = PORTAL_PAIRS[pair].find(id => id !== cell.id) as number;
+
+      return { ...cell, type: ECellType.PORTAL, portal: { pair, to } };
+    }
+
+    return cell.id === track.startId || cell.id === track.finishId
+      ? cell
+      : { ...cell, type: CELL_TYPE_CYCLE[cell.id % CELL_TYPE_CYCLE.length] };
+  }),
+});
+
+// Типы клеток: красные и зелёные, две пары порталов, «?» на нераскрытых событиях
+export const CellTypes: Story = {
+  args: {
+    state: (() => {
+      const state = makeParty({
+        track: withCellTypes(buildTrack([7, 7, 6, 6, 6])),
+        nicknames: SIX,
+        world: 'Заброшенная станция',
+        resource: 'заряды',
+        palette: STATION_PALETTE,
+        regions: STATION_REGIONS,
+      });
+
+      state.G.visited = [0, 1, 2, 3, 4, 5];
+
+      return state;
+    })(),
+  },
+};
+
 // Светлая палитра: вывод ролей обязан работать в обе стороны
 export const Pirates: Story = {
   args: {

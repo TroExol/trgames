@@ -15,6 +15,11 @@ import {
 import { hashString } from '@/lib/lucid/theme';
 import { resolveRegions } from '@/lib/lucid/regions';
 import { deriveRoles } from '@/lib/lucid/colors';
+import {
+  cellLook,
+  ZONE_LABEL,
+  zoneStarts,
+} from '@/lib/lucid/cellLook';
 
 import type { TSpot } from './linkPath';
 
@@ -135,23 +140,38 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
   // Плитки одного вида собираются в один path со множеством подпутей: их
   // полсотни, и каждая отдельным элементом ничего не добавляет
   const tiles = new Map<string, { d: string; fill: string; ink: string; isVisited: boolean }>();
+  const cellById = new Map(track.cells.map(cell => [cell.id, cell]));
+  const rings: { id: number; x: number; y: number; color: string }[] = [];
+  const glyphs: { id: number; x: number; y: number; text: string; ink: string }[] = [];
 
   layout.cells.forEach(cell => {
     const region = regionAt(cell.depth);
     const ink = region?.ink ?? 'var(--lucid-line)';
     const isVisited = visited.has(cell.id);
     const isEdge = cell.id === track.startId || cell.id === track.finishId;
-    const key = `${ink}:${isVisited}`;
+    const look = cellLook(cellById.get(cell.id)!, isVisited);
+    const fill = look.fill === 'ink'
+      ? ink
+      : look.fill === 'hollow' ? region?.hollow ?? 'var(--lucid-base)' : look.fill;
+    const key = `${ink}:${fill}:${look.fill === 'ink'}`;
     const d = isEdge
       ? tilePath(cell, EDGE_SIZE, EDGE_SIZE)
       : tilePath(cell, TILE_ALONG, TILE_ACROSS);
 
     tiles.set(key, {
       d: [tiles.get(key)?.d, d].filter(Boolean).join(' '),
-      fill: isVisited ? ink : region?.hollow ?? 'var(--lucid-base)',
+      fill,
       ink,
-      isVisited,
+      isVisited: look.fill === 'ink',
     });
+
+    if (look.ring) {
+      rings.push({ id: cell.id, x: cell.x, y: cell.y, color: look.ring });
+    }
+
+    if (look.glyph) {
+      glyphs.push({ id: cell.id, x: cell.x, y: cell.y, text: look.glyph, ink });
+    }
   });
 
   // Фишки нескольких игроков на одной клетке расходятся по кругу, иначе
@@ -312,6 +332,59 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                   strokeWidth={TILE_STROKE}
                 />
               ))}
+
+              {rings.map(ring => (
+                <circle
+                  cx={ring.x}
+                  cy={ring.y}
+                  fill="none"
+                  key={`ring-${ring.id}`}
+                  r={TILE_ACROSS / 2 - 3}
+                  stroke={ring.color}
+                  strokeWidth={4}
+                />
+              ))}
+
+              {glyphs.map(glyph => (
+                <text
+                  className="font-golos"
+                  dominantBaseline="central"
+                  fill={glyph.ink}
+                  fontSize={textSize}
+                  key={`glyph-${glyph.id}`}
+                  pointerEvents="none"
+                  textAnchor="middle"
+                  x={glyph.x}
+                  y={glyph.y}
+                >
+                  {glyph.text}
+                </text>
+              ))}
+
+              {zoneStarts(track).map(start => {
+                const cell = layout.byId[start.cellId];
+
+                return cell
+                  ? (
+                      <text
+                        className="font-golos"
+                        dominantBaseline="hanging"
+                        fill="var(--lucid-text)"
+                        fontSize={textSize * 0.85}
+                        key={`zone-${start.zone}`}
+                        paintOrder="stroke"
+                        pointerEvents="none"
+                        stroke="var(--lucid-base)"
+                        strokeWidth={4}
+                        textAnchor="middle"
+                        x={cell.x}
+                        y={cell.y + TILE_ACROSS / 2 + 4}
+                      >
+                        {ZONE_LABEL[start.zone]}
+                      </text>
+                    )
+                  : null;
+              })}
 
               {/* Подпись края поверх ленты и в обводке основы: место ей
                   подобрано в стороне от пути, но фишка или чужой ряд могут
