@@ -27,6 +27,10 @@ export const chooseAutoMove = (state: LucidShared.TState): LucidShared.TMove | n
     return { type: LucidShared.EMoveType.CHOOSE_DIE, playerId, stateId, dieIndex: 0 };
   }
 
+  if (state.ctx.phase === LucidShared.EPhase.LAW) {
+    return { type: LucidShared.EMoveType.CHOOSE_LAW, playerId, stateId, index: 0 };
+  }
+
   if (state.ctx.phase === LucidShared.EPhase.CHOICE) {
     const player = state.G.players[playerId];
     const options = state.G.events[player.position]?.options ?? [];

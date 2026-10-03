@@ -78,17 +78,19 @@ describe('assignCellTypes через buildTrack', () => {
     }));
   });
 
-  it('доли: событий 40%, зелёных и красных по 15% от внутренних клеток без порталов', () => {
+  it('доли: событий 35%, зелёных и красных по 12%, законов 10% от внутренних клеток без порталов', () => {
     allPlayerCounts.forEach(playerCount => {
       const track = buildTrack({ random: createRandom('shares'), playerCount });
       const rest = track.cells.length - 2 - 4;
+      const events = Math.round(rest * 0.35);
+      const greens = Math.round(rest * 0.12);
+      const laws = Math.round(rest * 0.1);
 
-      expect(countOf(track, ECellType.EVENT)).toBe(Math.round(rest * 0.4));
-      expect(countOf(track, ECellType.GREEN)).toBe(Math.round(rest * 0.15));
-      expect(countOf(track, ECellType.RED)).toBe(Math.round(rest * 0.15));
-      expect(countOf(track, ECellType.EMPTY)).toBe(
-        rest - Math.round(rest * 0.4) - 2 * Math.round(rest * 0.15),
-      );
+      expect(countOf(track, ECellType.EVENT)).toBe(events);
+      expect(countOf(track, ECellType.GREEN)).toBe(greens);
+      expect(countOf(track, ECellType.RED)).toBe(greens);
+      expect(countOf(track, ECellType.LAW)).toBe(laws);
+      expect(countOf(track, ECellType.EMPTY)).toBe(rest - events - 2 * greens - laws);
     });
   });
 

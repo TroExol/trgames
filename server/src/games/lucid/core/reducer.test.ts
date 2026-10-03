@@ -9,7 +9,9 @@ import {
   doubleForkTrack,
   forkTrack,
   lineTrack,
+  makeG,
 } from '@/games/lucid/vitest/factories';
+import { land } from '@/games/lucid/core/turn';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { createRandom } from '@/games/lucid/core/random';
@@ -770,5 +772,43 @@ describe('сейф на финише', () => {
 
     expect(next.G.players.a.position).toBe(1);
     expect(next.G.players.b.position).toBe(state.G.track.finishId);
+  });
+});
+
+describe('клетка «Закон»', () => {
+  const lawTrack = (): LucidShared.TTrack => ({
+    startId: 0,
+    finishId: 3,
+    cells: [
+      { id: 0, type: LucidShared.ECellType.START, next: [1] },
+      { id: 1, type: LucidShared.ECellType.LAW, next: [2] },
+      { id: 2, type: LucidShared.ECellType.EMPTY, next: [3] },
+      { id: 3, type: LucidShared.ECellType.FINISH, next: [] },
+    ],
+  });
+
+  it('остановка на «Законе» тянет два закона, выбор кладёт закон и передаёт ход', () => {
+    const G = makeG({ track: lawTrack() });
+    const state: LucidShared.TState = {
+      G: {
+        ...G,
+        players: { ...G.players, a: { ...G.players.a, position: 1 } },
+        cards: { ...G.cards, lawDeck: [LucidShared.ELaw.RED_BAD, LucidShared.ELaw.SIX_SKIP] },
+      },
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.ROLL },
+      stateId: 0,
+    };
+    const landed = land(state);
+
+    expect(landed.ctx.phase).toBe(LucidShared.EPhase.LAW);
+    expect(landed.G.cards.lawDraw).toEqual([LucidShared.ELaw.RED_BAD, LucidShared.ELaw.SIX_SKIP]);
+
+    const chosen = applyMove(landed, {
+      type: EMoveType.CHOOSE_LAW, playerId: 'a', stateId: landed.stateId, index: 0,
+    });
+
+    expect(chosen.G.cards.laws[0]).toBe(LucidShared.ELaw.RED_BAD);
+    expect(chosen.ctx.currentPlayer).toBe('b');
+    expect(chosen.ctx.phase).toBe(LucidShared.EPhase.ROLL);
   });
 });

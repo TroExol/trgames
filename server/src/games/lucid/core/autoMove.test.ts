@@ -105,4 +105,16 @@ describe('chooseAutoMove', () => {
 
     expect(chooseAutoMove(state)).toBeNull();
   });
+
+  it('в фазе закона берёт первый закон', () => {
+    const state = makeFallbackParty({ seed: 'auto-law' });
+    state.ctx.phase = LucidShared.EPhase.LAW;
+
+    expect(chooseAutoMove(state)).toEqual({
+      type: LucidShared.EMoveType.CHOOSE_LAW,
+      playerId: state.ctx.currentPlayer,
+      stateId: state.stateId,
+      index: 0,
+    });
+  });
 });

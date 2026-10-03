@@ -14,6 +14,7 @@ import {
   rollAndMove,
   takeBranch,
 } from '@/games/lucid/core/moves';
+import { placeLaw } from '@/games/lucid/core/cards';
 
 // @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
 // плоского реэкспорта не существует — извлекаем сами, чтобы обращения
@@ -61,7 +62,15 @@ const skipTurn = (state: LucidShared.TState, player: LucidShared.TPlayer): Lucid
 };
 
 const HANDLERS: Record<EMoveType, TMoveHandler> = {
-  [EMoveType.CHOOSE_LAW]: () => null,
+  [EMoveType.CHOOSE_LAW]: (state, move) => {
+    if (move.type !== EMoveType.CHOOSE_LAW) {
+      return null;
+    }
+
+    const G = placeLaw(state.G, state.ctx.currentPlayer, move.index);
+
+    return G ? proceed({ ...state, G }) : null;
+  },
   [EMoveType.ROLL]: state => {
     const player = state.G.players[state.ctx.currentPlayer];
 

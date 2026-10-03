@@ -1,6 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
 import { landOnCell } from '@/games/lucid/core/cells';
+import { drawLaws } from '@/games/lucid/core/cards';
 
 export const freshTurn = (): LucidShared.TTurn => ({
   step: LucidShared.ETurnStep.START,
@@ -46,6 +47,16 @@ export const land = (state: LucidShared.TState): LucidShared.TState => {
 
   if (isAffordable(G.events[player.position], player)) {
     return withPhase({ ...state, G }, LucidShared.EPhase.CHOICE);
+  }
+
+  const cell = G.track.cells.find(item => item.id === player.position);
+
+  if (cell?.type === LucidShared.ECellType.LAW) {
+    const drawn = drawLaws(G, 2);
+
+    if (drawn.cards.lawDraw.length > 0) {
+      return withPhase({ ...state, G: drawn }, LucidShared.EPhase.LAW);
+    }
   }
 
   return proceed({ ...state, G: landOnCell(G, playerId) });
