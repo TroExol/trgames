@@ -8,10 +8,11 @@ import { OptionButton } from './OptionButton';
 
 interface TProps {
   event: LucidShared.TEventView;
-  // Ход не твой — карточка показывает то же самое без кнопок: все читают одно
-  // и то же событие, это общий момент партии
+  // Ход не твой — варианты видны, но выключены: все читают одно и то же
+  // событие, это общий момент партии
   isMyTurn: boolean;
   currentNickname: string;
+  // Ресурс ходящего, а не смотрящего: «не по карману» считается от него
   resource: number;
   resourceName: string;
   // Оптимистичных ходов нет: после отправки кнопки молчат до нового stateId
@@ -55,27 +56,26 @@ export const EventCard = observer(function EventCard({
 
         <p className="text-base leading-relaxed">{event.text}</p>
 
-        {isMyTurn
-          ? (
-              <ul className="flex flex-col gap-3">
-                {event.options.map((option, index) => (
-                  <li key={option.text}>
-                    <OptionButton
-                      disabled={isSent}
-                      onClick={() => onChoose(index)}
-                      option={option}
-                      resource={resource}
-                      resourceName={resourceName}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )
-          : (
-              <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>
-                {`Выбирает ${currentNickname}`}
-              </p>
-            )}
+        {!isMyTurn && (
+          <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>
+            {`Выбирает ${currentNickname}`}
+          </p>
+        )}
+
+        <ul className="flex flex-col gap-3">
+          {event.options.map((option, index) => (
+            <li key={option.text}>
+              <OptionButton
+                disabled={isSent}
+                isPreview={!isMyTurn}
+                onClick={() => onChoose(index)}
+                option={option}
+                resource={resource}
+                resourceName={resourceName}
+              />
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

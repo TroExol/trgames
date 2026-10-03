@@ -292,7 +292,7 @@ export const Hud = observer(function Hud() {
           isSent={isSent || isRevealing}
           onChoose={handleChooseOption}
           onCollapse={() => setCollapsedCell(event.cellId)}
-          resource={you.resource}
+          resource={current.resource}
           resourceName={theme.resourceName}
         />
       )}

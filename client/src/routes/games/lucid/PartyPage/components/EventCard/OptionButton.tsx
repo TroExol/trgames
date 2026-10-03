@@ -8,6 +8,8 @@ interface TProps {
   resource: number;
   resourceName: string;
   disabled: boolean;
+  // Просмотр чужого выбора: кнопка выключена, но читается как обычная
+  isPreview?: boolean;
   onClick: () => void;
 }
 
@@ -16,6 +18,7 @@ export const OptionButton = observer(function OptionButton({
   resource,
   resourceName,
   disabled,
+  isPreview = false,
   onClick,
 }: TProps) {
   const missing = option.cost ? option.cost - resource : 0;
@@ -47,8 +50,8 @@ export const OptionButton = observer(function OptionButton({
 
   return (
     <Button
-      className="h-auto w-full flex-col items-start gap-1 whitespace-normal border-2 bg-transparent px-4 py-3 text-left font-normal hover:bg-transparent disabled:opacity-60"
-      disabled={disabled || isTooExpensive}
+      className={`h-auto w-full flex-col items-start gap-1 whitespace-normal border-2 bg-transparent px-4 py-3 text-left font-normal hover:bg-transparent ${isPreview && !isTooExpensive ? 'disabled:opacity-100' : 'disabled:opacity-60'}`}
+      disabled={disabled || isPreview || isTooExpensive}
       onClick={onClick}
       style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
       variant="outline"
@@ -71,7 +74,7 @@ export const OptionButton = observer(function OptionButton({
           ценой читается сама */}
       {isTooExpensive && (
         <span className="text-sm leading-snug" style={{ color: 'var(--lucid-accent)' }}>
-          {`у тебя ${resource}`}
+          {`${isPreview ? 'у ходящего' : 'у тебя'} ${resource}`}
         </span>
       )}
     </Button>
