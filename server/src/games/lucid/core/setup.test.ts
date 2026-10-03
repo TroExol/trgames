@@ -74,7 +74,7 @@ describe('setupParty: роли игроков', () => {
 });
 
 describe('setupParty: законы', () => {
-  it('колода законов перемешана, без «Подарка», ячейки пусты', () => {
+  it('колода законов перемешана и содержит все 15 законов, ячейки пусты', () => {
     const state = setupParty({
       seed: 'laws',
       players: [{ id: 'a', nickname: 'Аня' }, { id: 'b', nickname: 'Боря' }],
