@@ -60,6 +60,13 @@ describe('landOnCell', () => {
     expect(G.log).toEqual(['Ваня: красная клетка, заряды −1']);
   });
 
+  it('красная клетка при нулевом Ресурсе пишет нулевую потерю', () => {
+    const G = landOnCell(makeG(ECellType.RED, 0), 'p1');
+
+    expect(G.players.p1.resource).toBe(0);
+    expect(G.log).toEqual(['Ваня: красная клетка, заряды −0']);
+  });
+
   it('портал переносит на парную клетку и отмечает её посещённой', () => {
     const G = landOnCell(makeG(ECellType.PORTAL), 'p1');
 

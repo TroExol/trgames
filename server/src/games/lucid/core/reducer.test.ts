@@ -266,6 +266,30 @@ describe('события', () => {
     expect(next.ctx.phase).not.toBe(LucidShared.EPhase.CHOICE);
   });
 
+  it('CHOOSE_OPTION с нецелым номером варианта игнорируется', () => {
+    const state = makeParty('bad-option');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Находка',
+        text: 'Текст',
+        options: [{ text: 'Подобрать', success: { atoms: [] } }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 'length' as unknown as number,
+    });
+
+    expect(next).toBe(state);
+  });
+
   it('разыгранный вариант завершает ход, даже если игрок не сдвинулся', () => {
     const state = makeParty('stay-put');
     state.G.track = lineTrack();
@@ -542,6 +566,13 @@ describe('выбор кубика', () => {
     const rolled = roll(inPickZone());
 
     expect(choose(rolled, 2)).toBe(rolled);
+  });
+
+  it('CHOOSE_DIE с нецелым номером кубика игнорируется', () => {
+    const rolled = roll(inPickZone());
+
+    expect(choose(rolled, 'length' as unknown as number)).toBe(rolled);
+    expect(choose(rolled, '1' as unknown as number)).toBe(rolled);
   });
 
   it('CHOOSE_DIE в фазе ROLL игнорируется', () => {

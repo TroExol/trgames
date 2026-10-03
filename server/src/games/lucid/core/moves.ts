@@ -81,6 +81,10 @@ export const pickDie = (
   playerId: LucidShared.TPlayerId,
   dieIndex: number,
 ): LucidShared.TG | null => {
+  if (!Number.isInteger(dieIndex)) {
+    return null;
+  }
+
   const roll = G.lastRoll;
   const value = roll?.pending ? roll.values?.[dieIndex] : undefined;
 

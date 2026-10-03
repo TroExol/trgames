@@ -139,6 +139,10 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return null;
     }
 
+    if (!Number.isInteger(move.optionIndex)) {
+      return null;
+    }
+
     const player = state.G.players[state.ctx.currentPlayer];
     const option = state.G.events[player.position]?.options[move.optionIndex];
 

@@ -8,7 +8,7 @@ const withResource = (G: LucidShared.TG, playerId: LucidShared.TPlayerId, delta:
   const resource = Math.max(player.resource + delta, 0);
   const actual = resource - player.resource;
   const color = delta > 0 ? 'зелёная' : 'красная';
-  const sign = actual >= 0 ? '+' : '−';
+  const sign = delta > 0 ? '+' : '−';
 
   return {
     ...G,
