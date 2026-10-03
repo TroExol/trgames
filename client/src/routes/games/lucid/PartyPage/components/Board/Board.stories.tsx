@@ -235,7 +235,6 @@ const withCellTypes = (track: LucidShared.TTrack): LucidShared.TTrack => ({
   }),
 });
 
-// Типы клеток: красные и зелёные, две пары порталов, «?» на нераскрытых событиях
 export const CellTypes: Story = {
   args: {
     state: (() => {
