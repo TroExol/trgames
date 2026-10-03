@@ -38,8 +38,14 @@ export const Lobby = observer(function Lobby() {
     const textarea = document.createElement('textarea');
 
     textarea.value = inviteLink;
+    // readonly и вне экрана: без них iOS открывает клавиатуру, зумит и прокручивает страницу
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.select();
+    // На iOS select() часто не выделяет текст для execCommand('copy')
+    textarea.setSelectionRange(0, inviteLink.length);
 
     try {
       if (!document.execCommand('copy')) {
