@@ -1,6 +1,6 @@
 import { LucidShared } from '@trgames/shared';
 
-// Ход за отсутствующего игрока: кубик, первый кубик на выбор, первая ветка на развилке, первый
+// Ход за отсутствующего игрока: кубик (у сейфа — попытка без доплаты), первый кубик на выбор, первая ветка на развилке, первый
 // доступный по цене вариант события. Недоступный вариант брать нельзя —
 // движок такой ход отклонит, и автопилот застрянет на нём навсегда
 export const chooseAutoMove = (state: LucidShared.TState): LucidShared.TMove | null => {
@@ -8,6 +8,10 @@ export const chooseAutoMove = (state: LucidShared.TState): LucidShared.TMove | n
   const stateId = state.stateId;
 
   if (state.ctx.phase === LucidShared.EPhase.ROLL) {
+    if (state.G.players[playerId].position === state.G.track.finishId) {
+      return { type: LucidShared.EMoveType.OPEN_SAFE, playerId, stateId, bonus: 0 };
+    }
+
     return { type: LucidShared.EMoveType.ROLL, playerId, stateId };
   }
 

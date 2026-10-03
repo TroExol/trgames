@@ -16,6 +16,19 @@ describe('chooseAutoMove', () => {
     expect(chooseAutoMove(state)?.type).toBe(LucidShared.EMoveType.ROLL);
   });
 
+  it('на финише открывает сейф без доплаты', () => {
+    const state = makeFallbackParty({ seed: 'auto-safe' });
+    const playerId = state.ctx.currentPlayer;
+    state.G.players[playerId].position = state.G.track.finishId;
+
+    expect(chooseAutoMove(state)).toEqual({
+      type: LucidShared.EMoveType.OPEN_SAFE,
+      playerId,
+      stateId: state.stateId,
+      bonus: 0,
+    });
+  });
+
   it('в фазе выбора кубика берёт первый', () => {
     const state = makeFallbackParty({ seed: 'auto-dice' });
     state.ctx.phase = LucidShared.EPhase.DICE;

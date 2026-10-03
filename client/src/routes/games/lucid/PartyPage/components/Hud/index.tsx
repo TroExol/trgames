@@ -99,6 +99,16 @@ export const Hud = observer(function Hud() {
     socketService.makeMove({ playerId: state.you, stateId: state.stateId, type: EMoveType.ROLL });
   };
 
+  const handleOpenSafe = (bonus: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      bonus,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.OPEN_SAFE,
+    });
+  };
+
   const handleChooseDie = (dieIndex: number): void => {
     setSentStateId(state.stateId);
     socketService.makeMove({
@@ -204,8 +214,32 @@ export const Hud = observer(function Hud() {
       );
     }
 
+    const isAtSafe = state.ctx.phase === EPhase.ROLL && current.position === state.G.track.finishId;
+
     if (!isMyTurn) {
-      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
+      const text = isAtSafe ? `${current.nickname} открывает сейф` : `Ходит ${current.nickname}`;
+
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{text}</p>;
+    }
+
+    if (isAtSafe) {
+      return (
+        <div className="flex flex-col gap-2">
+          {LucidShared.SAFE_BONUS_COSTS.map((cost, bonus) => (
+            <Button
+              className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
+              disabled={isSent || isRevealing || you.resource < cost}
+              key={bonus}
+              onClick={() => handleOpenSafe(bonus)}
+              size="sm"
+              style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+              variant="outline"
+            >
+              {`${bonus === 0 ? 'Открыть сейф' : `+${bonus} за ${cost}`} · нужно ${LucidShared.safeNeed(bonus)}+`}
+            </Button>
+          ))}
+        </div>
+      );
     }
 
     if (state.ctx.phase === EPhase.ROLL) {

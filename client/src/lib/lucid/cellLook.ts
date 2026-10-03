@@ -9,6 +9,8 @@ export const ZONE_LABEL: Record<LucidShared.EDiceZone, string> = {
   [LucidShared.EDiceZone.PICK]: '2 кубика · выбор',
 };
 
+export const SAFE_LABEL = `Сейф · ${LucidShared.SAFE_THRESHOLD}+`;
+
 export interface TCellLook {
   fill: string;
   glyph?: string;

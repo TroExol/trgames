@@ -1,6 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
 import { resolveTarget } from '@/games/lucid/core/targets';
+import { isAtFinish } from '@/games/lucid/core/atoms';
 
 // Строка ленты для одного применённого атома — с реальными никами целей,
 // в отличие от общей подписи карточки события (LucidShared.describeAtom).
@@ -19,6 +20,10 @@ export const describeAtomLog = (
     }
     if (firstId === actorId) {
       return 'обмена нет: лидер — сам игрок';
+    }
+
+    if (isAtFinish(G, G.players[firstId]) || isAtFinish(G, G.players[actorId])) {
+      return 'обмена нет: игрок у сейфа неприкосновенен';
     }
 
     return `${G.players[actorId].nickname} меняется местами с ${G.players[firstId].nickname}`;

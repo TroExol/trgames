@@ -41,6 +41,7 @@ const setupHud = (
   ribbon: string[],
   usedFallback = false,
   dice?: { phase: LucidShared.EPhase; lastRoll: LucidShared.TRoll },
+  atFinish = false,
 ): void => {
   const withIds = players.map((player, index) => ({ id: `p${index + 1}`, ...player }));
   const order = withIds.map(player => player.id);
@@ -65,8 +66,8 @@ const setupHud = (
         players: Object.fromEntries(withIds.map(player => [player.id, {
           id: player.id,
           nickname: player.nickname,
-          position: TRACK.cells[1].id,
-          resource: 3,
+          position: atFinish ? TRACK.finishId : TRACK.cells[1].id,
+          resource: atFinish ? 7 : 3,
           skipTurns: 0,
           role: player.role,
         }])),
@@ -174,6 +175,21 @@ export const PickDie: Story = {
       ['Ваня бросил два кубика.'],
       false,
       { phase: EPhase.DICE, lastRoll: { playerId: 'p1', value: 2, values: [2, 5], pending: true, stateId: 1 } },
+    );
+
+    return <HudFrame />;
+  },
+};
+
+export const Safe: Story = {
+  name: 'Сейф',
+  render: () => {
+    setupHud(
+      [{ nickname: 'Ваня' }, { nickname: 'Аня' }],
+      ['Ваня бросает за сейф: 3 — не открыл'],
+      false,
+      undefined,
+      true,
     );
 
     return <HudFrame />;
