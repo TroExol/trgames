@@ -17,6 +17,7 @@ import { pluralizeSteps } from '@/lib/lucid/pluralize';
 import { Button } from '@/components/ui/Button';
 
 import { Outcome } from './Outcome';
+import { TruncatedText } from './components/TruncatedText';
 import { Die } from './components/Die';
 
 // @trgames/shared отдаёт перечисления только через неймспейс LucidShared,
@@ -194,7 +195,9 @@ export const Hud = observer(function Hud() {
         style={{ backgroundColor: 'var(--lucid-veil)' }}
       >
         <div className="flex items-baseline justify-between gap-3">
-          <h1 className="truncate font-unbounded text-base">{theme.name}</h1>
+          <h1 className="min-w-0 font-unbounded text-base">
+            <TruncatedText className="block max-w-full truncate" text={theme.name} />
+          </h1>
           {/* Название ресурса придумывает нейросеть, и склонять его по числу
               нечем: рода и типа склонения у строки нет. Название стоит перед
               числом подписью — подпись со значением не согласуются */}
@@ -242,13 +245,11 @@ export const Hud = observer(function Hud() {
                   шести игроках колонок ровно две (floor(336/(144+12))=2), строка
                   остаётся в 3 ряда, как и раньше (замерено в Storybook) */}
               {state.G.players[playerId].role && (
-                <span
+                <TruncatedText
                   className="min-w-0 truncate text-xs"
                   style={{ color: 'var(--lucid-muted)' }}
-                  title={state.G.players[playerId].role}
-                >
-                  {`— ${state.G.players[playerId].role}`}
-                </span>
+                  text={`— ${state.G.players[playerId].role}`}
+                />
               )}
               {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
             </li>
