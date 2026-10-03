@@ -73,8 +73,15 @@ const playEvent = (law: LucidShared.ELaw, kind: 'bad' | 'good') => ({ G, playerI
     return { G: log(G, lawLine(law, playerId, G, kind === 'bad' ? 'бед в этом мире нет' : 'событий нет')) };
   }
 
+  const event = G.events[drawn.cellId];
+  const { resource } = G.players[playerId];
+
+  if (!event.options.some(option => !option.cost || option.cost <= resource)) {
+    return { G: log(drawn.G, `${G.players[playerId].nickname}: событие «${event.title}» не по карману`) };
+  }
+
   return {
-    G: log(drawn.G, lawLine(law, playerId, G, `событие «${G.events[drawn.cellId].title}»`)),
+    G: log(drawn.G, lawLine(law, playerId, G, `событие «${event.title}»`)),
     pause: { kind: 'EVENT', cellId: drawn.cellId } as const,
   };
 };

@@ -28,21 +28,6 @@ export const currentEvent = (G: LucidShared.TG, playerId: LucidShared.TPlayerId)
 const isAffordable = (event: LucidShared.TEvent | undefined, player: LucidShared.TPlayer): boolean =>
   Boolean(event?.options.some(option => !option.cost || option.cost <= player.resource));
 
-const skipHopelessEvent = (state: LucidShared.TState, run: TLawRun): TLawRun => {
-  if (run.pause?.kind !== 'EVENT') {
-    return run;
-  }
-
-  const player = run.G.players[state.ctx.currentPlayer];
-  const event = run.G.events[run.pause.cellId];
-
-  if (isAffordable(event, player)) {
-    return run;
-  }
-
-  return { G: { ...run.G, log: [...run.G.log, `${player.nickname}: событие «${event.title}» не по карману`] } };
-};
-
 const applyPause = (state: LucidShared.TState, run: TLawRun): LucidShared.TState | null => {
   const next = { ...state, G: run.G };
 
@@ -63,7 +48,7 @@ const settle = (
   timing: TLawTiming,
   onClear: (state: LucidShared.TState) => LucidShared.TState,
 ): LucidShared.TState => {
-  const run = skipHopelessEvent(state, runLaws(state.G, state.ctx.currentPlayer, timing));
+  const run = runLaws(state.G, state.ctx.currentPlayer, timing);
 
   return applyPause(state, run) ?? onClear({ ...state, G: run.G });
 };
@@ -114,7 +99,7 @@ export const land = (state: LucidShared.TState): LucidShared.TState => {
     return landOn(landed);
   }
 
-  const run = skipHopelessEvent(landed, runLaws(G, state.ctx.currentPlayer, 'ROLLED'));
+  const run = runLaws(G, state.ctx.currentPlayer, 'ROLLED');
   const cleared = { ...landed, G: withTurn(run.G, { from: undefined }) };
 
   return applyPause(cleared, { ...run, G: cleared.G }) ?? landOn(cleared);

@@ -183,6 +183,22 @@ describe('законы цвета', () => {
     expect(next.G.log).toContain('Аня: событие «Находка» не по карману');
   });
 
+  it('недоступная беда не отменяет следующие законы того же момента', () => {
+    const state = stateWith(
+      [ELaw.RED_BAD, ELaw.RED_PAY_ALL],
+      [ECellType.RED, ...empties(4)],
+      { a: 1, b: 0 },
+      10,
+      { 5: { ...badEvent(5), options: [{ ...badEvent(5).options[0], cost: 99 }] } },
+    );
+    const next = land(state);
+
+    expect(next.G.log).toContain('Аня: событие «Напасть» не по карману');
+    expect(next.G.players.a.resource).toBe(6);
+    expect(next.G.players.b.resource).toBe(14);
+    expect(next.ctx.currentPlayer).toBe('b');
+  });
+
   it('два закона цвета одной клетки срабатывают слева направо', () => {
     const next = land(stateWith([ELaw.GREEN_RESOURCE, ELaw.GREEN_AGAIN], [ECellType.GREEN], { a: 1, b: 0 }));
 
