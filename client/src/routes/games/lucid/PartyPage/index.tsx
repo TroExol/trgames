@@ -24,6 +24,7 @@ import { CellView } from '@/routes/games/lucid/PartyPage/components/CellView';
 import { Board } from '@/routes/games/lucid/PartyPage/components/Board';
 import { themeStyle } from '@/lib/lucid/theme';
 import { deriveRoles } from '@/lib/lucid/colors';
+import { cellHint } from '@/lib/lucid/cellHint';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { useNickname } from '@/hooks/useNickname';
 import { Input } from '@/components/ui/Input';
@@ -281,6 +282,8 @@ export const Component = observer(function LucidPartyPage() {
       );
     }
 
+    const viewCell = state.G.track.cells.find(cell => cell.id === viewCellId);
+
     return (
       <>
         <Hud>
@@ -295,9 +298,10 @@ export const Component = observer(function LucidPartyPage() {
             на нём, и это стоит показать */}
         {view.phase === LucidShared.EPartyPhase.ENDED && <Ending />}
 
-        {viewCellId !== undefined && state.G.events[viewCellId] && (
+        {viewCellId !== undefined && viewCell && state.G.events[viewCellId] && (
           <CellView
             event={state.G.events[viewCellId]}
+            hint={cellHint(viewCell, state.G)}
             history={state.G.cellHistory[viewCellId] ?? []}
             onClose={() => setViewCellId(undefined)}
             resourceName={state.G.theme.resourceName}

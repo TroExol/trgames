@@ -8,6 +8,7 @@ import { OptionOutcomes } from '../EventCard/OptionOutcomes';
 interface TProps {
   event: LucidShared.TEventView;
   history: LucidShared.THistoryEntry[];
+  hint: string;
   resourceName: string;
   onClose: () => void;
 }
@@ -16,13 +17,15 @@ interface TProps {
 // выбора — и с историей того, что там уже случилось. Открывается только по
 // клетке с историей (Board это гарантирует), поэтому событие и хотя бы одна
 // запись здесь есть всегда
-export const CellView = observer(function CellView({ event, history, resourceName, onClose }: TProps) {
+export const CellView = observer(function CellView({ event, hint, history, resourceName, onClose }: TProps) {
   return (
     <div
       className="absolute inset-0 z-20 overflow-y-auto backdrop-blur-sm"
       style={{ backgroundColor: 'var(--lucid-veil)' }}
     >
       <div className="mx-auto flex min-h-full max-w-2xl flex-col gap-5 px-4 pb-8 pt-4">
+        <p className="text-sm leading-snug" style={{ color: 'var(--lucid-muted)' }}>{hint}</p>
+
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-unbounded text-xl leading-tight">{event.title}</h2>
 

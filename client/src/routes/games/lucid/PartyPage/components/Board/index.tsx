@@ -1,5 +1,9 @@
 import { useMediaQuery, useResizeObserver } from 'usehooks-ts';
-import { useEffect, useRef } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
@@ -22,6 +26,7 @@ import {
   ZONE_LABEL,
   zoneStarts,
 } from '@/lib/lucid/cellLook';
+import { cellHint } from '@/lib/lucid/cellHint';
 
 import type { TSpot } from './linkPath';
 
@@ -44,6 +49,7 @@ export interface TBoardProps {
 }
 
 // Размеры в условных единицах раскладки, где клетка отстоит от клетки на 132
+const HINT_MS = 4000;
 const RIBBON_WIDTH = 30;
 // Плитка события: вдоль пути на поперёк
 const TILE_ALONG = 36;
@@ -149,6 +155,8 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
   const isDrawn = useRef(false);
   const { width = 0, height = 0 } = useResizeObserver({ ref: containerRef, box: 'border-box' });
   const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const hintRef = useRef<HTMLParagraphElement>(null);
+  const [hintCellId, setHintCellId] = useState<number>();
 
   const { theme, track } = state.G;
   const roles = deriveRoles(theme.palette, theme.mood as TMood | undefined);
@@ -394,6 +402,26 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
     return [{ ink: region.ink, name: region.name, x: point.x, y: point.y }];
   });
 
+  useEffect(() => {
+    if (hintCellId === undefined) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setHintCellId(undefined), HINT_MS);
+    const handleOutside = (event: PointerEvent): void => {
+      if (!hintRef.current?.contains(event.target as Node)) {
+        setHintCellId(undefined);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutside);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('pointerdown', handleOutside);
+    };
+  }, [hintCellId]);
+
   // Прочерчивание — событие начала партии, а не отклик на перерисовку: оно
   // случается один раз, поэтому у эффекта нет списка зависимостей, а есть флаг.
   // Края чертятся подряд, от старта к финишу, а не разом
@@ -423,8 +451,20 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
     });
   });
 
+  const handleTapCell = (cellId: number): void => {
+    if ((state.G.cellHistory[cellId]?.length ?? 0) > 0) {
+      onViewCell?.(cellId);
+
+      return;
+    }
+
+    setHintCellId(cellId);
+  };
+
+  const hintCell = hintCellId === undefined ? undefined : track.cells.find(cell => cell.id === hintCellId);
+
   return (
-    <div className="size-full" ref={containerRef}>
+    <div className="relative size-full" ref={containerRef}>
       {width
         ? (
             <svg
@@ -587,21 +627,16 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                 );
               })}
 
-              {/* Просмотр клетки: только там, где уже что-то разыграно —
-                  клетка без записи в cellHistory нечего показывать, и это
-                  само собой исключает и непосещённые клетки, и клетку
-                  текущего нерешённого события (запись появляется только
-                  после выбора) */}
-              {layout.cells.filter(cell => (state.G.cellHistory[cell.id]?.length ?? 0) > 0).map(cell => (
+              {layout.cells.filter(cell => !onSelectCell || !state.G.branchChoices.includes(cell.id)).map(cell => (
                 <g
                   aria-label="Посмотреть клетку"
                   className="cursor-pointer"
                   key={`view-${cell.id}`}
-                  onClick={() => onViewCell?.(cell.id)}
+                  onClick={() => handleTapCell(cell.id)}
                   onKeyDown={event => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      onViewCell?.(cell.id);
+                      handleTapCell(cell.id);
                     }
                   }}
                   role="button"
@@ -677,6 +712,17 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
             </svg>
           )
         : null}
+
+      {hintCell && (
+        <p
+          className="absolute inset-x-2 bottom-2 z-10 rounded-md border-2 px-3 py-2 text-sm leading-snug"
+          ref={hintRef}
+          role="status"
+          style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+        >
+          {cellHint(hintCell, state.G)}
+        </p>
+      )}
     </div>
   );
 });
