@@ -8,6 +8,9 @@ import {
   type TAtom,
   type TCondition,
   type TEffect,
+  type THintItem,
+  type TOption,
+  type TOptionHint,
   type TOptionView,
 } from './types/effect';
 
@@ -101,3 +104,29 @@ export const describeHistoryEntry = (entry: THistoryEntry, option: TOptionView, 
 
   return `${entry.nickname} — «${option.text}»${rollPart} — ${outcome}`;
 };
+
+const hintItemOf = (atom: TAtom): THintItem => {
+  const hasSign = atom.kind === EAtomKind.MOVE || atom.kind === EAtomKind.RESOURCE;
+
+  return {
+    kind: atom.kind,
+    target: atom.target,
+    ...(hasSign && { sign: atom.value < 0 ? -1 : 1 }),
+  };
+};
+
+// Направление ветки без чисел: атомы ветки и otherwise, без повторов
+export const buildEffectHint = (effect?: TEffect): THintItem[] => {
+  const items = [...(effect?.atoms ?? []), ...(effect?.otherwise ?? [])].map(hintItemOf);
+
+  const same = (first: THintItem, second: THintItem): boolean => (
+    first.kind === second.kind && first.target === second.target && first.sign === second.sign
+  );
+
+  return items.filter((item, index) => items.findIndex(other => same(other, item)) === index);
+};
+
+export const buildOptionHint = (option: TOption): TOptionHint => ({
+  success: buildEffectHint(option.success),
+  failure: buildEffectHint(option.failure),
+});

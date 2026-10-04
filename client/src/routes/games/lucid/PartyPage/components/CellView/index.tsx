@@ -3,32 +3,14 @@ import { LucidShared } from '@trgames/shared';
 
 import { Button } from '@/components/ui/Button';
 
+import { OptionOutcomes } from '../EventCard/OptionOutcomes';
+
 interface TProps {
   event: LucidShared.TEventView;
   history: LucidShared.THistoryEntry[];
   resourceName: string;
   onClose: () => void;
 }
-
-// Только раскрытые ветки — те же revealed, что и у OptionButton, но без
-// префикса «удача/провал»: здесь варианты не выбираются, порог сам по себе
-// достаточно объясняет, что вариантов исхода два
-const outcomesOf = (option: LucidShared.TOptionView, resourceName: string): string[] => {
-  if (!option.threshold) {
-    return option.revealed.success && option.success
-      ? [LucidShared.describeEffect(option.success, resourceName)]
-      : [];
-  }
-
-  return [
-    option.revealed.success
-      ? `удача — ${option.success ? LucidShared.describeEffect(option.success, resourceName) : 'ничего'}`
-      : 'удача — ?',
-    option.revealed.failure
-      ? `провал — ${option.failure ? LucidShared.describeEffect(option.failure, resourceName) : 'ничего'}`
-      : 'провал — ?',
-  ];
-};
 
 // Просмотр уже посещённой клетки: то же, что видел бы ходящий, но без кнопок
 // выбора — и с историей того, что там уже случилось. Открывается только по
@@ -63,7 +45,6 @@ export const CellView = observer(function CellView({ event, history, resourceNam
               option.threshold ? `нужно ${option.threshold} и больше на кубике` : undefined,
               option.cost ? `цена ${option.cost}` : undefined,
             ].filter(Boolean);
-            const outcomes = outcomesOf(option, resourceName);
 
             return (
               <li
@@ -79,11 +60,7 @@ export const CellView = observer(function CellView({ event, history, resourceNam
                   </span>
                 )}
 
-                {outcomes.map(outcome => (
-                  <span className="text-sm leading-snug" key={outcome} style={{ color: 'var(--lucid-muted)' }}>
-                    {outcome}
-                  </span>
-                ))}
+                <OptionOutcomes option={option} resourceName={resourceName} />
               </li>
             );
           })}

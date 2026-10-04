@@ -16,6 +16,7 @@ export const SIMULATION_MODES: TSimulationMode[] = ['base', 'skill', 'ablate', '
 type TStrategy =
   | 'auto'
   | 'casual'
+  | 'hinted'
   | 'noCards'
   | 'optOracle'
   | 'optWorst'
@@ -283,6 +284,55 @@ const casualMove = (state: TState): TMove | null => {
   return moves[Math.floor(random() * moves.length)];
 };
 
+const D6_FACES = 6;
+
+const hintWeight = (items: LucidShared.THintItem[]): number => items.reduce((sum, item) => {
+  if (item.target === LucidShared.ETarget.SELF) {
+    if (item.kind === LucidShared.EAtomKind.SKIP_TURN) {
+      return sum - 1;
+    }
+
+    return sum + (item.sign ?? 0);
+  }
+
+  return item.sign === -1 ? sum + 0.5 : sum;
+}, 0);
+
+const hintedMove = (state: TState): TMove | null => {
+  if (state.ctx.phase !== EPhase.CHOICE) {
+    return casualMove(state);
+  }
+
+  const event = state.G.turn.lawEvent
+    ?? state.G.events[state.G.turn.eventCellId ?? state.G.players[state.ctx.currentPlayer].position];
+  const optionValue = (option: LucidShared.TOption): number => {
+    const hint = LucidShared.buildOptionHint(option);
+    const success = hintWeight(hint.success);
+
+    if (!option.threshold) {
+      return success;
+    }
+
+    const chance = Math.max(0, Math.min(D6_FACES, D6_FACES - option.threshold + 1)) / D6_FACES;
+
+    return chance * success + (1 - chance) * hintWeight(hint.failure);
+  };
+  let best: TMove | null = null;
+  let bestValue = -Infinity;
+
+  for (const move of legalMoves(state)) {
+    const option = move.type === EMoveType.CHOOSE_OPTION ? event?.options[move.optionIndex] : undefined;
+    const value = option ? optionValue(option) : -Infinity;
+
+    if (!best || value > bestValue) {
+      best = move;
+      bestValue = value;
+    }
+  }
+
+  return best;
+};
+
 const refuseShopMove = (state: TState): TMove | null =>
   state.ctx.phase === EPhase.SHOP
     ? legalMoves(state).find(move => move.type === EMoveType.BUY_CARD && move.index === null) ?? null
@@ -317,6 +367,8 @@ const chooseMove = (strategy: TStrategy, state: TState): TMove | null => {
   switch (strategy) {
     case 'auto':
       return chooseAutoMove(state);
+    case 'hinted':
+      return hintedMove(state);
     case 'noCards':
       return refuseShopMove(state);
     case 'optOracle':
@@ -524,6 +576,8 @@ export const runSimulation = ({ mode, count, events = [] }: TSimulationParams): 
         ...summarize('smart-vs-casual2', ['smart', 'casual'], count),
         ...summarize('oracle-vs-casual2', ['oracle', 'casual'], count),
         ...summarize('smart-vs-casual4', ['smart', 'casual', 'casual', 'casual'], count),
+        ...summarize('hinted-vs-casual2', ['hinted', 'casual'], count),
+        ...summarize('hinted-vs-casual4', ['hinted', 'casual', 'casual', 'casual'], count),
         ...summarize('random-vs-casual2', ['random', 'casual'], count * 2),
       ];
   }

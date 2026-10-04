@@ -57,6 +57,19 @@ export interface TOption {
   failure?: TEffect;
 }
 
+// Пункт подсказки направления: что затронет ветка, без числа.
+// sign есть только у MOVE и RESOURCE
+export interface THintItem {
+  kind: EAtomKind;
+  target: ETarget;
+  sign?: 1 | -1;
+}
+
+export interface TOptionHint {
+  success: THintItem[];
+  failure: THintItem[];
+}
+
 // Вариант глазами игрока: исход виден только по раскрытым веткам (5.5).
 // text/threshold/cost видны всегда, success/failure — только раскрытые.
 // revealed отличает «ветка раскрыта и пуста» (failure отсутствует,
@@ -66,6 +79,7 @@ export interface TOptionView {
   threshold?: number;
   cost?: number;
   revealed: { success: boolean; failure: boolean };
+  hint: TOptionHint;
   success?: TEffect;
   failure?: TEffect;
 }

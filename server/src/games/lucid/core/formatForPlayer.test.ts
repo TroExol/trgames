@@ -119,9 +119,30 @@ describe('formatForPlayer — раскрытие веток варианта', (
       threshold: 4,
       cost: 2,
       revealed: { success: false, failure: false },
+      hint: {
+        success: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, sign: 1 }],
+        failure: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, sign: -1 }],
+      },
       success: undefined,
       failure: undefined,
     });
+  });
+
+  it('подсказка есть у нераскрытой ветки, а value в ней нет', () => {
+    const event: LucidShared.TEvent = { cellId: 1, title: 'Ящик', text: 'Заперт', options: [baseOption()] };
+    const option = formatForPlayer(stateWith(event, {}), 'a').G.events[1].options[0];
+
+    expect(option.success).toBeUndefined();
+    expect(option.hint.success).toHaveLength(1);
+    expect(JSON.stringify(option.hint)).not.toContain('value');
+  });
+
+  it('событие закона тоже получает подсказку', () => {
+    const state = stateWith({ cellId: 1, title: 'Ящик', text: 'Заперт', options: [baseOption()] }, {});
+
+    state.G.turn.lawEvent = { cellId: 1, title: 'Пошлина', text: 'Плати', options: [baseOption()] };
+
+    expect(formatForPlayer(state, 'a').G.turn.lawEvent?.options[0].hint.failure).toHaveLength(1);
   });
 
   it('раскрытая success-ветка отдаёт success, failure остаётся скрытой', () => {

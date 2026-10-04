@@ -1,4 +1,4 @@
-import type { LucidShared } from '@trgames/shared';
+import { LucidShared } from '@trgames/shared';
 
 // @trgames/shared отдаёт этот тип только через неймспейс LucidShared,
 // плоского реэкспорта не существует — извлекаем сами
@@ -20,6 +20,7 @@ const toOptionView = (
     threshold: option.threshold,
     cost: option.cost,
     revealed: { success: revealedSuccess, failure: revealedFailure },
+    hint: LucidShared.buildOptionHint(option),
     success: revealedSuccess ? option.success : undefined,
     // Раскрытая, но отсутствующая failure остаётся undefined — «раскрыта,
     // пусто» клиент читает по revealed.failure, а не по наличию поля
@@ -46,6 +47,7 @@ const toOpenEventView = (event: LucidShared.TEvent): LucidShared.TEventView => (
     threshold: option.threshold,
     cost: option.cost,
     revealed: { success: true, failure: Boolean(option.failure) },
+    hint: LucidShared.buildOptionHint(option),
     success: option.success,
     failure: option.failure,
   })),
