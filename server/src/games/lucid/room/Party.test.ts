@@ -34,6 +34,17 @@ describe('состав партии', () => {
       .not.toThrow();
   });
 
+  it('длинный ник из старой партии не мешает переподключиться, а смена на другой длинный отклоняется', () => {
+    const party = makeParty();
+    const longNickname = 'я'.repeat(25);
+
+    party.join({ playerId: 'a', nickname: 'Аня' });
+    (party as unknown as { members: Map<string, { nickname: string }> }).members.get('a')!.nickname = longNickname;
+
+    expect(() => party.join({ playerId: 'a', nickname: longNickname })).not.toThrow();
+    expect(() => party.join({ playerId: 'a', nickname: 'ю'.repeat(25) })).toThrow('nickname-too-long');
+  });
+
   it('ник, занятый другим игроком, отклоняется', () => {
     const party = makeParty();
     party.join({ playerId: 'a', nickname: 'Аня' });

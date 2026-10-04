@@ -108,7 +108,7 @@ export class Party {
       throw new Error('empty-nickname');
     }
 
-    if (trimmed.length > LucidShared.NICKNAME_MAX_LENGTH) {
+    if (trimmed.length > LucidShared.NICKNAME_MAX_LENGTH && this.members.get(playerId)?.nickname !== trimmed) {
       throw new Error('nickname-too-long');
     }
 
