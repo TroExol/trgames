@@ -7,6 +7,7 @@ import { LucidShared } from '@trgames/shared';
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
+import { PlayerView } from '@/routes/games/lucid/PartyPage/components/PlayerView';
 import { LawsStrip } from '@/routes/games/lucid/PartyPage/components/LawsStrip';
 import { Hand } from '@/routes/games/lucid/PartyPage/components/Hand';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
@@ -44,6 +45,7 @@ export const Hud = observer(function Hud({ children }: THudProps) {
   // событие открывается само, разворачивать его руками не нужно
   const [collapsedCell, setCollapsedCell] = useState<number>();
   const [collapsedPick, setCollapsedPick] = useState<string>();
+  const [viewedPlayerId, setViewedPlayerId] = useState<LucidShared.TPlayerId>();
   const { state, view } = partyStore;
 
   if (!state || !view) {
@@ -384,12 +386,11 @@ export const Hud = observer(function Hud({ children }: THudProps) {
           </p>
         </div>
 
-        {/* Пока за отвалившегося ходит автопилот, это видно всем: иначе
-            остальные обсуждают решения, которых человек не принимал */}
-        {/* grid вместо flex-wrap: ширина колонки не зависит от длины роли, а
+        {/* Строка игрока — одна кнопка: тап открывает PlayerView. Ресурс и число
+            карт не сжимаются, ник сжимается позже роли, роль уходит первой.
+            grid вместо flex-wrap: ширина колонки не зависит от длины роли, а
             auto-fit схлопывает пустые колонки — при 2 игроках им достаётся вся
-            строка, при 6 на 360-390px колонок ровно две (см. комментарий у
-            роли), как и раньше */}
+            строка, при 6 на 360-390px колонок ровно две */}
         <ul
           className={
             hasAnyRole
@@ -398,50 +399,38 @@ export const Hud = observer(function Hud({ children }: THudProps) {
           }
           style={{ color: 'var(--lucid-muted)' }}
         >
-          {state.G.order.map(playerId => (
-            <li
-              className="flex min-w-0 items-center gap-1"
-              key={playerId}
-              style={playerId === state.ctx.currentPlayer ? { color: 'var(--lucid-text)' } : undefined}
-            >
-              {playerId === state.ctx.currentPlayer && (
-                <span
-                  aria-hidden
-                  className="size-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: 'var(--lucid-accent)' }}
-                />
-              )}
-              <span className="shrink-0">{state.G.players[playerId].nickname}</span>
-              {/* Роль — не секрет, но и не главное: всегда приглушена, даже у текущего
-                  игрока, хотя кегль (text-xs) тот же — меньше 12px уже неразборчиво.
-                  Без max-w: ширину задаёт колонка грида, а не сама роль, поэтому
-                  свободное место в строке достаётся роли честно, а не по фикс.
-                  потолку. minmax(9rem,...) — 9rem подобран под 360/390px: при
-                  шести игроках колонок ровно две (floor(336/(144+12))=2), строка
-                  остаётся в 3 ряда, как и раньше (замерено в Storybook) */}
-              {state.G.players[playerId].role && (
-                <TruncatedText
-                  className="min-w-0 truncate text-xs"
-                  style={{ color: 'var(--lucid-muted)' }}
-                  text={`— ${state.G.players[playerId].role}`}
-                />
-              )}
-              <span className="flex min-w-0 shrink items-center gap-1 overflow-hidden whitespace-nowrap">
-                <span className="shrink-0">{`· ${state.G.players[playerId].resource}`}</span>
-                {(state.G.cards.hands[playerId] ?? []).map(item => (
-                  <span
-                    className="shrink-0 rounded border px-1 leading-tight"
-                    key={item.uid}
-                    style={{ borderColor: 'var(--lucid-muted)' }}
-                    title={`${LucidShared.cardName(state.G, item.card)}: ${LucidShared.SHOP_TEXT[item.card].rule(theme.resourceName)}`}
-                  >
-                    {LucidShared.cardName(state.G, item.card).charAt(0)}
-                  </span>
-                ))}
-              </span>
-              {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
-            </li>
-          ))}
+          {state.G.order.map(playerId => {
+            const player = state.G.players[playerId];
+            const handSize = (state.G.cards.hands[playerId] ?? []).length;
+
+            return (
+              <li className="min-w-0" key={playerId}>
+                <button
+                  className="flex w-full min-w-0 items-center gap-1 text-left"
+                  onClick={() => setViewedPlayerId(playerId)}
+                  style={playerId === state.ctx.currentPlayer ? { color: 'var(--lucid-text)' } : undefined}
+                  type="button"
+                >
+                  {playerId === state.ctx.currentPlayer && (
+                    <span
+                      aria-hidden
+                      className="size-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: 'var(--lucid-accent)' }}
+                    />
+                  )}
+                  <span className="min-w-0 shrink truncate">{player.nickname}</span>
+                  <span className="shrink-0">{`· ${player.resource}`}</span>
+                  {handSize > 0 && <span className="shrink-0">{`· карт ${handSize}`}</span>}
+                  {player.role && (
+                    <span className="min-w-0 shrink-[3] truncate" style={{ color: 'var(--lucid-muted)' }}>
+                      {`— ${player.role}`}
+                    </span>
+                  )}
+                  {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         <LawsStrip />
@@ -517,6 +506,8 @@ export const Hud = observer(function Hud({ children }: THudProps) {
           resourceName={theme.resourceName}
         />
       )}
+
+      {viewedPlayerId && <PlayerView onClose={() => setViewedPlayerId(undefined)} playerId={viewedPlayerId} />}
     </>
   );
 });
