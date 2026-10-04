@@ -34,9 +34,13 @@ const EPhase = LucidShared.EPhase;
 // направлением, а не номером: номер клетки человеку ничего не говорит
 const BRANCH_LABELS = ['Верхняя тропа', 'Нижняя тропа'];
 
-// Интерфейс лежит поверх поля узкими полосами сверху и снизу: поле занимает
-// экран целиком и остаётся героем экрана, полосы молчат
-export const Hud = observer(function Hud() {
+interface THudProps {
+  children: ReactNode;
+}
+
+// Шапка, поле и нижняя панель идут столбиком: поле получает ровно остаток
+// высоты, ничто его не перекрывает, кроме полноэкранных модалок
+export const Hud = observer(function Hud({ children }: THudProps) {
   // Оптимистичных ходов нет: после нажатия кнопка молчит до прихода нового
   // stateId, а не до применения хода у себя
   const [sentStateId, setSentStateId] = useState<number>();
@@ -382,8 +386,8 @@ export const Hud = observer(function Hud() {
   return (
     <>
       <header
-        className="absolute inset-x-0 top-0 flex flex-col gap-1 px-3 py-2 backdrop-blur-sm"
-        style={{ backgroundColor: 'var(--lucid-veil)' }}
+        className="flex flex-none flex-col gap-1 border-b px-3 py-2"
+        style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-muted)' }}
       >
         <div className="flex items-baseline justify-between gap-3">
           <h1 className="min-w-0 font-unbounded text-base">
@@ -463,9 +467,11 @@ export const Hud = observer(function Hud() {
         <LawsStrip />
       </header>
 
+      <div className="flex min-h-0 grow px-2">{children}</div>
+
       <div
-        className="absolute inset-x-0 bottom-0 flex flex-col gap-2 px-3 pb-3 pt-2 backdrop-blur-sm"
-        style={{ backgroundColor: 'var(--lucid-veil)' }}
+        className="flex flex-none flex-col gap-2 border-t px-3 pb-3 pt-2"
+        style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-muted)' }}
       >
         {event && isCollapsed && (
           <EventBar

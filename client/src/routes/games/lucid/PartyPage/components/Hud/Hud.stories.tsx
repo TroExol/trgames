@@ -97,15 +97,17 @@ const setupHud = (
 };
 
 // Обёртка повторяет разметку сцены партии (PartyPage/index.tsx): relative-блок
-// на весь экран, HUD лежит над ним двумя полосами сверху и снизу.
+// на весь экран, шапка и панель идут столбиком, между ними место под поле.
 // -m-6 гасит отступ общей обёртки Storybook (`p-6`) — тот же приём, что и в
 // withTheme из Board.stories.tsx
 const HudFrame = observer(() => {
   const roles = deriveRoles(PALETTE);
 
   return (
-    <div className="relative -m-6 h-dvh overflow-hidden font-golos" style={themeStyle(roles, WORLD_NAME)}>
-      <Hud />
+    <div className="relative -m-6 flex h-dvh flex-col overflow-hidden font-golos" style={themeStyle(roles, WORLD_NAME)}>
+      <Hud>
+        <div className="grow rounded border border-dashed" style={{ borderColor: 'var(--lucid-muted)' }} />
+      </Hud>
     </div>
   );
 });
@@ -113,6 +115,7 @@ const HudFrame = observer(() => {
 const meta = {
   title: 'Games/Lucid/Hud',
   component: Hud,
+  args: { children: null },
   parameters: {
     layout: 'fullscreen',
   },

@@ -282,20 +282,13 @@ export const Component = observer(function LucidPartyPage() {
 
     return (
       <>
-        {/* Высота задана точно, а не минимумом: при min-height высота
-            контейнера остаётся неопределённой, h-full у поля схлопывается,
-            и оно возвращается к своим пропорциям. Отступы равны высоте полос:
-            они лежат поверх поля, и без отступов под ними прятались бы
-            крайние ряды клеток */}
-        <div className="flex min-h-0 grow px-2 pb-32 pt-36">
+        <Hud>
           <Board
             onSelectCell={isMyBranch ? handleSelectCell : undefined}
             onViewCell={setViewCellId}
             state={state}
           />
-        </div>
-
-        <Hud />
+        </Hud>
 
         {/* Поле остаётся видимым вокруг экрана победы: партия закончилась
             на нём, и это стоит показать */}

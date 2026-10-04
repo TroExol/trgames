@@ -8,17 +8,13 @@ import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 export const Ribbon = observer(function Ribbon() {
   const { ribbon, ribbonTotal } = partyStore;
 
-  if (ribbon.length === 0) {
-    return null;
-  }
-
   const firstNumber = ribbonTotal - ribbon.length;
 
   return (
-    <ul className="flex flex-col gap-0.5 text-xs leading-snug" style={{ color: 'var(--lucid-muted)' }}>
+    <ul className="flex h-[2.2rem] flex-col justify-end gap-0.5 overflow-hidden text-xs leading-snug sm:h-[4.5rem] max-sm:[&>li:not(:nth-last-child(-n+2))]:hidden" style={{ color: 'var(--lucid-muted)' }}>
       {ribbon.map((line, index) => (
         <li
-          className="motion-safe:animate-in motion-safe:fade-in"
+          className="truncate motion-safe:animate-in motion-safe:fade-in"
           key={firstNumber + index}
         >
           {line}
