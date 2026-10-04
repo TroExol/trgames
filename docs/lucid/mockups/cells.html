@@ -1,0 +1,316 @@
+<title>Клетки lucid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Сетка вариантов: каждый вариант — карточка с полем в ширину телефона */
+:root {
+  --bg: #eef0f4;
+  --surface: #ffffff;
+  --fg: #1b1e2b;
+  --muted: #5f6478;
+  --rule: #d5d8e2;
+  --accent: #5b4bd6;
+  --font-display: 'Unbounded', 'Arial Black', sans-serif;
+  --font-body: 'Golos Text', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11131b; --surface: #191c27; --fg: #e7e8f0; --muted: #9a9fb5; --rule: #2c3042; --accent: #9d92ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11131b; --surface: #191c27; --fg: #e7e8f0; --muted: #9a9fb5; --rule: #2c3042; --accent: #9d92ff;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--font-display); font-size: 22px; margin: 0; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 65ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--fg); padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ctl-label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 6px; }
+label.check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 372px), 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h2 { font-family: var(--font-display); font-size: 15px; margin: 0; display: flex; gap: 10px; align-items: baseline; }
+.card h2 .tag { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .06em; }
+.card p { margin: 0; font-size: 14px; color: var(--muted); }
+.board { border-radius: 8px; overflow: hidden; margin-inline: auto; width: 100%; }
+.board svg { display: block; width: 100%; height: auto; }
+.pros { margin: 0; padding-left: 18px; font-size: 14px; }
+.pros li { margin: 2px 0; }
+.pros .minus { color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; padding: 8px 10px; }
+.legend span { display: inline-flex; gap: 5px; align-items: center; }
+.legend svg { width: 18px; height: 18px; flex: none; }
+.note { font-size: 13px; color: var(--muted); max-width: 65ch; }
+</style>
+
+<div class="wrap">
+  <h1>Как отличить клетки на поле</h1>
+  <p class="lead">Четыре варианта на одном и том же отрезке трека. По умолчанию поле показано в ширину телефона, как в партии. Выбери вариант буквой; можно смешать, например «Г, но иконки из Б».</p>
+
+  <div class="controls">
+    <div><span class="ctl-label">Экран</span>
+      <span class="seg" id="screen">
+        <button type="button" aria-pressed="true" data-v="phone">Телефон</button>
+        <button type="button" aria-pressed="false" data-v="laptop">Ноутбук</button>
+      </span>
+    </div>
+    <div><span class="ctl-label">Тема партии</span>
+      <span class="seg" id="theme">
+        <button type="button" aria-pressed="true" data-v="night">Тёмная</button>
+        <button type="button" aria-pressed="false" data-v="day">Светлая</button>
+      </span>
+    </div>
+    <label class="check"><input type="checkbox" id="legend"> Легенда под полем</label>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="note">Посещённое событие залито цветом края, непосещённое — «?». Фишки стоят на клетках 2 и 9. Порталы пронумерованы парой: 1 ведёт в 1, 2 — в 2.</p>
+</div>
+
+<script>
+(() => {
+  const STEP = 132, ROW = 150, ALONG = 36, ACROSS = 28, EDGE = 42, RIBBON = 30, PAD = 50;
+
+  const T = { START: 'START', FINISH: 'FINISH', EVENT: 'EVENT', VISITED: 'VISITED', EMPTY: 'EMPTY', GREEN: 'GREEN', RED: 'RED', LAW: 'LAW', SHOP: 'SHOP', PORTAL: 'PORTAL' };
+  const SEQ = [
+    [T.START], [T.VISITED], [T.EMPTY], [T.GREEN], [T.SHOP], [T.EVENT], [T.RED], [T.PORTAL, 1],
+    [T.VISITED], [T.LAW], [T.EMPTY], [T.GREEN], [T.EVENT], [T.SHOP], [T.RED], [T.PORTAL, 1],
+    [T.EVENT], [T.LAW], [T.GREEN], [T.PORTAL, 2], [T.EVENT], [T.RED], [T.EMPTY], [T.PORTAL, 2], [T.SHOP], [T.FINISH],
+  ];
+
+  const COLORS = { RED: '#c8553d', GREEN: '#5a9e4b', LAW: '#c9a227', SHOP: '#3f7cc4', PORTAL: ['#8e5bd0', '#2f8fd8'] };
+
+  const THEMES = {
+    night: {
+      base: '#151826', text: '#ece9f5',
+      regions: [
+        { ribbon: '#2e3b63', ink: '#8ea2e6', hollow: '#1c2238' },
+        { ribbon: '#4b2f5e', ink: '#c99be6', hollow: '#251c33' },
+        { ribbon: '#244f4b', ink: '#86d0c4', hollow: '#18302e' },
+      ],
+    },
+    day: {
+      base: '#f4f1f8', text: '#23202e',
+      regions: [
+        { ribbon: '#c9d6f3', ink: '#3d5598', hollow: '#ffffff' },
+        { ribbon: '#e5cfee', ink: '#76459a', hollow: '#ffffff' },
+        { ribbon: '#c6e6df', ink: '#2c7064', hollow: '#ffffff' },
+      ],
+    },
+  };
+
+  const state = { screen: 'phone', theme: 'night', legend: false };
+
+  const layout = perRow => {
+    const cells = SEQ.map(([type, pair], i) => {
+      const r = Math.floor(i / perRow), c = i % perRow;
+      const col = r % 2 === 0 ? c : perRow - 1 - c;
+      return { i, type, pair, col, x: col * STEP, y: r * ROW, depth: i };
+    });
+    cells.forEach((cell, i) => {
+      const next = cells[i + 1], prev = cells[i - 1];
+      const a = next ?? cell, b = next ? cell : prev;
+      cell.angle = Math.atan2(a.y - b.y, a.x - b.x);
+      if (next && next.x === cell.x) cell.angle = Math.PI / 2;
+    });
+    const rows = Math.ceil(SEQ.length / perRow);
+    return { cells, width: (perRow - 1) * STEP, height: (rows - 1) * ROW };
+  };
+
+  const link = (a, b) => {
+    const cx = a.x === b.x ? a.x + (a.col === 0 ? -70 : 70) : a.x + (b.x - a.x) / 2;
+    return `M${a.x} ${a.y}C${cx} ${a.y} ${cx} ${b.y} ${b.x} ${b.y}`;
+  };
+
+  const tile = (c, along, across) => {
+    const ax = Math.cos(c.angle) * along / 2, ay = Math.sin(c.angle) * along / 2;
+    const bx = -Math.sin(c.angle) * across / 2, by = Math.cos(c.angle) * across / 2;
+    const p = (s, t) => `${c.x + s * ax + t * bx} ${c.y + s * ay + t * by}`;
+    return `M${p(-1, -1)}L${p(1, -1)}L${p(1, 1)}L${p(-1, 1)}Z`;
+  };
+
+  // Пиктограммы в квадрате 24×24 вокруг нуля, рисуются обводкой
+  const ICON = {
+    SHOP: '<path d="M-7 -2h14l-1.6 10h-10.8z"/><path d="M-3.5 -2v-2.5a3.5 3.5 0 0 1 7 0v2.5"/>',
+    LAW: '<path d="M0 -8v15M-5 7h10M-8 -5h16"/><path d="M-8 -5l-3 6h6zM8 -5l-3 6h6z"/>',
+    PORTAL: '<path d="M0 0a2 2 0 0 1 4 0a4 4 0 0 1 -8 0a6 6 0 0 1 12 0a8 8 0 0 1 -16 0"/>',
+    GREEN: '<path d="M-6 0h12M0 -6v12"/>',
+    RED: '<path d="M-6 0h12"/>',
+    START: '<path d="M-5 9v-18M-5 -8h11l-3 4l3 4h-11"/>',
+    FINISH: '<rect x="-8" y="-8" width="16" height="16" rx="2"/><circle r="4"/><path d="M0 -4v-2"/>',
+  };
+  const icon = (type, x, y, color, size = 1, width = 2.6) =>
+    `<g transform="translate(${x} ${y}) scale(${size})" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round">${ICON[type]}</g>`;
+
+  const glyph = (text, x, y, color, size) =>
+    `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Golos Text, sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central">${text}</text>`;
+
+  const fillFor = (c, reg) => {
+    switch (c.type) {
+      case T.VISITED: return reg.ink;
+      case T.GREEN: return COLORS.GREEN;
+      case T.RED: return COLORS.RED;
+      case T.LAW: return COLORS.LAW;
+      case T.SHOP: return COLORS.SHOP;
+      default: return reg.hollow;
+    }
+  };
+
+  const shapePoly = (c, n, r, rot = 0) => {
+    const pts = [];
+    for (let k = 0; k < n; k++) {
+      const a = rot + (Math.PI * 2 * k) / n;
+      pts.push(`${c.x + Math.cos(a) * r} ${c.y + Math.sin(a) * r}`);
+    }
+    return `M${pts.join('L')}Z`;
+  };
+
+  const VARIANTS = [
+    {
+      key: 'А', name: 'Как сейчас',
+      text: 'Только заливка и мелкий знак: «§», «¤», кольцо портала.',
+      pros: ['+ ничего не менять'], cons: ['− «¤» и «§» не читаются на телефоне', '− зелёную и красную не различить при дальтонизме', '− пары порталов видны только по цвету кольца'],
+      cell(c, reg, th, s) {
+        const edge = c.type === T.START || c.type === T.FINISH;
+        let out = `<path d="${edge ? tile(c, EDGE, EDGE) : tile(c, ALONG, ACROSS)}" fill="${fillFor(c, reg)}" stroke="${reg.ink}" stroke-width="2" stroke-linejoin="round"/>`;
+        if (c.type === T.EVENT) out += glyph('?', c.x, c.y, reg.ink, s);
+        if (c.type === T.LAW) out += glyph('§', c.x, c.y, reg.ink, s);
+        if (c.type === T.SHOP) out += glyph('¤', c.x, c.y, reg.ink, s);
+        if (c.type === T.PORTAL) out += `<circle cx="${c.x}" cy="${c.y}" r="${ACROSS / 2 - 3}" fill="none" stroke="${COLORS.PORTAL[c.pair - 1]}" stroke-width="4"/>`;
+        return out;
+      },
+    },
+    {
+      key: 'Б', name: 'Иконки на плитке',
+      text: 'Плитка крупнее, в каждой особой клетке — белая пиктограмма: сумка, весы, спираль, плюс и минус.',
+      pros: ['+ тип читается без цвета', '+ правка только в отрисовке'], cons: ['− на телефоне иконка ~14 px, на грани'],
+      cell(c, reg, th) {
+        const edge = c.type === T.START || c.type === T.FINISH;
+        const along = 44, across = 36;
+        const fill = c.type === T.PORTAL ? COLORS.PORTAL[c.pair - 1] : edge ? th.text : fillFor(c, reg);
+        let out = `<path d="${edge ? tile(c, EDGE + 4, EDGE + 4) : tile(c, along, across)}" fill="${fill}" stroke="${reg.ink}" stroke-width="2" stroke-linejoin="round"/>`;
+        const white = '#ffffff';
+        if (c.type === T.EVENT) out += glyph('?', c.x, c.y, reg.ink, 24);
+        if ([T.SHOP, T.LAW, T.GREEN, T.RED].includes(c.type)) out += icon(c.type, c.x, c.y, white, 1.15);
+        if (c.type === T.PORTAL) out += icon('PORTAL', c.x - 4, c.y, white, 0.85, 3) + glyph(c.pair, c.x + 10, c.y + 7, white, 13);
+        if (edge) out += icon(c.type, c.x, c.y, th.base, 1.2);
+        return out;
+      },
+    },
+    {
+      key: 'В', name: 'Своя форма у каждого типа',
+      text: 'Форма говорит тип ещё до цвета: Лавка — домик, закон — шестиугольник, портал — двойное кольцо, событие — ромб, цветные — круги.',
+      pros: ['+ различимо даже точкой 10 px', '+ работает при дальтонизме'], cons: ['− трек выглядит пестрее', '− нужно запомнить, какая форма что значит'],
+      cell(c, reg, th, s) {
+        const white = '#ffffff';
+        switch (c.type) {
+          case T.START: case T.FINISH:
+            return `<path d="${tile(c, EDGE + 4, EDGE + 4)}" fill="${th.text}" stroke="${reg.ink}" stroke-width="2"/>` + icon(c.type, c.x, c.y, th.base, 1.2);
+          case T.EVENT: case T.VISITED: {
+            const fill = c.type === T.VISITED ? reg.ink : reg.hollow;
+            return `<path d="${shapePoly(c, 4, 25)}" fill="${fill}" stroke="${reg.ink}" stroke-width="2.5" stroke-linejoin="round"/>` + (c.type === T.EVENT ? glyph('?', c.x, c.y, reg.ink, 22) : '');
+          }
+          case T.EMPTY:
+            return `<circle cx="${c.x}" cy="${c.y}" r="9" fill="${reg.hollow}" stroke="${reg.ink}" stroke-width="2.5"/>`;
+          case T.GREEN: case T.RED:
+            return `<circle cx="${c.x}" cy="${c.y}" r="18" fill="${COLORS[c.type]}" stroke="${reg.ink}" stroke-width="2"/>` + icon(c.type, c.x, c.y, white, 1);
+          case T.SHOP:
+            return `<path d="M${c.x - 20} ${c.y - 4}L${c.x} ${c.y - 24}L${c.x + 20} ${c.y - 4}V${c.y + 18}H${c.x - 20}Z" fill="${COLORS.SHOP}" stroke="${reg.ink}" stroke-width="2" stroke-linejoin="round"/>` + icon('SHOP', c.x, c.y + 4, white, 0.9);
+          case T.LAW:
+            return `<path d="${shapePoly(c, 6, 24, Math.PI / 6)}" fill="${COLORS.LAW}" stroke="${reg.ink}" stroke-width="2" stroke-linejoin="round"/>` + icon('LAW', c.x, c.y, white, 0.95);
+          case T.PORTAL: {
+            const col = COLORS.PORTAL[c.pair - 1];
+            return `<circle cx="${c.x}" cy="${c.y}" r="23" fill="${th.base}" stroke="${col}" stroke-width="5"/><circle cx="${c.x}" cy="${c.y}" r="13" fill="none" stroke="${col}" stroke-width="3"/>` + glyph(c.pair, c.x, c.y, col, 16);
+          }
+        }
+        return '';
+      },
+    },
+    {
+      key: 'Г', name: 'Флажки над особыми клетками',
+      text: 'Обычные клетки — как сейчас. Над Лавкой, законом и порталом стоит флажок с крупной иконкой, как метка на карте.',
+      pros: ['+ особые клетки видно с первого взгляда', '+ иконка крупная, флажок не мешает фишке'], cons: ['− флажок может налезть на подпись края', '− зелёные и красные остаются только цветом'],
+      cell(c, reg, th, s) {
+        let out = VARIANTS[0].cell(c, reg, th, s);
+        const PIN = { SHOP: COLORS.SHOP, LAW: COLORS.LAW, PORTAL: c.pair ? COLORS.PORTAL[c.pair - 1] : '' };
+        if (!PIN[c.type]) return out;
+        const top = c.y - 54;
+        out += `<path d="M${c.x} ${c.y - ACROSS / 2}V${top + 16}" stroke="${PIN[c.type]}" stroke-width="3.5"/>`;
+        out += `<circle cx="${c.x}" cy="${top}" r="19" fill="${PIN[c.type]}" stroke="${th.base}" stroke-width="3"/>`;
+        out += c.type === T.PORTAL
+          ? icon('PORTAL', c.x - 3, top, '#fff', 0.8, 3) + glyph(c.pair, c.x + 9, top + 7, '#fff', 12)
+          : icon(c.type, c.x, top, '#fff', 0.95);
+        return out;
+      },
+    },
+  ];
+
+  const LEGEND = [
+    ['SHOP', 'Лавка', COLORS.SHOP], ['LAW', 'Закон', COLORS.LAW], ['PORTAL', 'Портал', COLORS.PORTAL[0]],
+    ['GREEN', 'Зелёная', COLORS.GREEN], ['RED', 'Красная', COLORS.RED],
+  ];
+
+  const render = variant => {
+    const perRow = state.screen === 'phone' ? 5 : 9;
+    const th = THEMES[state.theme];
+    const { cells, width, height } = layout(perRow);
+    const regionOf = c => th.regions[Math.min(2, Math.floor(c.depth / (SEQ.length / 3)))];
+    const vw = width + PAD * 2 + 40, vh = height + PAD * 2 + 50;
+    const scale = state.screen === 'phone' ? 340 / vw : 1;
+    const textSize = Math.max(15, 12 / Math.min(scale, 1));
+
+    let svg = '';
+    for (let i = 0; i < cells.length - 1; i++) {
+      svg += `<path d="${link(cells[i], cells[i + 1])}" fill="none" stroke="${regionOf(cells[i]).ribbon}" stroke-width="${RIBBON}" stroke-linecap="round"/>`;
+    }
+    cells.forEach(c => { svg += variant.cell(c, regionOf(c), th, textSize); });
+    [[2, '#f2c14e'], [9, '#ef6f8a']].forEach(([i, color]) => {
+      const c = cells[i];
+      svg += `<circle cx="${c.x + 14}" cy="${c.y + 14}" r="11" fill="${color}" stroke="${th.base}" stroke-width="3"/>`;
+    });
+
+    const legend = state.legend
+      ? `<div class="legend" style="background:${th.base};color:${th.text}">${LEGEND.map(([k, label, color]) =>
+          `<span><svg viewBox="-12 -12 24 24"><circle r="11" fill="${color}"/>${icon(k, 0, 0, '#fff', 0.7, 3)}</svg>${label}</span>`).join('')}</div>`
+      : '';
+
+    const maxW = state.screen === 'phone' ? 'max-width:340px' : '';
+    return `<div class="board" style="background:${th.base};${maxW}">
+      <svg viewBox="${-PAD - 20} ${-PAD - 30} ${vw} ${vh}" role="img" aria-label="Вариант ${variant.key}: ${variant.name}">${svg}</svg>${legend}</div>`;
+  };
+
+  const grid = document.getElementById('grid');
+  const draw = () => {
+    grid.innerHTML = VARIANTS.map(v => `
+      <article class="card">
+        <h2><span class="tag">${v.key}</span>${v.name}</h2>
+        <p>${v.text}</p>
+        ${render(v)}
+        <ul class="pros">${v.pros.map(t => `<li>${t}</li>`).join('')}${v.cons.map(t => `<li class="minus">${t}</li>`).join('')}</ul>
+      </article>`).join('');
+  };
+
+  const seg = (id, key) => {
+    const root = document.getElementById(id);
+    root.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      state[key] = btn.dataset.v;
+      root.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+      draw();
+    });
+  };
+  seg('screen', 'screen');
+  seg('theme', 'theme');
+  document.getElementById('legend').addEventListener('change', e => { state.legend = e.target.checked; draw(); });
+  draw();
+})();
+</script>

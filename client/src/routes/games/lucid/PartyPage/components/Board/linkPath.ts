@@ -56,3 +56,16 @@ export const tilePath = (tile: TTile, along: number, across: number): string => 
 
   return `M${corner(-1, -1)}L${corner(1, -1)}L${corner(1, 1)}L${corner(-1, 1)}Z`;
 };
+
+// Правильный многоугольник вокруг центра клетки: ромб — четыре вершины, шестиугольник — шесть
+export const polygonPath = (center: TSpot, sides: number, radius: number, rotation = 0): string =>
+  `M${Array.from({ length: sides }, (_, index) => {
+    const angle = rotation + (Math.PI * 2 * index) / sides;
+
+    return `${round(center.x + Math.cos(angle) * radius)} ${round(center.y + Math.sin(angle) * radius)}`;
+  }).join('L')}Z`;
+
+// Домик Лавки: крыша вверх, не зависит от угла пути
+export const housePath = (center: TSpot): string =>
+  `M${round(center.x - 20)} ${round(center.y - 4)}L${round(center.x)} ${round(center.y - 24)}`
+  + `L${round(center.x + 20)} ${round(center.y - 4)}V${round(center.y + 18)}H${round(center.x - 20)}Z`;

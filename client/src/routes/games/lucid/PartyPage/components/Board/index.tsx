@@ -4,6 +4,7 @@ import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
 import type { TMood } from '@/lib/lucid/colors';
+import type { TCellIcon, TCellShape } from '@/lib/lucid/cellLook';
 
 import {
   CELL_STEP,
@@ -25,8 +26,10 @@ import {
 import type { TSpot } from './linkPath';
 
 import {
+  housePath,
   linkMiddle,
   linkPath,
+  polygonPath,
   tilePath,
 } from './linkPath';
 
@@ -51,6 +54,61 @@ const EDGE_SIZE = 42;
 // Скругление делается обводкой, а не радиусом: два — почти угол
 const TILE_STROKE = 2;
 const TILE_FILL_VISITED = 0.95;
+const DIAMOND_RADIUS = 25;
+const HEX_RADIUS = 24;
+const DOT_RADIUS = 9;
+const DISC_RADIUS = 18;
+const PORTAL_OUTER_RADIUS = 23;
+const PORTAL_INNER_RADIUS = 13;
+const WHITE = '#ffffff';
+// Толщина обводки по форме
+const SHAPE_STROKE: Record<TCellShape, number> = {
+  diamond: 2.5,
+  disc: 2,
+  dot: 2.5,
+  hex: 2,
+  house: 2,
+  portal: 5,
+  tile: TILE_STROKE,
+};
+// Пиктограммы нарисованы в квадрате 24×24 вокруг нуля; здесь их сдвиг вниз и размер
+const ICON_SPEC: Record<TCellIcon, { dy: number; size: number }> = {
+  FINISH: { dy: 0, size: 1.2 },
+  GREEN: { dy: 0, size: 1 },
+  LAW: { dy: 0, size: 0.95 },
+  RED: { dy: 0, size: 1 },
+  SHOP: { dy: 4, size: 0.9 },
+  START: { dy: 0, size: 1.2 },
+};
+const ICON_PATHS: Record<TCellIcon, JSX.Element> = {
+  FINISH: (
+    <>
+      <rect height="16" rx="2" width="16" x="-8" y="-8" />
+      <circle r="4" />
+      <path d="M0 -4v-2" />
+    </>
+  ),
+  GREEN: <path d="M-6 0h12M0 -6v12" />,
+  LAW: (
+    <>
+      <path d="M0 -8v15M-5 7h10M-8 -5h16" />
+      <path d="M-8 -5l-3 6h6zM8 -5l-3 6h6z" />
+    </>
+  ),
+  RED: <path d="M-6 0h12" />,
+  SHOP: (
+    <>
+      <path d="M-7 -2h14l-1.6 10h-10.8z" />
+      <path d="M-3.5 -2v-2.5a3.5 3.5 0 0 1 7 0v2.5" />
+    </>
+  ),
+  START: <path d="M-5 9v-18M-5 -8h11l-3 4l3 4h-11" />,
+};
+// Насколько пиктограммы и знаки растут на телефоне вместе с подписями; больше
+// не растут, иначе не влезут в форму
+const ICON_BOOST_MAX = 1.25;
+const MARK_SIZE = 22;
+const PORTAL_MARK_SIZE = 16;
 // Насколько обводка выбора шире самой плитки
 const CHOICE_GROWTH = 12;
 // Невидимая область нажатия шире плитки: пальцем в неё не попасть. Шире
@@ -138,40 +196,111 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
     .filter(ribbon => ribbon.d.length > 0);
 
   const visited = new Set(state.G.visited);
-  // Плитки одного вида собираются в один path со множеством подпутей: их
-  // полсотни, и каждая отдельным элементом ничего не добавляет
-  const tiles = new Map<string, { d: string; fill: string; ink: string; isVisited: boolean }>();
+  const boost = Math.min(Math.max(textSize / LABEL_SIZE, 1), ICON_BOOST_MAX);
+  // Формы-пути одного вида собираются в один path со множеством подпутей: их
+  // полсотни, и каждая отдельным элементом ничего не добавляет. Круги и
+  // пиктограммы рисуются отдельными элементами
+  const tiles = new Map<string, { d: string; fill: string; ink: string; isVisited: boolean; width: number }>();
   const cellById = new Map(track.cells.map(cell => [cell.id, cell]));
-  const rings: { id: number; x: number; y: number; color: string }[] = [];
-  const glyphs: { id: number; x: number; y: number; text: string; ink: string }[] = [];
+  const marks: { id: number; node: JSX.Element }[] = [];
 
   layout.cells.forEach(cell => {
     const region = regionAt(cell.depth);
     const ink = region?.ink ?? 'var(--lucid-line)';
+    const hollow = region?.hollow ?? 'var(--lucid-base)';
     const isVisited = visited.has(cell.id);
-    const isEdge = cell.id === track.startId || cell.id === track.finishId;
     const look = cellLook(cellById.get(cell.id)!, isVisited);
-    const fill = look.fill === 'ink'
-      ? ink
-      : look.fill === 'hollow' ? region?.hollow ?? 'var(--lucid-base)' : look.fill;
-    const key = `${ink}:${fill}:${look.fill === 'ink'}`;
-    const d = isEdge
-      ? tilePath(cell, EDGE_SIZE, EDGE_SIZE)
-      : tilePath(cell, TILE_ALONG, TILE_ACROSS);
+    const isInk = look.fill === 'ink';
+    const fill = isInk ? ink : look.fill === 'hollow' ? hollow : look.fill;
+    const outline = SHAPE_STROKE[look.shape];
+    const pathByShape: Partial<Record<TCellShape, string>> = {
+      diamond: polygonPath(cell, 4, DIAMOND_RADIUS),
+      hex: polygonPath(cell, 6, HEX_RADIUS, Math.PI / 6),
+      house: housePath(cell),
+      tile: tilePath(cell, EDGE_SIZE, EDGE_SIZE),
+    };
+    const d = pathByShape[look.shape];
 
-    tiles.set(key, {
-      d: [tiles.get(key)?.d, d].filter(Boolean).join(' '),
-      fill,
-      ink,
-      isVisited: look.fill === 'ink',
-    });
+    if (d) {
+      const key = `${ink}:${fill}:${isInk}:${outline}`;
 
-    if (look.ring) {
-      rings.push({ id: cell.id, x: cell.x, y: cell.y, color: look.ring });
+      tiles.set(key, {
+        d: [tiles.get(key)?.d, d].filter(Boolean).join(' '),
+        fill,
+        ink,
+        isVisited: isInk,
+        width: outline,
+      });
     }
 
-    if (look.glyph) {
-      glyphs.push({ id: cell.id, x: cell.x, y: cell.y, text: look.glyph, ink });
+    if (look.shape === 'dot') {
+      marks.push({
+        id: cell.id,
+        node: <circle cx={cell.x} cy={cell.y} fill={fill} r={DOT_RADIUS} stroke={ink} strokeWidth={outline} />,
+      });
+    }
+
+    if (look.shape === 'disc') {
+      marks.push({
+        id: cell.id,
+        node: <circle cx={cell.x} cy={cell.y} fill={fill} r={DISC_RADIUS} stroke={ink} strokeWidth={outline} />,
+      });
+    }
+
+    if (look.shape === 'portal') {
+      marks.push({
+        id: cell.id,
+        node: (
+          <>
+            <circle cx={cell.x} cy={cell.y} fill="var(--lucid-base)" r={PORTAL_OUTER_RADIUS} stroke={fill} strokeWidth={outline} />
+            <circle cx={cell.x} cy={cell.y} fill="none" r={PORTAL_INNER_RADIUS} stroke={fill} strokeWidth={3} />
+          </>
+        ),
+      });
+    }
+
+    if (look.icon) {
+      const spec = ICON_SPEC[look.icon];
+      const isEdge = look.shape === 'tile';
+      const color = isEdge ? (isInk ? hollow : ink) : WHITE;
+
+      marks.push({
+        id: cell.id,
+        node: (
+          <g
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2.6}
+            transform={`translate(${cell.x} ${cell.y + spec.dy}) scale(${spec.size * boost})`}
+          >
+            {ICON_PATHS[look.icon]}
+          </g>
+        ),
+      });
+    }
+
+    if (look.label) {
+      const isPortal = look.shape === 'portal';
+
+      marks.push({
+        id: cell.id,
+        node: (
+          <text
+            className="font-golos"
+            dominantBaseline="central"
+            fill={isPortal ? fill : ink}
+            fontSize={(isPortal ? PORTAL_MARK_SIZE : MARK_SIZE) * boost}
+            fontWeight={600}
+            textAnchor="middle"
+            x={cell.x}
+            y={cell.y}
+          >
+            {look.label}
+          </text>
+        ),
+      });
     }
   });
 
@@ -349,38 +478,15 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                   key={key}
                   stroke={tile.ink}
                   strokeLinejoin="round"
-                  strokeWidth={TILE_STROKE}
+                  strokeWidth={tile.width}
                 />
               ))}
 
-              {rings.map(ring => (
-                <circle
-                  cx={ring.x}
-                  cy={ring.y}
-                  fill="none"
-                  key={`ring-${ring.id}`}
-                  pointerEvents="none"
-                  r={TILE_ACROSS / 2 - 3}
-                  stroke={ring.color}
-                  strokeWidth={4}
-                />
-              ))}
-
-              {glyphs.map(glyph => (
-                <text
-                  className="font-golos"
-                  dominantBaseline="central"
-                  fill={glyph.ink}
-                  fontSize={textSize}
-                  key={`glyph-${glyph.id}`}
-                  pointerEvents="none"
-                  textAnchor="middle"
-                  x={glyph.x}
-                  y={glyph.y}
-                >
-                  {glyph.text}
-                </text>
-              ))}
+              <g pointerEvents="none">
+                {marks.map((mark, index) => (
+                  <g key={`${mark.id}-${index}`}>{mark.node}</g>
+                ))}
+              </g>
 
               {finishCell && (
                 <text

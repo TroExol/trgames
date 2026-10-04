@@ -217,7 +217,14 @@ export const LongTrack: Story = {
   },
 };
 
-const CELL_TYPE_CYCLE = [ECellType.EVENT, ECellType.EMPTY, ECellType.GREEN, ECellType.RED];
+const CELL_TYPE_CYCLE = [
+  ECellType.EVENT,
+  ECellType.EMPTY,
+  ECellType.GREEN,
+  ECellType.RED,
+  ECellType.SHOP,
+  ECellType.LAW,
+];
 const PORTAL_PAIRS = [[3, 20], [9, 28]];
 
 const withCellTypes = (track: LucidShared.TTrack): LucidShared.TTrack => ({

@@ -13,28 +13,44 @@ export const ZONE_LABEL: Record<LucidShared.EDiceZone, string> = {
 
 export const SAFE_LABEL = `Сейф · ${LucidShared.SAFE_THRESHOLD}+`;
 
+export type TCellShape = 'diamond' | 'disc' | 'dot' | 'hex' | 'house' | 'portal' | 'tile';
+
+export type TCellIcon = 'FINISH' | 'GREEN' | 'LAW' | 'RED' | 'SHOP' | 'START';
+
 export interface TCellLook {
+  shape: TCellShape;
   fill: string;
-  glyph?: string;
-  ring?: string;
+  icon?: TCellIcon;
+  label?: string;
 }
 
 export const cellLook = (cell: LucidShared.TCell, isVisited: boolean): TCellLook => {
+  const inkOrHollow = isVisited ? 'ink' : 'hollow';
+
   switch (cell.type) {
     case LucidShared.ECellType.EVENT:
-      return isVisited ? { fill: 'ink' } : { fill: 'hollow', glyph: '?' };
+      return isVisited
+        ? { shape: 'diamond', fill: 'ink' }
+        : { shape: 'diamond', fill: 'hollow', label: '?' };
+    case LucidShared.ECellType.FINISH:
+      return { shape: 'tile', fill: inkOrHollow, icon: 'FINISH' };
     case LucidShared.ECellType.GREEN:
-      return { fill: GREEN_FILL };
+      return { shape: 'disc', fill: GREEN_FILL, icon: 'GREEN' };
     case LucidShared.ECellType.LAW:
-      return { fill: LAW_FILL, glyph: '§' };
-    case LucidShared.ECellType.PORTAL:
-      return { fill: 'hollow', ring: PORTAL_RINGS[(cell.portal?.pair ?? 0) % PORTAL_RINGS.length] };
+      return { shape: 'hex', fill: LAW_FILL, icon: 'LAW' };
+    case LucidShared.ECellType.PORTAL: {
+      const pair = cell.portal?.pair ?? 0;
+
+      return { shape: 'portal', fill: PORTAL_RINGS[pair % PORTAL_RINGS.length], label: String(pair + 1) };
+    }
     case LucidShared.ECellType.RED:
-      return { fill: RED_FILL };
+      return { shape: 'disc', fill: RED_FILL, icon: 'RED' };
     case LucidShared.ECellType.SHOP:
-      return { fill: SHOP_FILL, glyph: '¤' };
+      return { shape: 'house', fill: SHOP_FILL, icon: 'SHOP' };
+    case LucidShared.ECellType.START:
+      return { shape: 'tile', fill: inkOrHollow, icon: 'START' };
     default:
-      return { fill: isVisited ? 'ink' : 'hollow' };
+      return { shape: 'dot', fill: inkOrHollow };
   }
 };
 

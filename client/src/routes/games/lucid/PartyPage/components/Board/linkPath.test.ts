@@ -5,8 +5,10 @@ import {
 } from 'vitest';
 
 import {
+  housePath,
   linkMiddle,
   linkPath,
+  polygonPath,
   tilePath,
 } from './linkPath';
 
@@ -63,5 +65,19 @@ describe('плитка', () => {
 
     expect(side(0, 1)).toBeCloseTo(36, 1);
     expect(side(1, 2)).toBeCloseTo(28, 1);
+  });
+});
+
+describe('формы клеток', () => {
+  it('ромб — четыре вершины на радиусе', () => {
+    expect(polygonPath({ x: 10, y: 20 }, 4, 25)).toBe('M35 20L10 45L-15 20L10 -5Z');
+  });
+
+  it('шестиугольник — шесть вершин', () => {
+    expect(polygonPath({ x: 0, y: 0 }, 6, 24, Math.PI / 6).split('L')).toHaveLength(6);
+  });
+
+  it('домик стоит крышей вверх', () => {
+    expect(housePath({ x: 100, y: 50 })).toBe('M80 46L100 26L120 46V68H80Z');
   });
 });
