@@ -42,7 +42,7 @@ export const runPassives = (G: LucidShared.TG, playerId: LucidShared.TPlayerId):
       && player.position !== G.track.finishId
     ) {
       traveled = true;
-      current = log(stepBy(marked, playerId, 4), passiveLine(item.card, current, playerId, '+4 клетки'));
+      current = stepBy(log(marked, passiveLine(item.card, current, playerId, '+4 клетки')), playerId, 4);
     }
   }
 

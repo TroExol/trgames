@@ -101,6 +101,27 @@ describe('пассивные карты на клетке', () => {
   });
 });
 
+describe('порядок строк ленты при сдвиге на портал', () => {
+  it('«Попутка» на портал: строка карты стоит перед «проходит портал»', () => {
+    const state = stateWith(empties(12), [EShopCard.TRAVELATOR]);
+    const cells = state.G.track.cells.map(cell => {
+      if (cell.id === 5) {
+        return { ...cell, type: ECellType.PORTAL, portal: { pair: 0, to: 10 } };
+      }
+
+      return cell.id === 10 ? { ...cell, type: ECellType.PORTAL, portal: { pair: 0, to: 5 } } : cell;
+    });
+    const next = land({ ...state, G: { ...state.G, track: { ...state.G.track, cells } } });
+    const lines = next.G.log;
+
+    expect(next.G.players.a.position).toBe(10);
+    expect(lines.findIndex(line => line.includes('Попутка'))).toBeGreaterThanOrEqual(0);
+    expect(lines.findIndex(line => line.includes('Попутка'))).toBeLessThan(
+      lines.findIndex(line => line.includes('проходит портал')),
+    );
+  });
+});
+
 describe('«Утяжелённый кубик»', () => {
   it('один кубик: показывает выпавшее, идёт на число + 1', () => {
     const state = stateWith(empties(30), [EShopCard.MAGIC_DIE], [], 0);

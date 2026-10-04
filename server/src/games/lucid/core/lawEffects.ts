@@ -58,7 +58,7 @@ const advance = (law: LucidShared.ELaw, steps: number) => ({ G, playerId }: TLaw
     return { G };
   }
 
-  return { G: log(stepBy(G, playerId, steps), lawLine(law, playerId, G, `+${steps} клеток`)) };
+  return { G: stepBy(log(G, lawLine(law, playerId, G, `+${steps} клеток`)), playerId, steps) };
 };
 
 const playEvent = (law: LucidShared.ELaw, kind: 'bad' | 'good') => ({ G, playerId }: TLawContext) => {

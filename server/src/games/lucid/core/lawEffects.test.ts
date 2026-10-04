@@ -127,6 +127,25 @@ describe('законы цвета', () => {
     expect(next.G.log.filter(line => line.includes('Урожай'))).toHaveLength(1);
   });
 
+  it('«Тропа» на портал: строка закона стоит перед «проходит портал»', () => {
+    const state = stateWith([ELaw.GREEN_ADVANCE], [ECellType.GREEN, ...empties(14)], { a: 1, b: 0 });
+    const cells = state.G.track.cells.map(cell => {
+      if (cell.id === 8) {
+        return { ...cell, type: ECellType.PORTAL, portal: { pair: 0, to: 12 } };
+      }
+
+      return cell.id === 12 ? { ...cell, type: ECellType.PORTAL, portal: { pair: 0, to: 8 } } : cell;
+    });
+    const next = land({ ...state, G: { ...state.G, track: { ...state.G.track, cells } } });
+    const lines = next.G.log;
+
+    expect(next.G.players.a.position).toBe(12);
+    expect(lines.findIndex(line => line.includes('Тропа'))).toBeGreaterThanOrEqual(0);
+    expect(lines.findIndex(line => line.includes('Тропа'))).toBeLessThan(
+      lines.findIndex(line => line.includes('проходит портал')),
+    );
+  });
+
   it('«Второе дыхание»: снова ходит тот же игрок', () => {
     const next = land(stateWith([ELaw.GREEN_AGAIN], [ECellType.GREEN], { a: 1, b: 0 }));
 
