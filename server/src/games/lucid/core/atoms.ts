@@ -1,7 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
 import { resolveTarget } from '@/games/lucid/core/targets';
-import { moveBy } from '@/games/lucid/core/movement';
+import { stepBy } from '@/games/lucid/core/cells';
 
 interface TAtomParams {
   actorId: LucidShared.TPlayerId;
@@ -28,11 +28,10 @@ const updatePlayers = (
 });
 
 export const ATOMS: Record<LucidShared.EAtomKind, TAtomHandler> = {
-  [LucidShared.EAtomKind.MOVE]: (G, { targets, value }) => updatePlayers(G, targets, player => (
-    isAtFinish(G, player)
-      ? player
-      : { ...player, position: moveBy(G.track, player.position, value) }
-  )),
+  [LucidShared.EAtomKind.MOVE]: (G, { targets, value }) => targets.reduce(
+    (state, id) => (isAtFinish(state, state.players[id]) ? state : stepBy(state, id, value)),
+    G,
+  ),
 
   // Долг: отдаёшь сколько есть, отрицательного запаса не бывает
   [LucidShared.EAtomKind.RESOURCE]: (G, { targets, value }) => updatePlayers(G, targets, player => ({

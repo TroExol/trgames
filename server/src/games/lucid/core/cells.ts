@@ -1,5 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
+import { moveBy } from '@/games/lucid/core/movement';
+
 // Эффект клетки, на которой закончилось движение своим ходом. Событие сюда
 // не входит — его разыгрывает редьюсер фазой CHOICE
 export const landOnCell = (G: LucidShared.TG, playerId: LucidShared.TPlayerId): LucidShared.TG => {
@@ -24,4 +26,14 @@ export const landOnCell = (G: LucidShared.TG, playerId: LucidShared.TPlayerId): 
     default:
       return G;
   }
+};
+
+export const stepBy = (G: LucidShared.TG, playerId: LucidShared.TPlayerId, steps: number): LucidShared.TG => {
+  const player = G.players[playerId];
+  const moved = {
+    ...G,
+    players: { ...G.players, [playerId]: { ...player, position: moveBy(G.track, player.position, steps) } },
+  };
+
+  return landOnCell(moved, playerId);
 };

@@ -37,8 +37,6 @@ const applyPause = (state: LucidShared.TState, run: TLawRun): LucidShared.TState
   switch (run.pause?.kind) {
     case 'EVENT':
       return withPhase({ ...next, G: withTurn(next.G, { eventCellId: run.pause.cellId }) }, LucidShared.EPhase.CHOICE);
-    case 'LAND':
-      return land(next);
     case 'LAW_EVENT':
       return withPhase({ ...next, G: withTurn(next.G, { lawEvent: run.pause.event }) }, LucidShared.EPhase.CHOICE);
     default:

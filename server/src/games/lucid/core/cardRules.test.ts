@@ -39,9 +39,10 @@ const cardsState = (
   hand: LucidShared.EShopCard[],
   resource = 10,
   events: Record<number, LucidShared.TEvent> = {},
+  customTrack: LucidShared.TTrack = track,
 ): LucidShared.TState => {
   const G = makeG({
-    track,
+    track: customTrack,
     events,
     players: Object.entries(positions).map(([id, position]) => ({ id, nickname: id, position, resource })),
   });
@@ -55,6 +56,18 @@ const cardsState = (
     stateId: 0,
   };
 };
+
+const trackWith = (
+  patch: Record<number, Partial<LucidShared.TCell>>,
+): LucidShared.TTrack => ({
+  ...track,
+  cells: track.cells.map(cell => ({ ...cell, ...patch[cell.id] })),
+});
+
+const portals = (a: number, b: number): Record<number, Partial<LucidShared.TCell>> => ({
+  [a]: { type: ECellType.PORTAL, portal: { pair: 0, to: b } },
+  [b]: { type: ECellType.PORTAL, portal: { pair: 0, to: a } },
+});
 
 describe('canPlay', () => {
   const check = (positions: Record<string, number>, card: LucidShared.EShopCard): boolean => {
@@ -137,6 +150,38 @@ describe('активные карты', () => {
     const next = playCard(cardsState({ a: 2, b: 9 }, [EShopCard.HOOK]), 0)!;
 
     expect(next.G.players.a.position).toBe(9);
+  });
+
+  it.each([ECellType.EVENT, ECellType.SHOP, ECellType.LAW])('«Рывок» на клетку %s: клетка не срабатывает', type => {
+    const state = cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET], 10, { 7: badEvent(7) }, trackWith({ 7: { type } }));
+    const next = playCard(state, 0)!;
+
+    expect(next.G.players.a.position).toBe(7);
+    expect([EPhase.CHOICE, EPhase.SHOP, EPhase.LAW]).not.toContain(next.ctx.phase);
+    expect(next.ctx.currentPlayer).toBe('b');
+  });
+
+  it('«Рывок» на портал переносит на парную клетку', () => {
+    const next = playCard(cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET], 10, {}, trackWith(portals(7, 15))), 0)!;
+
+    expect(next.G.players.a.position).toBe(15);
+    expect(next.G.log).toContain('a проходит портал');
+  });
+
+  it('«Обвал» отбрасывает жертву на портал: жертва на парной клетке', () => {
+    const state = cardsState({ a: 2, b: 9 }, [EShopCard.GRENADE], 10, {}, trackWith(portals(3, 15)));
+    const next = playCard(state, 0)!;
+
+    expect(next.G.players.b.position).toBe(15);
+    expect(next.G.visited).toContain(15);
+  });
+
+  it('«Кошка» на клетку игрока, который стоит на портале, — переноса нет', () => {
+    const state = cardsState({ a: 2, b: 9 }, [EShopCard.HOOK], 10, {}, trackWith(portals(9, 15)));
+    const next = playCard(state, 0)!;
+
+    expect(next.G.players.a.position).toBe(9);
+    expect(next.G.log.some(line => line.includes('проходит портал'))).toBe(false);
   });
 
   it('«Кошка» не играется при расстоянии 13', () => {

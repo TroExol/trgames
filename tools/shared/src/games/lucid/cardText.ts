@@ -9,13 +9,13 @@ export interface TCardText {
 
 export const LAW_TEXT: Record<ELaw, TCardText> = {
   [ELaw.DOUBLE_AGAIN]: { name: 'Дубль', rule: () => 'Выпали два одинаковых кубика — ходи ещё раз' },
-  [ELaw.GREEN_ADVANCE]: { name: 'Тропа', rule: () => 'Остановился на зелёной — пройди 7 клеток вперёд, клетка сработает' },
+  [ELaw.GREEN_ADVANCE]: { name: 'Тропа', rule: () => 'Остановился на зелёной — пройди 7 клеток вперёд' },
   [ELaw.GREEN_AGAIN]: { name: 'Второе дыхание', rule: () => 'Остановился на зелёной — ходи ещё раз' },
   [ELaw.GREEN_GOOD]: { name: 'Добрый знак', rule: () => 'Остановился на зелёной — разыграй случайное событие без беды' },
   [ELaw.GREEN_RESOURCE]: { name: 'Урожай', rule: resource => `Остановился на зелёной: ${resource} +5` },
   [ELaw.LAST_END_ADVANCE]: {
     name: 'Попутный ветер',
-    rule: () => 'Отстающий в конце своего хода проходит 5 клеток вперёд, клетка сработает',
+    rule: () => 'Отстающий в конце своего хода проходит 5 клеток вперёд',
   },
   [ELaw.LAST_END_DIE]: {
     name: 'Лотерея',
@@ -73,7 +73,7 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
     name: 'Кошка',
     kind: 'active',
     rule: resource =>
-      `Отдай ${resource} 3 — встань на клетку ближайшего впереди, если до него не больше 10 клеток; клетка сработает`,
+      `Отдай ${resource} 3 — встань на клетку ближайшего впереди, если до него не больше 10 клеток`,
   },
   [EShopCard.MAGIC_DIE]: { name: 'Утяжелённый кубик', kind: 'passive', rule: () => '+1 к броску на движение' },
   [EShopCard.MONEY_MAGNET]: {
@@ -84,12 +84,12 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   [EShopCard.ROCKET]: {
     name: 'Рывок',
     kind: 'active',
-    rule: resource => `Отдай ${resource} 3 — пройди 5 клеток вперёд, клетка сработает`,
+    rule: resource => `Отдай ${resource} 3 — пройди 5 клеток вперёд`,
   },
   [EShopCard.TRAVELATOR]: {
     name: 'Попутка',
     kind: 'passive',
-    rule: () => 'Остановился на пустой — пройди 4 клетки вперёд, клетка сработает',
+    rule: () => 'Остановился на пустой — пройди 4 клетки вперёд',
   },
   [EShopCard.VOODOO]: {
     name: 'Порча',

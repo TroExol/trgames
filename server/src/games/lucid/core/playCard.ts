@@ -1,11 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
-import {
-  land,
-  proceed,
-  withTurn,
-} from '@/games/lucid/core/turn';
-import { moveBy } from '@/games/lucid/core/movement';
+import { proceed, withTurn } from '@/games/lucid/core/turn';
+import { stepBy } from '@/games/lucid/core/cells';
 
 const { EShopCard } = LucidShared;
 
@@ -48,22 +44,19 @@ export const playCard = (
   const name = LucidShared.SHOP_TEXT[item.card].name;
   const say = (what: string): string => `${actor.nickname} играет «${name}»: ${what}`;
 
+  const walk = (id: LucidShared.TPlayerId, steps: number, what: string): LucidShared.TG =>
+    stepBy({ ...charged, log: [...charged.log, say(what)] }, id, steps);
+
   switch (item.card) {
     case EShopCard.GRENADE:
       return proceed({
         ...state,
-        G: {
-          ...moveTo(charged, victim!.id, moveBy(G.track, victim!.position, -GRENADE_STEPS)),
-          log: [...G.log, say(`${victim!.nickname} отступает на ${GRENADE_STEPS} клеток`)],
-        },
+        G: walk(victim!.id, -GRENADE_STEPS, `${victim!.nickname} отступает на ${GRENADE_STEPS} клеток`),
       });
     case EShopCard.HAND_OF_FATE:
       return proceed({
         ...state,
-        G: {
-          ...moveTo(charged, victim!.id, moveBy(G.track, victim!.position, -PUSH_STEPS)),
-          log: [...G.log, say(`${victim!.nickname} отступает на ${PUSH_STEPS} клетки`)],
-        },
+        G: walk(victim!.id, -PUSH_STEPS, `${victim!.nickname} отступает на ${PUSH_STEPS} клетки`),
       });
     case EShopCard.HARPOON:
       return proceed({
@@ -71,7 +64,7 @@ export const playCard = (
         G: { ...moveTo(charged, victim!.id, actor.position), log: [...G.log, say(`${victim!.nickname} встаёт рядом`)] },
       });
     case EShopCard.HOOK:
-      return land({
+      return proceed({
         ...state,
         G: {
           ...moveTo(charged, actorId, victim!.position),
@@ -79,12 +72,9 @@ export const playCard = (
         },
       });
     case EShopCard.ROCKET:
-      return land({
+      return proceed({
         ...state,
-        G: {
-          ...moveTo(charged, actorId, moveBy(G.track, actor.position, ROCKET_STEPS)),
-          log: [...G.log, say(`идёт на ${ROCKET_STEPS} клеток вперёд`)],
-        },
+        G: walk(actorId, ROCKET_STEPS, `идёт на ${ROCKET_STEPS} клеток вперёд`),
       });
     default:
       return proceed({

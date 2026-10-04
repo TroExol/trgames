@@ -76,11 +76,19 @@ describe('пассивные карты на клетке', () => {
     expect(next.G.players.a.resource).toBe(18);
   });
 
-  it('«Попутка»: 4 клетки вперёд, на новой пустой вторая «Попутка» срабатывает, первая нет', () => {
+  it('«Попутка»: 4 клетки вперёд, на новой пустой вторая «Попутка» не срабатывает', () => {
     const next = land(stateWith(empties(12), [EShopCard.TRAVELATOR, EShopCard.TRAVELATOR]));
 
-    expect(next.G.players.a.position).toBe(9);
-    expect(next.G.log.filter(line => line.includes('Попутка'))).toHaveLength(2);
+    expect(next.G.players.a.position).toBe(5);
+    expect(next.G.log.filter(line => line.includes('Попутка'))).toHaveLength(1);
+  });
+
+  it('«Попутка» на пустую: «Подкова» срабатывает один раз на клетке остановки', () => {
+    const next = land(stateWith(empties(12), [EShopCard.TRAVELATOR, EShopCard.CLOVER]));
+
+    expect(next.G.players.a.position).toBe(5);
+    expect(next.G.players.a.resource).toBe(14);
+    expect(next.G.log.filter(line => line.includes('Подкова'))).toHaveLength(1);
   });
 
   it('закон на красной срабатывает раньше «Громоотвода»', () => {

@@ -118,6 +118,15 @@ describe('законы цвета', () => {
     expect(next.ctx.currentPlayer).toBe('b');
   });
 
+  it('«Тропа» не активирует клетку, на которую привела: второго сдвига нет', () => {
+    const types = [ECellType.GREEN, ...empties(6), ECellType.GREEN, ...empties(8)];
+    const next = land(stateWith([ELaw.GREEN_ADVANCE, ELaw.GREEN_RESOURCE], types, { a: 1, b: 0 }));
+
+    expect(next.G.players.a.position).toBe(8);
+    expect(next.G.log.filter(line => line.includes('Тропа'))).toHaveLength(1);
+    expect(next.G.log.filter(line => line.includes('Урожай'))).toHaveLength(1);
+  });
+
   it('«Второе дыхание»: снова ходит тот же игрок', () => {
     const next = land(stateWith([ELaw.GREEN_AGAIN], [ECellType.GREEN], { a: 1, b: 0 }));
 

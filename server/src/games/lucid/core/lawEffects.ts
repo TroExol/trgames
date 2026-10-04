@@ -2,7 +2,7 @@ import { LucidShared } from '@trgames/shared';
 
 import { resolveTarget } from '@/games/lucid/core/targets';
 import { rollDie } from '@/games/lucid/core/random';
-import { moveBy } from '@/games/lucid/core/movement';
+import { stepBy } from '@/games/lucid/core/cells';
 import { giveCard } from '@/games/lucid/core/cards';
 import { drawEvent } from '@/games/lucid/core/calamity';
 
@@ -10,7 +10,6 @@ export type TLawTiming = 'END' | 'LANDED' | 'ROLLED' | 'START';
 
 export type TLawPause =
   | { kind: 'EVENT'; cellId: number }
-  | { kind: 'LAND' }
   | { kind: 'LAW_EVENT'; event: LucidShared.TEvent };
 
 interface TLawContext {
@@ -59,12 +58,7 @@ const advance = (law: LucidShared.ELaw, steps: number) => ({ G, playerId }: TLaw
     return { G };
   }
 
-  const moved = {
-    ...G,
-    players: { ...G.players, [playerId]: { ...player, position: moveBy(G.track, player.position, steps) } },
-  };
-
-  return { G: log(moved, lawLine(law, playerId, G, `+${steps} клеток`)), pause: { kind: 'LAND' } as const };
+  return { G: log(stepBy(G, playerId, steps), lawLine(law, playerId, G, `+${steps} клеток`)) };
 };
 
 const playEvent = (law: LucidShared.ELaw, kind: 'bad' | 'good') => ({ G, playerId }: TLawContext) => {
