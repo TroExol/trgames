@@ -17,7 +17,7 @@ const passiveRules = (cell: LucidShared.TCell, G: TCellHintG, you: LucidShared.T
     .map(card => {
       const rule = LucidShared.SHOP_TEXT[card].rule(G.theme.resourceName).replace(LANDED_PREFIX, '');
 
-      return `твоя «${LucidShared.cardName(G, card)}» — ${rule}`;
+      return `твоя карта «${LucidShared.cardName(G, card)}» — ${rule}`;
     });
 };
 

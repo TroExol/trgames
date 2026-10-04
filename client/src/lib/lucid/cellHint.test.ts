@@ -66,26 +66,26 @@ describe('cellHint', () => {
 
   it('карта руки на красной', () => {
     expect(cellHint(cellOf(ECellType.RED), makeG([null, null, null], hand(EShopCard.MONEY_MAGNET)), 'me')).toBe(
-      'Красная: твоя «Громоотвод» — заряды +5',
+      'Красная: твоя карта «Громоотвод» — заряды +5',
     );
   });
 
   it('карта руки на пустой', () => {
     expect(cellHint(cellOf(ECellType.EMPTY), makeG([], hand(EShopCard.CLOVER)), 'me')).toBe(
-      'Пустая: твоя «Подкова» — заряды +4',
+      'Пустая: твоя карта «Подкова» — заряды +4',
     );
   });
 
   it('закон и карта', () => {
     expect(cellHint(cellOf(ECellType.RED), makeG([null, ELaw.RED_BAD, null], hand(EShopCard.MONEY_MAGNET)), 'me')).toBe(
-      'Красная: «Дурная примета» — разыграй случайную беду; твоя «Громоотвод» — заряды +5',
+      'Красная: «Дурная примета» — разыграй случайную беду; твоя карта «Громоотвод» — заряды +5',
     );
   });
 
   it('две копии — одна строка', () => {
     expect(
       cellHint(cellOf(ECellType.RED), makeG([], hand(EShopCard.MONEY_MAGNET, EShopCard.MONEY_MAGNET)), 'me'),
-    ).toBe('Красная: твоя «Громоотвод» — заряды +5');
+    ).toBe('Красная: твоя карта «Громоотвод» — заряды +5');
   });
 
   it('чужая рука и карты других клеток не попадают', () => {
