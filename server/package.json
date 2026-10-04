@@ -7,6 +7,7 @@
     "start:dev": "nodemon -r tsconfig-paths/register src/index.ts",
     "start": "ts-node -r tsconfig-paths/register src/index.ts",
     "lucid:balance": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runBalanceReport.ts",
+    "lucid:sim": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runSimulation.ts",
     "lucid:usage": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runUsageReport.ts",
     "typecheck": "tsc --noEmit",
     "eslint": "eslint .",

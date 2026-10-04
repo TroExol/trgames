@@ -24,6 +24,7 @@ yarn workspace @trgames/server start:dev    # Nodemon watch mode (порт 4001)
 yarn workspace @trgames/server test         # Vitest (все тесты)
 yarn workspace @trgames/server test --run src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест (флаг --run обязателен)
 yarn workspace @trgames/server lint         # typecheck + eslint + тесты
+yarn workspace @trgames/server lucid:sim base 100 --generated  # симуляция партий lucid ботами: режимы base/skill/ablate/cards, число партий, --generated — события модели из lucid.db
 ```
 
 Флаг `--run` для запуска одного файла обязателен: скрипт `test` заканчивается флагом `--silent`, и без `--run` путь приклеивается к нему как значение — vitest падает с `Unexpected value "--silent=<путь>"`, не начав работу.
