@@ -18,7 +18,6 @@ interface TProps {
   resourceName: string;
   // Оптимистичных ходов нет: после отправки кнопки молчат до нового stateId
   isSent: boolean;
-  // Другие игроки: из них ходящий выбирает цель варианта с CHOSEN
   targets: { id: string; nickname: string }[];
   onChoose: (optionIndex: number, targetId?: string) => void;
   onCollapse: () => void;
