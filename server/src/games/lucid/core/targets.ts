@@ -1,15 +1,17 @@
 import { LucidShared } from '@trgames/shared';
 
-// Крайний игрок: ближайший к финишу или самый дальний от него.
+// Крайний игрок по глубине пути: ближайший к финишу или самый дальний от него.
 // При равенстве нескольких игроков крайним не считается никто
 const extremePlayer = (
   G: LucidShared.TG,
   pick: 'max' | 'min',
 ): LucidShared.TPlayerId[] => {
+  const depths = LucidShared.trackDepths(G.track);
   const players = G.order.map(id => G.players[id]);
-  const positions = players.map(player => player.position);
-  const edge = pick === 'max' ? Math.max(...positions) : Math.min(...positions);
-  const matched = players.filter(player => player.position === edge);
+  const depthOf = (player: LucidShared.TPlayer): number => depths[player.position] ?? 0;
+  const values = players.map(depthOf);
+  const edge = pick === 'max' ? Math.max(...values) : Math.min(...values);
+  const matched = players.filter(player => depthOf(player) === edge);
 
   return matched.length === 1 ? [matched[0].id] : [];
 };

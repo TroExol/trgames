@@ -32,6 +32,16 @@ describe('resolveTarget', () => {
     expect(resolveTarget(G, 'c', LucidShared.ETarget.FIRST)).toEqual([]);
   });
 
+  it('игроки на разных ветках одной глубины — ничья, номер клетки не важен', () => {
+    const G = threePlayers();
+    G.players.a.position = 3;
+    G.players.c.position = 5;
+    G.players.b.position = 1;
+
+    expect(resolveTarget(G, 'b', LucidShared.ETarget.FIRST)).toEqual([]);
+    expect(resolveTarget(G, 'b', LucidShared.ETarget.LAST)).toEqual(['b']);
+  });
+
   it('себя и всех разрешает верно', () => {
     const G = threePlayers();
 
