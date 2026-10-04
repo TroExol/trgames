@@ -25,6 +25,7 @@ export const COST_RANGE = { min: 2, max: 5 };
 // Края мира: участки пути со своими названиями и цветами
 export const REGION_RANGE = { min: 3, max: 5 } as const;
 export const REGION_NAME_MAX = 24;
+export const RESOURCE_NAME_MAX = 20;
 // Шесть шестнадцатеричных цифр: короткую запись не принимаем, чтобы на клиенте
 // был ровно один формат
 const HEX_COLOR = /^#[\da-f]{6}$/i;
@@ -76,7 +77,7 @@ export const cardNameSchema = z.strictObject({
 export const worldSchema = z.strictObject({
   theme: z.strictObject({
     name: z.string().min(1).max(80),
-    resourceName: z.string().min(1).max(40),
+    resourceName: z.string().regex(/^[^\s]+$/).max(RESOURCE_NAME_MAX),
     palette: z.array(z.string().regex(HEX_COLOR)).min(3).max(6),
     // Необязательное: модель может его не прислать, отсутствие обрабатывает клиент
     mood: z.enum(LucidShared.EThemeMood).optional(),

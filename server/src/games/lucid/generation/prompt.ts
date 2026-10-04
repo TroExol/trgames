@@ -9,6 +9,7 @@ import {
   COST_RANGE,
   REGION_NAME_MAX,
   REGION_RANGE,
+  RESOURCE_NAME_MAX,
   THRESHOLD_RANGE,
 } from '@/games/lucid/generation/schema';
 
@@ -111,7 +112,9 @@ export const buildWorldPrompt = (theme: string, nicknames: string[]): string => 
 "cards":[{"id":"card1","name":"...","flavor":"..."}, ...]}
 
 name — название мира в духе темы, до 80 символов.
-resourceName — как в этом мире называются монеты, до 40 символов.
+resourceName — одно слово: как в этом мире называются монеты, во множественном
+числе, например «гроши», «искры», «кредиты». Без пробелов, до ${RESOURCE_NAME_MAX}
+знаков; дефис можно («кварц-чипы»).
 palette — от 3 до 6 цветов в формате #rrggbb, сочетающихся между собой.
 mood — DARK, если мир мрачный, тревожный или опасный, LIGHT, если светлый,
 тёплый или задорный. Яркость палитры тут ни при чём, важен тон мира.

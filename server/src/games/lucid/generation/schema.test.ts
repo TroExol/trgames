@@ -227,6 +227,28 @@ describe('eventBatchSchema', () => {
   });
 });
 
+describe('worldSchema: название ресурса', () => {
+  const withResource = (resourceName: string) => {
+    const world = validWorld();
+    world.theme.resourceName = resourceName;
+    return worldSchema.safeParse(world).success;
+  };
+
+  it('принимает одно слово и слово с дефисом', () => {
+    expect(withResource('гроши')).toBe(true);
+    expect(withResource('кварц-чипы')).toBe(true);
+  });
+
+  it('отклоняет фразу с пробелом', () => {
+    expect(withResource('звёздные гроши')).toBe(false);
+  });
+
+  it('отклоняет слово длиннее 20 знаков', () => {
+    expect(withResource('я'.repeat(21))).toBe(false);
+    expect(withResource('я'.repeat(20))).toBe(true);
+  });
+});
+
 describe('worldSchema: названия карт', () => {
   const card = { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит, дорога короче' };
 

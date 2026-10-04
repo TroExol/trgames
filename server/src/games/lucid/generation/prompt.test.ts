@@ -28,6 +28,7 @@ describe('buildWorldPrompt', () => {
 
     expect(prompt).toContain('"roles":[{"nickname"');
     expect(prompt).toContain('Имена игроков: Аня, Боря.');
+    expect(prompt).toContain('одно слово');
   });
 });
 
