@@ -1,10 +1,6 @@
 import type { ReactNode } from 'react';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
@@ -20,7 +16,6 @@ import { pluralizeSteps } from '@/lib/lucid/pluralize';
 import { ZONE_LABEL } from '@/lib/lucid/cellLook';
 import { Button } from '@/components/ui/Button';
 
-import { Outcome } from './Outcome';
 import { TruncatedText } from './components/TruncatedText';
 import { Die } from './components/Die';
 
@@ -44,40 +39,11 @@ export const Hud = observer(function Hud({ children }: THudProps) {
   // Оптимистичных ходов нет: после нажатия кнопка молчит до прихода нового
   // stateId, а не до применения хода у себя
   const [sentStateId, setSentStateId] = useState<number>();
+  const [pendingBuy, setPendingBuy] = useState<{ index: number; stateId: number }>();
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
-  const [pendingBuy, setPendingBuy] = useState<{ index: number; stateId: number }>();
   const [collapsedCell, setCollapsedCell] = useState<number>();
-  // Итог только что разыгранного варианта — своя клетка и запись истории,
-  // не флаг: пока он висит, следующее событие всё равно открывается само
-  const [outcome, setOutcome] = useState<{ cellId: number; entry: LucidShared.THistoryEntry }>();
-  // Клетка события с прошлого рендера: пропадает или меняется — значит по
-  // ней только что разыграли вариант. Ref, а не state: хук должен звать
-  // хуки безусловно, а state ниже вычисляется уже после возможного раннего return
-  const prevEventCellRef = useRef<number>();
   const { state, view } = partyStore;
-  const currentEventCellId = state && state.ctx.phase === LucidShared.EPhase.CHOICE && !state.G.turn.lawEvent
-    ? state.G.events[state.G.turn.eventCellId ?? state.G.players[state.ctx.currentPlayer].position]?.cellId
-    : undefined;
-
-  useEffect(() => {
-    const prevCellId = prevEventCellRef.current;
-
-    prevEventCellRef.current = currentEventCellId;
-
-    if (!state || prevCellId === undefined || prevCellId === currentEventCellId) {
-      return;
-    }
-
-    const entry = state.G.cellHistory[prevCellId]?.at(-1);
-
-    if (entry) {
-      setOutcome({ cellId: prevCellId, entry });
-    }
-    // Реагируем только на смену состояния партии — currentEventCellId и cellHistory
-    // берутся из его же снимка, отдельно отслеживать их незачем
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state?.stateId]);
 
   if (!state || !view) {
     return null;
@@ -480,10 +446,6 @@ export const Hud = observer(function Hud({ children }: THudProps) {
             onExpand={() => setCollapsedCell(undefined)}
             title={event.title}
           />
-        )}
-
-        {outcome && (
-          <Outcome lines={outcome.entry.lines} onClose={() => setOutcome(undefined)} />
         )}
 
         <Ribbon />
