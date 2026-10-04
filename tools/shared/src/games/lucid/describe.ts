@@ -115,7 +115,6 @@ const hintItemOf = (atom: TAtom): THintItem => {
   };
 };
 
-// Направление ветки без чисел: атомы ветки и otherwise, без повторов
 export const buildEffectHint = (effect?: TEffect): THintItem[] => {
   const items = [...(effect?.atoms ?? []), ...(effect?.otherwise ?? [])].map(hintItemOf);
 

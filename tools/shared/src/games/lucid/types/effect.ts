@@ -57,8 +57,6 @@ export interface TOption {
   failure?: TEffect;
 }
 
-// Пункт подсказки направления: что затронет ветка, без числа.
-// sign есть только у MOVE и RESOURCE
 export interface THintItem {
   kind: EAtomKind;
   target: ETarget;
