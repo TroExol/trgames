@@ -108,6 +108,10 @@ export class Party {
       throw new Error('empty-nickname');
     }
 
+    if (trimmed.length > LucidShared.NICKNAME_MAX_LENGTH) {
+      throw new Error('nickname-too-long');
+    }
+
     // Ник опознаёт игрока для людей, а не для системы: повторы запрещены,
     // иначе игроки не смогут однозначно говорить друг о друге
     const taken = [...this.members.values()]

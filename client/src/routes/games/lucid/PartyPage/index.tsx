@@ -198,6 +198,7 @@ export const Component = observer(function LucidPartyPage() {
         <form className="flex flex-col gap-3" onSubmit={handleSubmitNickname}>
           <Input
             aria-labelledby="nickname-heading"
+            maxLength={LucidShared.NICKNAME_MAX_LENGTH}
             name="nickname"
             onChange={event => setNicknameDraft(event.target.value)}
             placeholder="Ник"

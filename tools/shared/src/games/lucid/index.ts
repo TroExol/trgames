@@ -1,6 +1,7 @@
 export * from './cardRules';
 export * from './cardText';
 export * from './describe';
+export * from './nickname';
 export * from './safe';
 export * from './track';
 export * from './types/cards';

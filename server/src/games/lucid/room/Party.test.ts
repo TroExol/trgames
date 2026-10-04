@@ -25,6 +25,15 @@ describe('состав партии', () => {
     expect(party.view('a').members.map(member => member.nickname)).toEqual(['Аня', 'Боря']);
   });
 
+  it('ник длиннее потолка отклоняется, ровно потолок проходит', () => {
+    const party = makeParty();
+
+    expect(() => party.join({ playerId: 'a', nickname: 'я'.repeat(LucidShared.NICKNAME_MAX_LENGTH + 1) }))
+      .toThrow('nickname-too-long');
+    expect(() => party.join({ playerId: 'a', nickname: 'я'.repeat(LucidShared.NICKNAME_MAX_LENGTH) }))
+      .not.toThrow();
+  });
+
   it('ник, занятый другим игроком, отклоняется', () => {
     const party = makeParty();
     party.join({ playerId: 'a', nickname: 'Аня' });

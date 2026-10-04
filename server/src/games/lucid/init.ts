@@ -41,6 +41,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   'cannot-start': t('lucid.errors.cannotStart', 'ru'),
   'empty-nickname': t('lucid.errors.emptyNickname', 'ru'),
   'empty-theme': t('lucid.errors.emptyTheme', 'ru'),
+  'nickname-too-long': t('lucid.errors.nicknameTooLong', 'ru'),
   'nickname-taken': t('lucid.errors.nicknameTaken', 'ru'),
   'not-a-member': t('lucid.errors.notAMember', 'ru'),
   'party-already-started': t('lucid.errors.partyAlreadyStarted', 'ru'),

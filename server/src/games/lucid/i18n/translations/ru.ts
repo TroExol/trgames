@@ -5,6 +5,7 @@ export const ru = {
       emptyNickname: 'Нужно назваться',
       emptyTheme: 'Тема не может быть пустой',
       notAMember: 'Вас нет в этой партии',
+      nicknameTooLong: 'Ник длиннее 20 знаков',
       nicknameTaken: 'Такой ник в партии уже занят',
       partyAlreadyStarted: 'Партия уже идёт',
       partyIsFull: 'В партии уже шестеро',
