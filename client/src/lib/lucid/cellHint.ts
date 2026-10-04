@@ -1,6 +1,6 @@
 import { LucidShared } from '@trgames/shared';
 
-const LANDED_PREFIX = /^Остановился на (зелёной|красной)(:| —) /;
+const LANDED_PREFIX = /^Остановился на (зелёной|красной|пустой)(:| —) /;
 
 type TCellHintG = Pick<LucidShared.TStateForPlayer['G'], 'cardNames' | 'cards' | 'theme'>;
 
@@ -9,8 +9,21 @@ const COLOR_PREFIX: Partial<Record<LucidShared.ECellType, { law: string; title: 
   [LucidShared.ECellType.RED]: { law: 'RED_', title: 'Красная' },
 };
 
-export const cellHint = (cell: LucidShared.TCell, G: TCellHintG): string => {
+const passiveRules = (cell: LucidShared.TCell, G: TCellHintG, you: LucidShared.TPlayerId): string[] => {
+  const cards = new Set((G.cards.hands[you] ?? []).map(item => item.card));
+
+  return Object.values(LucidShared.EShopCard)
+    .filter(card => cards.has(card) && LucidShared.SHOP_TEXT[card].landsOn === cell.type)
+    .map(card => {
+      const rule = LucidShared.SHOP_TEXT[card].rule(G.theme.resourceName).replace(LANDED_PREFIX, '');
+
+      return `твоя «${LucidShared.cardName(G, card)}» — ${rule}`;
+    });
+};
+
+export const cellHint = (cell: LucidShared.TCell, G: TCellHintG, you: LucidShared.TPlayerId): string => {
   const color = COLOR_PREFIX[cell.type];
+  const passives = passiveRules(cell, G, you);
 
   if (color) {
     const rules = G.cards.laws
@@ -21,7 +34,9 @@ export const cellHint = (cell: LucidShared.TCell, G: TCellHintG): string => {
         return `«${LucidShared.cardName(G, law)}» — ${rule}`;
       });
 
-    return `${color.title}: ${rules.length > 0 ? rules.join('; ') : 'сейчас ничего не даёт'}`;
+    const parts = [...rules, ...passives];
+
+    return `${color.title}: ${parts.length > 0 ? parts.join('; ') : 'сейчас ничего не даёт'}`;
   }
 
   switch (cell.type) {
@@ -38,6 +53,6 @@ export const cellHint = (cell: LucidShared.TCell, G: TCellHintG): string => {
     case LucidShared.ECellType.START:
       return 'Старт';
     default:
-      return 'Пустая: ничего';
+      return `Пустая: ${passives.length > 0 ? passives.join('; ') : 'ничего'}`;
   }
 };

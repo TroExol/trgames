@@ -301,7 +301,7 @@ export const Component = observer(function LucidPartyPage() {
         {viewCellId !== undefined && viewCell && state.G.events[viewCellId] && (
           <CellView
             event={state.G.events[viewCellId]}
-            hint={cellHint(viewCell, state.G)}
+            hint={cellHint(viewCell, state.G, state.you)}
             history={state.G.cellHistory[viewCellId] ?? []}
             onClose={() => setViewCellId(undefined)}
             resourceName={state.G.theme.resourceName}

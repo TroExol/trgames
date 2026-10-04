@@ -720,7 +720,7 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
           role="status"
           style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
         >
-          {cellHint(hintCell, state.G)}
+          {cellHint(hintCell, state.G, state.you)}
         </p>
       )}
     </div>

@@ -1,5 +1,6 @@
 import type { TCardName } from './types/content';
 
+import { ECellType } from './types/track';
 import { ELaw, EShopCard } from './types/cards';
 
 export interface TCardText {
@@ -49,10 +50,16 @@ export const SHOP_OFFER = 3;
 
 export interface TShopCardText extends TCardText {
   kind: 'active' | 'passive';
+  landsOn?: ECellType;
 }
 
 export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
-  [EShopCard.CLOVER]: { name: 'Подкова', kind: 'passive', rule: resource => `Остановился на пустой: ${resource} +4` },
+  [EShopCard.CLOVER]: {
+    name: 'Подкова',
+    kind: 'passive',
+    landsOn: ECellType.EMPTY,
+    rule: resource => `Остановился на пустой: ${resource} +4`,
+  },
   [EShopCard.GRENADE]: {
     name: 'Обвал',
     kind: 'active',
@@ -77,6 +84,7 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   [EShopCard.MONEY_MAGNET]: {
     name: 'Громоотвод',
     kind: 'passive',
+    landsOn: ECellType.RED,
     rule: resource => `Остановился на красной: ${resource} +5`,
   },
   [EShopCard.ROCKET]: {
@@ -87,6 +95,7 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   [EShopCard.TRAVELATOR]: {
     name: 'Попутка',
     kind: 'passive',
+    landsOn: ECellType.EMPTY,
     rule: () => 'Остановился на пустой — пройди 4 клетки вперёд',
   },
   [EShopCard.VOODOO]: {
