@@ -43,6 +43,7 @@ export const Hud = observer(function Hud({ children }: THudProps) {
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
   const [collapsedCell, setCollapsedCell] = useState<number>();
+  const [collapsedPick, setCollapsedPick] = useState<string>();
   const { state, view } = partyStore;
 
   if (!state || !view) {
@@ -68,6 +69,17 @@ export const Hud = observer(function Hud({ children }: THudProps) {
     ? state.G.turn.lawEvent ?? state.G.events[state.G.turn.eventCellId ?? current.position]
     : undefined;
   const isCollapsed = event !== undefined && collapsedCell === event.cellId;
+  const isDiscarding = pendingBuy !== undefined && pendingBuy.stateId === state.stateId;
+  const pickTitle = !isMyTurn
+    ? undefined
+    : state.ctx.phase === EPhase.LAW
+      ? 'Выбор закона'
+      : state.ctx.phase === EPhase.SHOP
+        ? isDiscarding ? 'Сброс карты' : 'Лавка'
+        : undefined;
+  const pickKey = `${state.stateId}:${isDiscarding ? 'discard' : state.ctx.phase}`;
+  const isPickCollapsed = collapsedPick === pickKey;
+  const handlePickCollapse = (): void => setCollapsedPick(pickKey);
 
   const handleRoll = (): void => {
     setSentStateId(state.stateId);
@@ -306,7 +318,7 @@ export const Hud = observer(function Hud({ children }: THudProps) {
     const hand = state.G.cards.hands[state.you] ?? [];
     const { resourceName } = theme;
 
-    if (pendingBuy && pendingBuy.stateId === state.stateId) {
+    if (isDiscarding) {
       return (
         <CardPick
           isSent={isSent || isRevealing}
@@ -316,6 +328,7 @@ export const Hud = observer(function Hud({ children }: THudProps) {
             name: LucidShared.cardName(state.G, item.card),
             rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
           }))}
+          onCollapse={handlePickCollapse}
           onPick={index => handleBuy(pendingBuy.index, hand[index].uid)}
           onSkip={() => setPendingBuy(undefined)}
           skipLabel="Назад"
@@ -335,6 +348,7 @@ export const Hud = observer(function Hud({ children }: THudProps) {
           name: LucidShared.cardName(state.G, item.card),
           rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
         }))}
+        onCollapse={handlePickCollapse}
         onPick={index => {
           if (hand.length >= LucidShared.HAND_LIMIT) {
             setPendingBuy({ index, stateId: state.stateId });
@@ -448,6 +462,15 @@ export const Hud = observer(function Hud({ children }: THudProps) {
           />
         )}
 
+        {pickTitle && isPickCollapsed && (
+          <EventBar
+            currentNickname={current.nickname}
+            isMyTurn
+            onExpand={() => setCollapsedPick(undefined)}
+            title={pickTitle}
+          />
+        )}
+
         <Ribbon />
 
         <Hand
@@ -465,7 +488,7 @@ export const Hud = observer(function Hud({ children }: THudProps) {
         </div>
       </div>
 
-      {state.ctx.phase === EPhase.LAW && isMyTurn && (
+      {state.ctx.phase === EPhase.LAW && isMyTurn && !isPickCollapsed && (
         <CardPick
           isSent={isSent || isRevealing}
           items={state.G.cards.lawDraw.map(law => ({
@@ -474,12 +497,13 @@ export const Hud = observer(function Hud({ children }: THudProps) {
             name: LucidShared.cardName(state.G, law),
             rule: LucidShared.LAW_TEXT[law].rule(theme.resourceName),
           }))}
+          onCollapse={handlePickCollapse}
           onPick={handleChooseLaw}
           title="Закон: какой ввести?"
         />
       )}
 
-      {state.ctx.phase === EPhase.SHOP && isMyTurn && renderShop()}
+      {state.ctx.phase === EPhase.SHOP && isMyTurn && !isPickCollapsed && renderShop()}
 
       {event && !isCollapsed && (
         <EventCard

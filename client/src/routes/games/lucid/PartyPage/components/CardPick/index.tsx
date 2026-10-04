@@ -16,6 +16,7 @@ interface TCardPickProps {
   items: TCardPickItem[];
   isSent: boolean;
   onPick: (index: number) => void;
+  onCollapse: () => void;
   onSkip?: () => void;
   skipLabel?: string;
 }
@@ -27,6 +28,7 @@ export const CardPick = observer(function CardPick({
   items,
   isSent,
   onPick,
+  onCollapse,
   onSkip,
   skipLabel,
 }: TCardPickProps) {
@@ -36,7 +38,19 @@ export const CardPick = observer(function CardPick({
       style={{ backgroundColor: 'var(--lucid-veil)' }}
     >
       <div className="mx-auto flex min-h-full max-w-2xl flex-col gap-5 px-4 pb-8 pt-4">
-        <h2 className="font-unbounded text-xl leading-tight">{title}</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-unbounded text-xl leading-tight">{title}</h2>
+
+          <Button
+            className="shrink-0 bg-transparent hover:bg-transparent"
+            onClick={onCollapse}
+            size="sm"
+            style={BUTTON_STYLE}
+            variant="outline"
+          >
+            Свернуть
+          </Button>
+        </div>
 
         <ul className="flex flex-col gap-3">
           {items.map((item, index) => (
