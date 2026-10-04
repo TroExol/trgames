@@ -20,7 +20,7 @@ export const EventBar = observer(function EventBar({
 }: TProps) {
   return (
     <div
-      className="absolute inset-x-0 bottom-full flex items-center gap-2 border-t-2 px-3 py-2 backdrop-blur-sm"
+      className="flex items-center gap-2 rounded-md border-2 px-3 py-2"
       style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-accent)' }}
     >
       {/* Точка бьётся, пока ход не сделан: полоса не должна читаться как
