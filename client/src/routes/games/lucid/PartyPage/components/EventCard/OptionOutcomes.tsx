@@ -58,7 +58,7 @@ export const OptionOutcomes = observer(function OptionOutcomes({ option, resourc
     }
 
     if (!branch.hint.length) {
-      return { prefix: branch.prefix, content: '?' };
+      return { prefix: branch.prefix, content: 'ничего' };
     }
 
     return {
