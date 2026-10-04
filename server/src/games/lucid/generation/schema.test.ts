@@ -200,20 +200,10 @@ describe('worldSchema', () => {
     expect(worldSchema.safeParse(world).success).toBe(false);
   });
 
-  it('принимает роли игроков', () => {
+  it('молча игнорирует устаревшее поле roles', () => {
     const world = { ...validWorld(), roles: [{ nickname: 'Джек', role: 'хранитель компаса' }] };
 
     expect(worldSchema.safeParse(world).success).toBe(true);
-  });
-
-  it('роли необязательны: мир годится и вовсе без них', () => {
-    expect(worldSchema.safeParse(validWorld()).success).toBe(true);
-  });
-
-  it('отклоняет слишком длинную роль', () => {
-    const world = { ...validWorld(), roles: [{ nickname: 'Джек', role: 'а'.repeat(51) }] };
-
-    expect(worldSchema.safeParse(world).success).toBe(false);
   });
 });
 

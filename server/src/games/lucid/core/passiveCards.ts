@@ -14,7 +14,7 @@ const cellTypeOf = (G: LucidShared.TG): LucidShared.ECellType | undefined =>
   G.track.cells.find(cell => cell.id === G.turn.landedCellId)?.type;
 
 const passiveLine = (card: LucidShared.EShopCard, G: LucidShared.TG, playerId: LucidShared.TPlayerId, what: string) =>
-  `карта «${LucidShared.SHOP_TEXT[card].name}»: ${G.players[playerId].nickname} — ${what}`;
+  `карта «${LucidShared.cardName(G, card)}»: ${G.players[playerId].nickname} — ${what}`;
 
 export const runPassives = (G: LucidShared.TG, playerId: LucidShared.TPlayerId): TLawRun => {
   let current = G;

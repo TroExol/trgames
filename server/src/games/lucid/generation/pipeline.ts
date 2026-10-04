@@ -232,7 +232,7 @@ export const generateContent = async ({
   });
 
   try {
-    const world = await request('world', buildWorldPrompt(theme, nicknames), worldSchema, data => {
+    const world = await request('world', buildWorldPrompt(theme), worldSchema, data => {
       const parsed = worldSchema.safeParse(data);
 
       return parsed.success ? parsed.data : null;
@@ -259,7 +259,7 @@ export const generateContent = async ({
 
       return request(
         'events',
-        buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkBriefs, world.roles ?? []),
+        buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkBriefs, nicknames),
         eventBatchSchema,
         parseEvents(chunkIds),
       );
@@ -279,8 +279,6 @@ export const generateContent = async ({
           (acc, event) => ({ ...acc, [event.cellId]: event }),
           {},
         ),
-        // Сопоставление с конкретными игроками — забота setupParty, здесь только сырой ответ модели
-        roles: world.roles,
         cardNames: toCardNames(world.cards),
       },
       usedFallback: false,

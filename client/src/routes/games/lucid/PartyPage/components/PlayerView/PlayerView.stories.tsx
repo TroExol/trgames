@@ -24,7 +24,6 @@ const TRACK: LucidShared.TTrack = {
 
 const PALETTE = ['#0d1b2a', '#1b263b', '#415a77', '#778da9', '#e0e1dd'];
 const WORLD_NAME = 'Заброшенная станция';
-const LONG_ROLE = 'механик ржавых шестерёнок и хранитель забытых чертежей дальнего шлюза';
 
 const setupParty = (hand: LucidShared.THandCard[]): void => {
   const order = ['p1', 'p2'];
@@ -53,7 +52,6 @@ const setupParty = (hand: LucidShared.THandCard[]): void => {
             resource: 7,
             skipTurns: 2,
             cursed: 1,
-            role: LONG_ROLE,
           },
           p2: { id: 'p2', nickname: 'Аня', position: 1, resource: 3, skipTurns: 0 },
         },
@@ -95,8 +93,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const LongRoleThreeCards: Story = {
-  name: 'Длинная роль, три карты, состояния',
+export const ThreeCards: Story = {
+  name: 'Три карты, состояния',
   render: () => {
     setupParty([
       { uid: 1, card: EShopCard.CLOVER },

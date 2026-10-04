@@ -50,7 +50,6 @@ export const PlayerView = observer(function PlayerView({ playerId, onClose }: TP
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <h2 className="break-words font-unbounded text-xl leading-tight">{player.nickname}</h2>
-            {player.role && <p className="break-words text-base" style={{ color: 'var(--lucid-muted)' }}>{player.role}</p>}
           </div>
 
           <Button

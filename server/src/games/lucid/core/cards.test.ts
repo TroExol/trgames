@@ -8,6 +8,7 @@ import { LucidShared } from '@trgames/shared';
 import { makeG } from '@/games/lucid/vitest/factories';
 import { createRandom } from '@/games/lucid/core/random';
 import {
+  buyCard,
   createCards,
   drawLaws,
   placeLaw,
@@ -65,5 +66,24 @@ describe('колода Лавки', () => {
     Object.values(LucidShared.EShopCard).forEach(kind => {
       expect(shopDeck.filter(item => item.card === kind)).toHaveLength(2);
     });
+  });
+});
+
+describe('лента: имена карт', () => {
+  it('строка покупки содержит сгенерированное имя из G.cardNames', () => {
+    const base = makeG();
+    const G: LucidShared.TG = {
+      ...base,
+      cardNames: { [LucidShared.EShopCard.ROCKET]: { name: 'Пустой Сектор', flavor: 'Тишина' } },
+      players: { ...base.players, a: { ...base.players.a, resource: LucidShared.SHOP_PRICE } },
+      cards: {
+        ...base.cards,
+        shopOffer: [{ uid: 1, card: LucidShared.EShopCard.ROCKET }],
+        hands: { ...base.cards.hands, a: [] },
+      },
+    };
+    const next = buyCard(G, 'a', 0);
+
+    expect(next?.log.at(-1)).toContain('покупает «Пустой Сектор»');
   });
 });

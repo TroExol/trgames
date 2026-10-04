@@ -32,7 +32,7 @@ const lawLine = (
   playerId: LucidShared.TPlayerId,
   G: LucidShared.TG,
   what: string,
-): string => `закон «${LucidShared.LAW_TEXT[law].name}»: ${G.players[playerId].nickname} — ${what}`;
+): string => `закон «${LucidShared.cardName(G, law)}»: ${G.players[playerId].nickname} — ${what}`;
 
 export const addResource = (G: LucidShared.TG, playerId: LucidShared.TPlayerId, delta: number): LucidShared.TG => ({
   ...G,
@@ -81,13 +81,13 @@ const playEvent = (law: LucidShared.ELaw, kind: 'bad' | 'good') => ({ G, playerI
   };
 };
 
-const tollEvent = (resourceName: string): LucidShared.TEvent => ({
+const tollEvent = (G: LucidShared.TG): LucidShared.TEvent => ({
   cellId: -1,
-  title: LucidShared.LAW_TEXT[ELaw.RED_CHOICE].name,
-  text: LucidShared.LAW_TEXT[ELaw.RED_CHOICE].rule(resourceName),
+  title: LucidShared.cardName(G, ELaw.RED_CHOICE),
+  text: LucidShared.LAW_TEXT[ELaw.RED_CHOICE].rule(G.theme.resourceName),
   options: [
     {
-      text: `Отдать ${resourceName}: 3`,
+      text: `Отдать ${G.theme.resourceName}: 3`,
       success: { atoms: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, value: -3 }] },
     },
     {
@@ -132,7 +132,7 @@ const LAW_EFFECTS: Partial<Record<LucidShared.ELaw, TLawEffect>> = {
   [ELaw.RED_CHOICE]: {
     timing: 'LANDED',
     applies: context => landedType(context) === ECellType.RED,
-    apply: ({ G }) => ({ G, pause: { kind: 'LAW_EVENT', event: tollEvent(G.theme.resourceName) } }),
+    apply: ({ G }) => ({ G, pause: { kind: 'LAW_EVENT', event: tollEvent(G) } }),
   },
   [ELaw.RED_PAY_ALL]: {
     timing: 'LANDED',

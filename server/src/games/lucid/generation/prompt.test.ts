@@ -23,11 +23,11 @@ const cell = (overrides: Partial<TEventCellBrief> = {}): TEventCellBrief => ({
 });
 
 describe('buildWorldPrompt', () => {
-  it('просит роли игроков и перечисляет ники, для которых их нужно придумать', () => {
-    const prompt = buildWorldPrompt('пираты', ['Аня', 'Боря']);
+  it('не просит ролей игроков', () => {
+    const prompt = buildWorldPrompt('пираты');
 
-    expect(prompt).toContain('"roles":[{"nickname"');
-    expect(prompt).toContain('Имена игроков: Аня, Боря.');
+    expect(prompt).not.toContain('roles');
+    expect(prompt).not.toContain('роль');
     expect(prompt).toContain('одно слово');
   });
 });
@@ -95,23 +95,23 @@ describe('buildEventsPrompt', () => {
     expect(prompt).toContain('до 50 символов');
   });
 
-  it('передаёт роли игроков как контекст, не привязывая событие к конкретному', () => {
-    const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], [
-      { nickname: 'Джек', role: 'хранитель компаса' },
-    ]);
+  it('передаёт ники игроков как контекст, не привязывая событие к конкретному', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], ['Джек', 'Аня']);
 
-    expect(prompt).toContain('Джек — хранитель компаса');
+    expect(prompt).toContain('В партии играют: Джек, Аня.');
     expect(prompt).toContain('любому');
+    expect(prompt).not.toContain('роль');
+    expect(prompt).not.toContain('роли');
   });
 
-  it('без ролей не оставляет в промпте пустой абзац', () => {
-    expect(buildEventsPrompt('Подземелье', 'золото', [cell()], [])).not.toContain('роли игроков');
+  it('без ников не оставляет в промпте пустой абзац', () => {
+    expect(buildEventsPrompt('Подземелье', 'золото', [cell()], [])).not.toContain('В партии играют');
   });
 });
 
 describe('buildWorldPrompt: названия карт', () => {
   it('требует cards и перечисляет 25 карт под безликими ключами', () => {
-    const prompt = buildWorldPrompt('пираты', ['Аня']);
+    const prompt = buildWorldPrompt('пираты');
 
     expect(PROMPT_CARD_IDS).toHaveLength(25);
     expect(prompt).toContain('"cards":[{"id":"card1"');

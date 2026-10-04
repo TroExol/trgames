@@ -16,10 +16,6 @@ export interface TPlayer {
   resource: number;
   skipTurns: number;
   cursed?: number;
-  // Роль в мире партии, придуманная нейросетью в честь игрока. Необязательна:
-  // модель могла не прислать роль на всех, а партии, сгенерированные раньше,
-  // лежат в базе вовсе без ролей
-  role?: string;
 }
 
 export enum EPhase {

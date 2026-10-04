@@ -13,13 +13,6 @@ interface TSetupPartyParams {
   content: LucidShared.TPartyContent;
 }
 
-// Модель отвечает по нику, а не по playerId — здесь роли находят своих игроков.
-// Ник, которого нет среди игроков, просто не находит адресата; при повторе ника
-// в ответе модели побеждает последняя запись. Ни то ни другое не повод
-// перегенерировать мир — просто часть игроков останется без роли
-const rolesByNickname = (roles: LucidShared.TRole[] = []): Record<string, string> =>
-  roles.reduce<Record<string, string>>((acc, entry) => ({ ...acc, [entry.nickname]: entry.role }), {});
-
 export const setupParty = ({
   seed,
   players,
@@ -30,7 +23,6 @@ export const setupParty = ({
     random: createRandom(`${seed}:track`),
     playerCount: players.length,
   });
-  const roleByNickname = rolesByNickname(content.roles);
 
   return {
     G: {
@@ -43,7 +35,6 @@ export const setupParty = ({
             position: track.startId,
             resource: START_RESOURCE,
             skipTurns: 0,
-            role: roleByNickname[player.nickname],
           },
         }),
         {},

@@ -45,14 +45,6 @@ export interface TEventView {
   options: TOptionView[];
 }
 
-// Роль игрока в мире партии, как её вернула модель. Привязана к нику, а не
-// к playerId: на стадии «Мир» модель знает только имена, сопоставление
-// с конкретным игроком делает setupParty
-export interface TRole {
-  nickname: string;
-  role: string;
-}
-
 export interface TCardName {
   name: string;
   flavor: string;
@@ -62,8 +54,5 @@ export interface TCardName {
 export interface TPartyContent {
   theme: TTheme;
   events: Record<number, TEvent>;
-  // Необязательное: модель может прислать не для всех игроков или не прислать
-  // вовсе, тогда часть или все останутся без роли
-  roles?: TRole[];
   cardNames?: Record<string, TCardName>;
 }

@@ -41,7 +41,7 @@ export const playCard = (
       [actorId]: { ...actor, resource: actor.resource - LucidShared.CARD_USE_PRICE },
     },
   };
-  const name = LucidShared.SHOP_TEXT[item.card].name;
+  const name = LucidShared.cardName(G, item.card);
   const say = (what: string): string => `${actor.nickname} играет «${name}»: ${what}`;
 
   const walk = (id: LucidShared.TPlayerId, steps: number, what: string): LucidShared.TG =>

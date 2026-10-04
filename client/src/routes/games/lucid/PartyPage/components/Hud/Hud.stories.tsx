@@ -30,7 +30,6 @@ const WORLD_NAME = 'Заброшенная станция';
 
 interface TPlayerSetup {
   nickname: string;
-  role?: string;
 }
 
 // HUD читает партию из partyStore напрямую, не пропсами (как и боевой
@@ -70,7 +69,6 @@ const setupHud = (
           position: atFinish ? TRACK.finishId : TRACK.cells[1].id,
           resource: atFinish ? 7 : 3,
           skipTurns: 0,
-          role: player.role,
         }])),
         order,
         track: TRACK,
@@ -125,42 +123,36 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Двое игроков: свободного места в строке много, роль должна быть видна
-// почти целиком
-export const TwoPlayersLongRoles: Story = {
-  name: 'Двое, длинные роли',
+export const TwoPlayers: Story = {
+  name: 'Двое',
   render: () => {
     setupHud([
-      { nickname: 'Ваня', role: 'механик ржавых шестерёнок' },
-      { nickname: 'Аня', role: 'хранитель забытых чертежей' },
+      { nickname: 'Ваня' },
+      { nickname: 'Аня' },
     ], ['Ваня бросил кубик и получил 5.']);
 
     return <HudFrame />;
   },
 };
 
-// Шесть игроков: свободного места на каждого меньше, роль режется сильнее —
-// но строка не должна стать выше, чем с прежним фиксированным max-w-24
-export const SixPlayersLongRoles: Story = {
-  name: 'Шестеро, длинные роли',
+export const SixPlayers: Story = {
+  name: 'Шестеро',
   render: () => {
     setupHud([
-      { nickname: 'Ваня', role: 'механик ржавых шестерёнок' },
-      { nickname: 'Аня', role: 'хранитель забытых чертежей' },
-      { nickname: 'Борис', role: 'смотритель дальнего маяка' },
-      { nickname: 'Вика', role: 'проводник по гулким тоннелям' },
-      { nickname: 'Гриша', role: 'сборщик потерянных сигналов' },
-      { nickname: 'Даша', role: 'хранительница тихих архивов' },
+      { nickname: 'Ваня' },
+      { nickname: 'Аня' },
+      { nickname: 'Борис' },
+      { nickname: 'Вика' },
+      { nickname: 'Гриша' },
+      { nickname: 'Даша' },
     ], ['Ход переходит по кругу.']);
 
     return <HudFrame />;
   },
 };
 
-// Запасная партия (4.7): модель не прислала роли вовсе — строка игроков
-// держит вёрстку и без единой роли, без падения
-export const NoRoles: Story = {
-  name: 'Без ролей',
+export const FallbackParty: Story = {
+  name: 'Запасная партия',
   render: () => {
     setupHud([
       { nickname: 'Ваня' },

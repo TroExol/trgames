@@ -61,10 +61,6 @@ export const Hud = observer(function Hud({ children }: THudProps) {
   // ещё не применён — нажатие ушло бы по устаревшему виду
   const isRevealing = partyStore.isRevealing;
   const offline = new Set(view.members.filter(member => !member.isConnected).map(member => member.playerId));
-  // Без единой роли (запасная партия, 4.7) колонки грида ниже ни на что не
-  // тратятся — нечего обрезать. Тогда строке выгоднее обычный flex-wrap:
-  // он пакует короткие ники по факту их ширины, а не по минимуму колонки
-  const hasAnyRole = state.G.order.some(playerId => Boolean(state.G.players[playerId].role));
   // Событие берётся по клетке ходящего игрока: его читают все, а не только тот,
   // чей ход
   const event = state.ctx.phase === EPhase.CHOICE
@@ -387,16 +383,9 @@ export const Hud = observer(function Hud({ children }: THudProps) {
         </div>
 
         {/* Строка игрока — одна кнопка: тап открывает PlayerView. Ресурс и число
-            карт не сжимаются, ник сжимается позже роли, роль уходит первой.
-            grid вместо flex-wrap: ширина колонки не зависит от длины роли, а
-            auto-fit схлопывает пустые колонки — при 2 игроках им достаётся вся
-            строка, при 6 на 360-390px колонок ровно две */}
+            карт не сжимаются, ник обрезается. */}
         <ul
-          className={
-            hasAnyRole
-              ? 'grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-x-3 text-xs'
-              : 'flex flex-wrap gap-x-3 text-xs'
-          }
+          className="flex flex-wrap gap-x-3 text-xs"
           style={{ color: 'var(--lucid-muted)' }}
         >
           {state.G.order.map(playerId => {
@@ -421,11 +410,6 @@ export const Hud = observer(function Hud({ children }: THudProps) {
                   <span className="min-w-0 shrink truncate">{player.nickname}</span>
                   <span className="shrink-0">{`· ${player.resource}`}</span>
                   {handSize > 0 && <span className="shrink-0">{`· карт ${handSize}`}</span>}
-                  {player.role && (
-                    <span className="min-w-0 shrink-[3] truncate" style={{ color: 'var(--lucid-muted)' }}>
-                      {`— ${player.role}`}
-                    </span>
-                  )}
                   {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
                 </button>
               </li>

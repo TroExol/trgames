@@ -84,10 +84,10 @@ export const placeLaw = (
   const rest = G.cards.lawDraw.filter((_, drawIndex) => drawIndex !== index);
   const dropped = G.cards.laws[LAW_SLOTS - 1];
   const laws = [chosen, ...G.cards.laws.slice(0, LAW_SLOTS - 1)];
-  const lines = [`${G.players[playerId].nickname} вводит закон «${LucidShared.LAW_TEXT[chosen].name}»`];
+  const lines = [`${G.players[playerId].nickname} вводит закон «${LucidShared.cardName(G, chosen)}»`];
 
   if (dropped) {
-    lines.push(`закон «${LucidShared.LAW_TEXT[dropped].name}» отменён`);
+    lines.push(`закон «${LucidShared.cardName(G, dropped)}» отменён`);
   }
 
   return {
@@ -138,10 +138,10 @@ export const buyCard = (
   }
 
   const kept = dropped ? hand.filter(item => item !== dropped) : hand;
-  const lines = [`${player.nickname} покупает «${LucidShared.SHOP_TEXT[bought.card].name}»`];
+  const lines = [`${player.nickname} покупает «${LucidShared.cardName(G, bought.card)}»`];
 
   if (dropped) {
-    lines.push(`${player.nickname} сбрасывает «${LucidShared.SHOP_TEXT[dropped.card].name}»`);
+    lines.push(`${player.nickname} сбрасывает «${LucidShared.cardName(G, dropped.card)}»`);
   }
 
   return {
