@@ -11,6 +11,11 @@ import {
   worldSchema,
 } from '@/games/lucid/generation/schema';
 import {
+  sanitizeEvent,
+  sanitizeTheme,
+  stripSchemaKeys,
+} from '@/games/lucid/generation/sanitize';
+import {
   buildEventsPrompt,
   buildWorldPrompt,
   PROMPT_CARD_IDS,
@@ -102,7 +107,12 @@ const toCardNames = (cards: unknown[] = []): Record<string, LucidShared.TCardNam
     .flatMap(parsed => {
       const id = parsed.success ? toCardId(parsed.data.id) : undefined;
 
-      return parsed.success && id ? [[id, { name: parsed.data.name, flavor: parsed.data.flavor }]] : [];
+      return parsed.success && id
+        ? [[id, {
+            name: stripSchemaKeys(parsed.data.name),
+            flavor: stripSchemaKeys(parsed.data.flavor),
+          }]]
+        : [];
     }),
 );
 
@@ -222,7 +232,7 @@ export const generateContent = async ({
       return true;
     });
 
-    return events.length > 0 ? events : null;
+    return events.length > 0 ? events.map(sanitizeEvent) : null;
   };
 
   const withFallback = (): TGenerateContentResult => ({
@@ -235,7 +245,7 @@ export const generateContent = async ({
     const world = await request('world', buildWorldPrompt(theme), worldSchema, data => {
       const parsed = worldSchema.safeParse(data);
 
-      return parsed.success ? parsed.data : null;
+      return parsed.success ? { ...parsed.data, theme: sanitizeTheme(parsed.data.theme) } : null;
     });
 
     if (!world) {

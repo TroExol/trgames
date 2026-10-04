@@ -9,6 +9,7 @@ export interface TContentMetrics {
   helpLastShare: number;
   // Доля «бед»: ни в одной ветке ни одного варианта нет чистого плюса ходящему
   calamityShare: number;
+  resourceWordShare: number;
   // Средняя длина текста события и варианта в символах — цель промпта ~140 и ~50
   avgEventTextLength: number;
   avgOptionTextLength: number;
@@ -80,6 +81,9 @@ const isGainForMover = (atom: LucidShared.TAtom): boolean => {
 const isCalamity = (event: LucidShared.TEvent): boolean =>
   event.options.length > 0 && !eventAtoms(event).some(isGainForMover);
 
+const mentionsResourceWord = (event: LucidShared.TEvent): boolean =>
+  [event.title, event.text, ...event.options.map(option => option.text)].some(text => /ресурс/i.test(text));
+
 const average = (values: number[]): number =>
   values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 
@@ -97,6 +101,7 @@ export const computeContentMetrics = (content: LucidShared.TPartyContent): TCont
     antiLeaderShare: share(events, event => eventAtoms(event).some(isAgainstLeader)),
     helpLastShare: share(events, event => eventAtoms(event).some(isHelpForLast)),
     calamityShare: share(events, isCalamity),
+    resourceWordShare: share(events, mentionsResourceWord),
     avgEventTextLength: average(events.map(event => event.text.length)),
     avgOptionTextLength: average(events.flatMap(event => event.options.map(option => option.text.length))),
   };

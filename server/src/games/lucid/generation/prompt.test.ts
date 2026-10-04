@@ -31,9 +31,22 @@ describe('buildWorldPrompt', () => {
     expect(prompt).not.toContain('роль');
     expect(prompt).toContain('одно слово');
   });
+
+  it('запрещает ключи схемы и слово «ресурс» в названиях и строках карт', () => {
+    const prompt = buildWorldPrompt('пираты');
+
+    expect(prompt).toContain('не пиши ключи вроде FIRST, LAST и слово');
+  });
 });
 
 describe('buildEventsPrompt', () => {
+  it('просит называть цели словами и ресурс — названием темы', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
+
+    expect(prompt).toContain('не пиши ключи схемы');
+    expect(prompt).toContain('«заряды» в нужном падеже, слово «ресурс» не пиши');
+  });
+
   it('строит строку на клетку с краем и завязкой, без требования у обычной завязки', () => {
     const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], []);
 
