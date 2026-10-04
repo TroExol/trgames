@@ -34,11 +34,13 @@ export const playCard = (
   const victimId = item.card === EShopCard.HAND_OF_FATE ? targetId : ahead?.id;
   const victim = victimId === undefined ? undefined : G.players[victimId];
   const paid = withTurn(G, { used: [...G.turn.used, uid] });
+  const hand = G.cards.hands[actorId] ?? [];
   const charged: LucidShared.TG = {
     ...paid,
-    players: {
-      ...paid.players,
-      [actorId]: { ...actor, resource: actor.resource - LucidShared.CARD_USE_PRICE },
+    cards: {
+      ...paid.cards,
+      hands: { ...paid.cards.hands, [actorId]: hand.filter(card => card.uid !== uid) },
+      shopDiscard: [...paid.cards.shopDiscard, item],
     },
   };
   const name = LucidShared.cardName(G, item.card);

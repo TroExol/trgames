@@ -91,7 +91,7 @@ export const PlayerView = observer(function PlayerView({ playerId, onClose }: TP
                   {flavor && <p className="text-sm italic" style={{ color: 'var(--lucid-muted)' }}>{flavor}</p>}
                   <p className="text-sm leading-relaxed">{text.rule(resourceName)}</p>
                   <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>
-                    {text.kind === 'active' ? `активная · ${LucidShared.CARD_USE_PRICE}` : 'пассивная'}
+                    {text.kind === 'active' ? 'активная' : 'пассивная'}
                   </p>
                 </li>
               );

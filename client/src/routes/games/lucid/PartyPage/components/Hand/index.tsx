@@ -91,7 +91,7 @@ export const Hand = observer(function Hand({ canPlay, isSent, onPlay }: THandPro
               style={BUTTON_STYLE}
               variant="outline"
             >
-              {`Применить · ${LucidShared.CARD_USE_PRICE}`}
+              Применить
             </Button>
           )}
 

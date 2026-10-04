@@ -111,12 +111,14 @@ describe('nearestAhead', () => {
 });
 
 describe('активные карты', () => {
-  it('«Рывок»: +5 клеток, расход 3, фаза карт снова, если есть ещё карта', () => {
+  it('«Рывок»: +5 клеток, Ресурс цел, карта в сбросе, фаза карт снова, если есть ещё карта', () => {
     const state = cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET, EShopCard.ROCKET]);
     const next = playCard(state, 0)!;
 
     expect(next.G.players.a.position).toBe(7);
-    expect(next.G.players.a.resource).toBe(7);
+    expect(next.G.players.a.resource).toBe(10);
+    expect(next.G.cards.hands.a.map(item => item.uid)).toEqual([1]);
+    expect(next.G.cards.shopDiscard.map(item => item.uid)).toEqual([0]);
     expect(next.G.turn.used).toContain(0);
     expect(next.ctx.phase).toBe(EPhase.CARDS);
   });
@@ -133,11 +135,13 @@ describe('активные карты', () => {
     expect(playCard(next, 0)).toBeNull();
   });
 
-  it('Ресурс 2 — карта не играется, фазы карт нет', () => {
-    const state = cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET], 2);
+  it('Ресурс 0 — карта всё равно играется', () => {
+    const state = cardsState({ a: 2, b: 0 }, [EShopCard.ROCKET], 0);
+    const next = playCard(state, 0)!;
 
-    expect(LucidShared.canPlay(state.G, 'a', state.G.cards.hands.a[0])).toBe(false);
-    expect(playCard(state, 0)).toBeNull();
+    expect(LucidShared.canPlay(state.G, 'a', state.G.cards.hands.a[0])).toBe(true);
+    expect(next.G.players.a.resource).toBe(0);
+    expect(next.G.cards.shopDiscard.map(item => item.uid)).toEqual([0]);
   });
 
   it('«Обвал»: b впереди на 9 отступает на 3', () => {
@@ -211,21 +215,21 @@ describe('активные карты', () => {
     expect(next.G.log.some(line => line.includes('порча не нашла беды'))).toBe(true);
   });
 
-  it('«Толчок»: цель c на 6 уходит на 2, карта остаётся в руке', () => {
+  it('«Толчок»: цель c на 6 уходит на 2, карта уходит в сброс', () => {
     const state = cardsState({ a: 2, b: 3, c: 6 }, [EShopCard.HAND_OF_FATE]);
     const next = playCard(state, 0, 'c')!;
 
     expect(next.G.players.c.position).toBe(2);
-    expect(next.G.players.a.resource).toBe(7);
-    expect(next.G.cards.hands.a).toHaveLength(1);
+    expect(next.G.players.a.resource).toBe(10);
+    expect(next.G.cards.hands.a).toHaveLength(0);
+    expect(next.G.cards.shopDiscard).toHaveLength(1);
   });
 
-  it('«Толчок»: без цели, на себя и без Ресурса — null', () => {
+  it('«Толчок»: без цели и на себя — null', () => {
     const state = cardsState({ a: 2, b: 3, c: 6 }, [EShopCard.HAND_OF_FATE]);
 
     expect(playCard(state, 0)).toBeNull();
     expect(playCard(state, 0, 'a')).toBeNull();
-    expect(playCard(cardsState({ a: 2, b: 3, c: 6 }, [EShopCard.HAND_OF_FATE], 2), 0, 'c')).toBeNull();
   });
 
   it('«Толчок»: чужой ключ вместо id игрока — null, состояние прежнее', () => {

@@ -848,7 +848,7 @@ describe('клетка «Лавка»', () => {
     };
   };
 
-  it('с Ресурсом от 5 Лавка открывается, покупка передаёт ход', () => {
+  it('с Ресурсом от 3 Лавка открывается, покупка передаёт ход', () => {
     const landed = land(shopState(10));
 
     expect(landed.ctx.phase).toBe(LucidShared.EPhase.SHOP);
@@ -859,7 +859,7 @@ describe('клетка «Лавка»', () => {
     });
 
     expect(bought.G.cards.hands.a).toHaveLength(1);
-    expect(bought.G.players.a.resource).toBe(5);
+    expect(bought.G.players.a.resource).toBe(7);
     expect(bought.ctx.currentPlayer).toBe('b');
   });
 
@@ -872,8 +872,8 @@ describe('клетка «Лавка»', () => {
     expect(rejected).toBe(landed);
   });
 
-  it('с Ресурсом меньше 5 Лавка не открывается, ход идёт дальше', () => {
-    const landed = land(shopState(4));
+  it('с Ресурсом меньше 3 Лавка не открывается, ход идёт дальше', () => {
+    const landed = land(shopState(2));
 
     expect(landed.ctx.phase).toBe(LucidShared.EPhase.ROLL);
     expect(landed.ctx.currentPlayer).toBe('b');

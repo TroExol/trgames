@@ -44,8 +44,7 @@ export const LAW_TEXT: Record<ELaw, TCardText> = {
 };
 
 export const HAND_LIMIT = 3;
-export const SHOP_PRICE = 5;
-export const CARD_USE_PRICE = 3;
+export const SHOP_PRICE = 3;
 export const SHOP_OFFER = 3;
 
 export interface TShopCardText extends TCardText {
@@ -57,23 +56,22 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   [EShopCard.GRENADE]: {
     name: 'Обвал',
     kind: 'active',
-    rule: resource => `Отдай ${resource} 3 — ближайший впереди отступает на 6 клеток`,
+    rule: () => 'Ближайший впереди отступает на 6 клеток',
   },
   [EShopCard.HAND_OF_FATE]: {
     name: 'Толчок',
     kind: 'active',
-    rule: resource => `Отдай ${resource} 3 — выбранный игрок отступает на 4 клетки`,
+    rule: () => 'Выбранный игрок отступает на 4 клетки',
   },
   [EShopCard.HARPOON]: {
     name: 'Аркан',
     kind: 'active',
-    rule: resource => `Отдай ${resource} 3 — ближайший впереди, если до него не больше 10 клеток, встаёт на твою клетку`,
+    rule: () => 'Ближайший впереди, если до него не больше 10 клеток, встаёт на твою клетку',
   },
   [EShopCard.HOOK]: {
     name: 'Кошка',
     kind: 'active',
-    rule: resource =>
-      `Отдай ${resource} 3 — встань на клетку ближайшего впереди, если до него не больше 10 клеток`,
+    rule: () => 'Встань на клетку ближайшего впереди, если до него не больше 10 клеток',
   },
   [EShopCard.MAGIC_DIE]: { name: 'Утяжелённый кубик', kind: 'passive', rule: () => '+1 к броску на движение' },
   [EShopCard.MONEY_MAGNET]: {
@@ -84,7 +82,7 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   [EShopCard.ROCKET]: {
     name: 'Рывок',
     kind: 'active',
-    rule: resource => `Отдай ${resource} 3 — пройди 5 клеток вперёд`,
+    rule: () => 'Пройди 5 клеток вперёд',
   },
   [EShopCard.TRAVELATOR]: {
     name: 'Попутка',
@@ -94,7 +92,7 @@ export const SHOP_TEXT: Record<EShopCard, TShopCardText> = {
   [EShopCard.VOODOO]: {
     name: 'Порча',
     kind: 'active',
-    rule: resource => `Отдай ${resource} 3 — ближайший впереди в начале своего хода разыгрывает беду`,
+    rule: () => 'Ближайший впереди в начале своего хода разыгрывает беду',
   },
 };
 

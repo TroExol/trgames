@@ -7,7 +7,7 @@ import type {
 
 import { EShopCard } from './types/cards';
 import { trackDepths } from './track';
-import { CARD_USE_PRICE, SHOP_TEXT } from './cardText';
+import { SHOP_TEXT } from './cardText';
 
 export type TCardRulesG = { cards: Pick<TCards, 'hands'>; turn: Pick<TTurn, 'used'> }
   & Pick<TG, 'order' | 'players' | 'track'>;
@@ -45,10 +45,6 @@ export const canPlay = (
   const text = SHOP_TEXT[item.card];
 
   if (text.kind === 'passive' || G.turn.used.includes(item.uid)) {
-    return false;
-  }
-
-  if (G.players[actorId].resource < CARD_USE_PRICE) {
     return false;
   }
 

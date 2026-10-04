@@ -43,9 +43,13 @@ describe('Лавка', () => {
     const bought = buyCard(openShop(withShop(10)), 'a', 1)!;
 
     expect(bought.cards.hands.a).toEqual([card(2, EShopCard.CLOVER)]);
-    expect(bought.players.a.resource).toBe(5);
+    expect(bought.players.a.resource).toBe(7);
     expect(bought.cards.shopDiscard.map(item => item.uid)).toEqual([1, 3]);
     expect(bought.cards.shopOffer).toEqual([]);
+  });
+
+  it('покупка за ровно 3 Ресурса', () => {
+    expect(buyCard(openShop(withShop(LucidShared.SHOP_PRICE)), 'a', 0)!.players.a.resource).toBe(0);
   });
 
   it('отказ: всё в сброс, Ресурс цел', () => {
@@ -64,6 +68,6 @@ describe('Лавка', () => {
   });
 
   it('не хватает Ресурса — покупка отклоняется', () => {
-    expect(buyCard(openShop(withShop(4)), 'a', 0)).toBeNull();
+    expect(buyCard(openShop(withShop(2)), 'a', 0)).toBeNull();
   });
 });
