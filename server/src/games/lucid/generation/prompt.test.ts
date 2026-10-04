@@ -7,7 +7,11 @@ import { LucidShared } from '@trgames/shared';
 
 import type { TEventCellBrief } from '@/games/lucid/generation/prompt';
 
-import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
+import {
+  buildEventsPrompt,
+  buildWorldPrompt,
+  PROMPT_CARD_IDS,
+} from '@/games/lucid/generation/prompt';
 
 const cell = (overrides: Partial<TEventCellBrief> = {}): TEventCellBrief => ({
   cellId: 43,
@@ -105,13 +109,13 @@ describe('buildEventsPrompt', () => {
 });
 
 describe('buildWorldPrompt: названия карт', () => {
-  it('требует cards и перечисляет все 25 карт с правилом', () => {
+  it('требует cards и перечисляет 25 карт под безликими ключами', () => {
     const prompt = buildWorldPrompt('пираты', ['Аня']);
-    const ids = [...Object.values(LucidShared.ELaw), ...Object.values(LucidShared.EShopCard)];
 
-    expect(ids).toHaveLength(25);
-    expect(prompt).toContain('"cards":[{"id"');
-    ids.forEach(id => expect(prompt).toContain(`- ${id}: `));
-    expect(prompt).toContain('- ROCKET: Отдай ресурс 3');
+    expect(PROMPT_CARD_IDS).toHaveLength(25);
+    expect(prompt).toContain('"cards":[{"id":"card1"');
+    expect(prompt).toContain('- card1: ');
+    expect(prompt).toContain('- card25: ');
+    PROMPT_CARD_IDS.forEach(id => expect(prompt).not.toMatch(new RegExp(`\\b${id}\\b`)));
   });
 });

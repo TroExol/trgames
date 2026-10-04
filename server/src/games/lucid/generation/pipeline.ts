@@ -1,7 +1,7 @@
 import type { z } from 'zod';
+import type { LucidShared } from '@trgames/shared';
 
 import { chunk } from 'lodash';
-import { LucidShared } from '@trgames/shared';
 
 import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model';
 
@@ -10,7 +10,11 @@ import {
   eventBatchSchema,
   worldSchema,
 } from '@/games/lucid/generation/schema';
-import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
+import {
+  buildEventsPrompt,
+  buildWorldPrompt,
+  PROMPT_CARD_IDS,
+} from '@/games/lucid/generation/prompt';
 import { assignPremises, assignRegionNames } from '@/games/lucid/generation/premises';
 import { MODEL_ID } from '@/games/lucid/generation/model';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
@@ -86,13 +90,20 @@ export interface TGenerateContentResult {
   stats: TGenerateStats;
 }
 
-const KNOWN_CARD_IDS = new Set<string>([...Object.values(LucidShared.ELaw), ...Object.values(LucidShared.EShopCard)]);
+const toCardId = (key: string): string | undefined => {
+  const match = /^card(\d+)$/.exec(key);
+
+  return match ? PROMPT_CARD_IDS[Number(match[1]) - 1] : undefined;
+};
 
 const toCardNames = (cards: unknown[] = []): Record<string, LucidShared.TCardName> => Object.fromEntries(
   cards
     .map(card => cardNameSchema.safeParse(card))
-    .flatMap(parsed => (parsed.success && KNOWN_CARD_IDS.has(parsed.data.id) ? [parsed.data] : []))
-    .map(card => [card.id, { name: card.name, flavor: card.flavor }]),
+    .flatMap(parsed => {
+      const id = parsed.success ? toCardId(parsed.data.id) : undefined;
+
+      return parsed.success && id ? [[id, { name: parsed.data.name, flavor: parsed.data.flavor }]] : [];
+    }),
 );
 
 export const generateContent = async ({

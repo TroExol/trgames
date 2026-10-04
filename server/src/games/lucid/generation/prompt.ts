@@ -81,10 +81,19 @@ const describeRoles = (roles: LucidShared.TRole[]): string => {
     + 'будто событие происходит именно с ним.\n';
 };
 
-const describeCards = (): string => [
-  ...Object.entries(LucidShared.LAW_TEXT),
-  ...Object.entries(LucidShared.SHOP_TEXT),
-].map(([id, card]) => `- ${id}: ${card.rule('ресурс')}`).join('\n');
+export const PROMPT_CARD_IDS: string[] = [
+  ...Object.values(LucidShared.ELaw),
+  ...Object.values(LucidShared.EShopCard),
+];
+
+const CARD_TEXT: Record<string, { rule: (resource: string) => string }> = {
+  ...LucidShared.LAW_TEXT,
+  ...LucidShared.SHOP_TEXT,
+};
+
+const describeCards = (): string => PROMPT_CARD_IDS
+  .map((id, index) => `- card${index + 1}: ${CARD_TEXT[id].rule('ресурс')}`)
+  .join('\n');
 
 export const buildWorldPrompt = (theme: string, nicknames: string[]): string => `
 Ты придумываешь оформление настольной игры-бродилки.
@@ -99,7 +108,7 @@ export const buildWorldPrompt = (theme: string, nicknames: string[]): string => 
 {"theme":{"name":"...","resourceName":"...","palette":["#rrggbb", ...],"mood":"DARK",
 "regions":[{"name":"...","color":"#rrggbb"}, ...]},
 "roles":[{"nickname":"...","role":"..."}, ...],
-"cards":[{"id":"...","name":"...","flavor":"..."}, ...]}
+"cards":[{"id":"card1","name":"...","flavor":"..."}, ...]}
 
 name — название мира в духе темы, до 80 символов.
 resourceName — как в этом мире называются монеты, до 40 символов.
@@ -117,7 +126,7 @@ roles — короткая роль в мире партии для каждог
 слов в духе темы, например «хранитель чайника», а не описание характера или
 судьбы.
 cards — название и строка настроения для каждой карты из списка. id — точно
-из списка. name — 1–4 слова в духе мира, до ${CARD_NAME_MAX} знаков. flavor —
+из списка (card1, card2 и так далее). name — 1–4 слова в духе мира, до ${CARD_NAME_MAX} знаков. flavor —
 одна фраза до ${CARD_FLAVOR_MAX} знаков. Правило карты не пересказывай, оно
 уже есть.
 ${describeCards()}

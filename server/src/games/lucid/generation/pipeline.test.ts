@@ -8,6 +8,7 @@ import { LucidShared } from '@trgames/shared';
 
 import type { TGenerateJson } from '@/games/lucid/generation/pipeline';
 
+import { PROMPT_CARD_IDS } from '@/games/lucid/generation/prompt';
 import {
   EVENTS_CHUNK_SIZE,
   generateContent,
@@ -331,7 +332,7 @@ describe('generateContent: названия карт', () => {
     const world = {
       ...validWorld,
       cards: [
-        { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит' },
+        { id: 'card1', name: 'Паровой рывок', flavor: 'Котёл гудит' },
         { id: 'NOPE', name: 'Лишняя', flavor: 'Нет такой' },
       ],
     };
@@ -341,16 +342,36 @@ describe('generateContent: названия карт', () => {
 
     const { content } = await run(generateJson);
 
-    expect(content.cardNames?.ROCKET).toEqual({ name: 'Паровой рывок', flavor: 'Котёл гудит' });
+    expect(content.cardNames?.[PROMPT_CARD_IDS[0]]).toEqual({ name: 'Паровой рывок', flavor: 'Котёл гудит' });
     expect(content.cardNames).not.toHaveProperty('NOPE');
+  });
+
+  it('card{N} разворачивается по позиции, прочие ключи отбрасываются', async () => {
+    const world = {
+      ...validWorld,
+      cards: [
+        { id: 'card1', name: 'Первая', flavor: 'а' },
+        { id: 'card25', name: 'Последняя', flavor: 'б' },
+        { id: 'ROCKET', name: 'Ракета', flavor: 'в' },
+        { id: 'card26', name: 'Лишняя', flavor: 'г' },
+        { id: 'card0', name: 'Нулевая', flavor: 'д' },
+      ],
+    };
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: world, usage })
+      .mockResolvedValue({ data: eventsFor([1, 2]), usage });
+
+    const { content } = await run(generateJson);
+
+    expect(Object.keys(content.cardNames ?? {}).sort()).toEqual([PROMPT_CARD_IDS[0], PROMPT_CARD_IDS[24]].sort());
   });
 
   it('карта с кривым названием отбрасывается без перегенерации мира', async () => {
     const world = {
       ...validWorld,
       cards: [
-        { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит' },
-        { id: 'GRENADE', name: 'я'.repeat(31), flavor: 'Слишком длинно' },
+        { id: 'card1', name: 'Паровой рывок', flavor: 'Котёл гудит' },
+        { id: 'card2', name: 'я'.repeat(31), flavor: 'Слишком длинно' },
       ],
     };
     const generateJson: TGenerateJson = vi.fn()
@@ -360,8 +381,8 @@ describe('generateContent: названия карт', () => {
     const result = await run(generateJson);
 
     expect(result.usedFallback).toBe(false);
-    expect(result.content.cardNames).toHaveProperty('ROCKET');
-    expect(result.content.cardNames).not.toHaveProperty('GRENADE');
+    expect(result.content.cardNames).toHaveProperty(PROMPT_CARD_IDS[0]);
+    expect(result.content.cardNames).not.toHaveProperty(PROMPT_CARD_IDS[1]);
     expect(vi.mocked(generateJson).mock.calls.filter(([prompt]) => prompt.includes('Верни JSON строго такого вида, без пояснений:\n{"theme"'))).toHaveLength(1);
   });
 
