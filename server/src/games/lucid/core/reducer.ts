@@ -182,8 +182,15 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return null;
     }
 
+    const needsTarget = LucidShared.optionNeedsTarget(option);
+    const { targetId } = move;
+
+    if (needsTarget && (!targetId || targetId === player.id || !state.G.order.includes(targetId))) {
+      return null;
+    }
+
     const cellId = state.G.turn.lawEvent ? undefined : event.cellId;
-    const G = resolveOption(state.G, player.id, move.optionIndex, option, cellId);
+    const G = resolveOption(state.G, player.id, move.optionIndex, option, cellId, needsTarget ? targetId : undefined);
 
     // Вариант недоступен, например не хватает ресурса: ход не состоялся,
     // игрок не теряет право выбрать другой

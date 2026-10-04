@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
+import { TargetPicker } from '@/routes/games/lucid/PartyPage/components/TargetPicker';
 import { Button } from '@/components/ui/Button';
 
 interface THandProps {
@@ -96,21 +97,11 @@ export const Hand = observer(function Hand({ canPlay, isSent, onPlay }: THandPro
           )}
 
           {isPlayable && targetUid === opened.uid && (
-            <div className="flex flex-wrap gap-2">
-              {targets.map(playerId => (
-                <Button
-                  className="whitespace-normal border-2 bg-transparent hover:bg-transparent"
-                  disabled={isSent}
-                  key={playerId}
-                  onClick={() => onPlay(opened.uid, playerId)}
-                  size="sm"
-                  style={BUTTON_STYLE}
-                  variant="outline"
-                >
-                  {state.G.players[playerId].nickname}
-                </Button>
-              ))}
-            </div>
+            <TargetPicker
+              isSent={isSent}
+              onPick={playerId => onPlay(opened.uid, playerId)}
+              targets={targets.map(id => ({ id, nickname: state.G.players[id].nickname }))}
+            />
           )}
         </div>
       )}

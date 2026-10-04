@@ -30,6 +30,7 @@ const TARGET_LABELS: Record<ETarget, string> = {
   [ETarget.FIRST]: 'лидер',
   [ETarget.LAST]: 'отстающий',
   [ETarget.SELF]: 'ты',
+  [ETarget.CHOSEN]: 'выбранный',
 };
 
 // Действие атома без цели: используется и для карточки события (с общей
@@ -96,13 +97,14 @@ export const describeEffect = (effect: TEffect, resourceName: string): string =>
 // Используется и карточкой итога, и просмотром клетки — обе показывают уже
 // случившееся, эффект берётся по сработавшей ветке записи
 export const describeHistoryEntry = (entry: THistoryEntry, option: TOptionView, resourceName: string): string => {
+  const targetPart = entry.targetNickname ? `, цель ${entry.targetNickname}` : '';
   const rollPart = entry.roll !== undefined && option.threshold
     ? `, выпало ${entry.roll} из ${option.threshold}`
     : '';
   const effect = entry.branch === 'success' ? option.success : option.failure;
   const outcome = effect ? describeEffect(effect, resourceName) : 'ничего';
 
-  return `${entry.nickname} — «${option.text}»${rollPart} — ${outcome}`;
+  return `${entry.nickname} — «${option.text}»${targetPart}${rollPart} — ${outcome}`;
 };
 
 const hintItemOf = (atom: TAtom): THintItem => {
@@ -129,3 +131,9 @@ export const buildOptionHint = (option: TOption): TOptionHint => ({
   success: buildEffectHint(option.success),
   failure: buildEffectHint(option.failure),
 });
+
+export const hintNeedsTarget = (hint: TOptionHint): boolean => (
+  [...hint.success, ...hint.failure].some(item => item.target === ETarget.CHOSEN)
+);
+
+export const optionNeedsTarget = (option: TOption): boolean => hintNeedsTarget(buildOptionHint(option));

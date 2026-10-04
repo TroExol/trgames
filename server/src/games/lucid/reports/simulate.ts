@@ -1,6 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
 import { makeFallbackParty } from '@/games/lucid/vitest/factories';
+import { currentEvent } from '@/games/lucid/core/turn';
 import { applyMove } from '@/games/lucid/core/reducer';
 import { chooseAutoMove } from '@/games/lucid/core/autoMove';
 
@@ -97,8 +98,20 @@ const candidateMoves = (state: TState): TMove[] => {
 
       return moves;
     }
-    case EPhase.CHOICE:
-      return OPTION_INDEXES.map((optionIndex): TMove => ({ ...base, type: EMoveType.CHOOSE_OPTION, optionIndex }));
+    case EPhase.CHOICE: {
+      const options = currentEvent(state.G, playerId)?.options ?? [];
+      const others = state.G.order.filter(id => id !== playerId);
+
+      return OPTION_INDEXES.flatMap((optionIndex): TMove[] => {
+        const option = options[optionIndex];
+
+        if (option && LucidShared.optionNeedsTarget(option)) {
+          return others.map((targetId): TMove => ({ ...base, type: EMoveType.CHOOSE_OPTION, optionIndex, targetId }));
+        }
+
+        return [{ ...base, type: EMoveType.CHOOSE_OPTION, optionIndex }];
+      });
+    }
     case EPhase.DICE:
       return DICE_INDEXES.map((dieIndex): TMove => ({ ...base, type: EMoveType.CHOOSE_DIE, dieIndex }));
     case EPhase.LAW:
@@ -249,6 +262,32 @@ const smartMove = (state: TState, seesOutcomes: boolean): TMove | null => {
   return best;
 };
 
+const chosenStance = (option: LucidShared.TOption): number => {
+  const hint = LucidShared.buildOptionHint(option);
+
+  return [...hint.success, ...hint.failure]
+    .filter(item => item.target === LucidShared.ETarget.CHOSEN)
+    .reduce((sum, item) => sum + (item.kind === LucidShared.EAtomKind.SKIP_TURN ? -1 : item.sign ?? 0), 0);
+};
+
+const aimAtTarget = (state: TState, move: TMove | null): TMove | null => {
+  if (move?.type !== EMoveType.CHOOSE_OPTION) {
+    return move;
+  }
+
+  const option = currentEvent(state.G, move.playerId)?.options[move.optionIndex];
+
+  if (!option || !LucidShared.optionNeedsTarget(option)) {
+    return move;
+  }
+
+  const byDepth = state.G.order
+    .filter(id => id !== move.playerId)
+    .sort((first, second) => depthOf(state, second) - depthOf(state, first));
+
+  return { ...move, targetId: chosenStance(option) < 0 ? byDepth[0] : byDepth[byDepth.length - 1] };
+};
+
 const randomMove = (state: TState): TMove | null => {
   const moves = legalMoves(state);
 
@@ -264,6 +303,17 @@ const casualMove = (state: TState): TMove | null => {
 
   if (state.ctx.phase === EPhase.SHOP) {
     return moves.find(move => move.type === EMoveType.BUY_CARD && move.index !== null) ?? moves[0];
+  }
+
+  if (state.ctx.phase === EPhase.CHOICE) {
+    const optionOf = (move: TMove): number | undefined => (
+      move.type === EMoveType.CHOOSE_OPTION ? move.optionIndex : undefined
+    );
+    const distinct = moves.filter((move, index) => (
+      optionOf(move) === undefined || moves.findIndex(other => optionOf(other) === optionOf(move)) === index
+    ));
+
+    return aimAtTarget(state, distinct[Math.floor(random() * distinct.length)]);
   }
 
   if (state.ctx.phase === EPhase.CARDS) {
@@ -330,7 +380,7 @@ const hintedMove = (state: TState): TMove | null => {
     }
   }
 
-  return best;
+  return aimAtTarget(state, best);
 };
 
 const refuseShopMove = (state: TState): TMove | null =>

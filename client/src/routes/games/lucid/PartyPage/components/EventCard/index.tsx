@@ -1,7 +1,8 @@
-import type { LucidShared } from '@trgames/shared';
-
+import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { LucidShared } from '@trgames/shared';
 
+import { TargetPicker } from '@/routes/games/lucid/PartyPage/components/TargetPicker';
 import { Button } from '@/components/ui/Button';
 
 import { OptionButton } from './OptionButton';
@@ -17,7 +18,9 @@ interface TProps {
   resourceName: string;
   // Оптимистичных ходов нет: после отправки кнопки молчат до нового stateId
   isSent: boolean;
-  onChoose: (optionIndex: number) => void;
+  // Другие игроки: из них ходящий выбирает цель варианта с CHOSEN
+  targets: { id: string; nickname: string }[];
+  onChoose: (optionIndex: number, targetId?: string) => void;
   onCollapse: () => void;
 }
 
@@ -30,9 +33,23 @@ export const EventCard = observer(function EventCard({
   resource,
   resourceName,
   isSent,
+  targets,
   onChoose,
   onCollapse,
 }: TProps) {
+  const [pendingIndex, setPendingIndex] = useState<number>();
+  const pending = pendingIndex === undefined ? undefined : event.options[pendingIndex];
+
+  const handleOptionClick = (index: number): void => {
+    if (LucidShared.hintNeedsTarget(event.options[index].hint)) {
+      setPendingIndex(index);
+
+      return;
+    }
+
+    onChoose(index);
+  };
+
   return (
     <div
       className="absolute inset-0 z-20 overflow-y-auto backdrop-blur-sm"
@@ -62,20 +79,44 @@ export const EventCard = observer(function EventCard({
           </p>
         )}
 
-        <ul className="flex flex-col gap-3">
-          {event.options.map((option, index) => (
-            <li key={option.text}>
-              <OptionButton
-                disabled={isSent}
-                isPreview={!isMyTurn}
-                onClick={() => onChoose(index)}
-                option={option}
-                resource={resource}
-                resourceName={resourceName}
-              />
-            </li>
-          ))}
-        </ul>
+        {pending && pendingIndex !== undefined
+          ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-base leading-snug">{`«${pending.text}» — кого выбрать?`}</p>
+
+                <TargetPicker
+                  isSent={isSent}
+                  onPick={targetId => onChoose(pendingIndex, targetId)}
+                  targets={targets}
+                />
+
+                <Button
+                  className="self-start bg-transparent hover:bg-transparent"
+                  onClick={() => setPendingIndex(undefined)}
+                  size="sm"
+                  style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+                  variant="outline"
+                >
+                  Назад
+                </Button>
+              </div>
+            )
+          : (
+              <ul className="flex flex-col gap-3">
+                {event.options.map((option, index) => (
+                  <li key={option.text}>
+                    <OptionButton
+                      disabled={isSent}
+                      isPreview={!isMyTurn}
+                      onClick={() => handleOptionClick(index)}
+                      option={option}
+                      resource={resource}
+                      resourceName={resourceName}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
       </div>
     </div>
   );

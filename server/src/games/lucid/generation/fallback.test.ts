@@ -3,6 +3,7 @@ import {
   expect,
   it,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
 import { eventSchema, worldSchema } from '@/games/lucid/generation/schema';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
@@ -47,6 +48,14 @@ describe('loadFallbackContent', () => {
 
     expect(metrics.paidOptionShare).toBeCloseTo(1 / 3, 1);
     expect(metrics.calamityShare).toBeCloseTo(1 / 4, 1);
+  });
+
+  it('в пуле есть варианты с целью CHOSEN: 5–6 событий', () => {
+    const { events } = loadFallbackContent(WHOLE_POOL, 'fallback');
+    const chosen = Object.values(events).filter(event => event.options.some(LucidShared.optionNeedsTarget));
+
+    expect(chosen.length).toBeGreaterThanOrEqual(5);
+    expect(chosen.length).toBeLessThanOrEqual(6);
   });
 
   it('события покрывают ровно переданные клетки — без лишних и без пропусков', () => {

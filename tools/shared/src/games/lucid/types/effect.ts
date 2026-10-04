@@ -7,6 +7,7 @@ export enum EAtomKind {
 
 export enum ETarget {
   ALL = 'ALL',
+  CHOSEN = 'CHOSEN',
   FIRST = 'FIRST',
   LAST = 'LAST',
   SELF = 'SELF',

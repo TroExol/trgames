@@ -39,6 +39,9 @@ export interface TCellPremise {
   // «Платный»: один из вариантов стоит ресурса (cost, без threshold),
   // на остальных клетках cost запрещён. От завязки и беды не зависит
   paid: boolean;
+  // «Выбор игрока»: хотя бы один вариант с атомом на CHOSEN. Как и беда, не ставится
+  // на клетки с «удар по лидеру» / «помощь отстающему»
+  chosen: boolean;
 }
 
 // Выбор count клеток по индексам из candidates — отдельным сидом на каждую
@@ -93,6 +96,7 @@ export const assignPremises = (cellIds: number[], seed: string): TCellPremise[] 
     .map((premise, index) => (premise === PREMISE_LEADER || premise === PREMISE_LAST ? -1 : index))
     .filter(index => index !== -1);
   const calamityIndexes = pickIndexes(calamityCandidates, Math.round(total / 4), `${seed}:calamity`);
+  const chosenIndexes = pickIndexes(calamityCandidates, Math.round(total / 5), `${seed}:chosen`);
   const paidIndexes = pickIndexes(
     Array.from({ length: total }, (_unused, index) => index),
     Math.round(total / 3),
@@ -112,6 +116,7 @@ export const assignPremises = (cellIds: number[], seed: string): TCellPremise[] 
           : undefined,
       calamity: calamityIndexes.has(index),
       paid: paidIndexes.has(index),
+      chosen: chosenIndexes.has(index),
     };
   });
 };

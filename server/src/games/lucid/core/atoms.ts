@@ -68,8 +68,9 @@ export const applyAtom = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   atom: LucidShared.TAtom,
+  chosenId?: LucidShared.TPlayerId,
 ): LucidShared.TG => ATOMS[atom.kind](G, {
   actorId,
   value: atom.value,
-  targets: resolveTarget(G, actorId, atom.target),
+  targets: resolveTarget(G, actorId, atom.target, chosenId),
 });

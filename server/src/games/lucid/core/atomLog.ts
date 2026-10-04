@@ -11,6 +11,7 @@ export const describeAtomLog = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   atom: LucidShared.TAtom,
+  chosenId?: LucidShared.TPlayerId,
 ): string => {
   if (atom.kind === LucidShared.EAtomKind.SWAP_WITH_FIRST) {
     const [firstId] = resolveTarget(G, actorId, LucidShared.ETarget.FIRST);
@@ -29,7 +30,7 @@ export const describeAtomLog = (
     return `${G.players[actorId].nickname} меняется местами с ${G.players[firstId].nickname}`;
   }
 
-  const resolved = resolveTarget(G, actorId, atom.target);
+  const resolved = resolveTarget(G, actorId, atom.target, chosenId);
 
   if (resolved.length === 0) {
     return atom.target === LucidShared.ETarget.FIRST

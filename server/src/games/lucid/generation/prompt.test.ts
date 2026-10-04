@@ -19,6 +19,7 @@ const cell = (overrides: Partial<TEventCellBrief> = {}): TEventCellBrief => ({
   region: 'Подземный зал',
   calamity: false,
   paid: false,
+  chosen: false,
   ...overrides,
 });
 
@@ -80,6 +81,14 @@ describe('buildEventsPrompt', () => {
 
     expect(line).toContain('(беда');
     expect(line).toContain('(один вариант платный');
+  });
+
+  it('у выбора игрока в строке клетки — требование атома на CHOSEN, цель описана', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'золото', [cell({ chosen: true })], []);
+
+    expect(prompt).toContain('(хотя бы один вариант с атомом на CHOSEN — ходящий выберет, кому помочь или помешать)');
+    expect(prompt).toContain('- CHOSEN: игрок, которого выберет ходящий (не он сам)');
+    expect(buildEventsPrompt('Подземелье', 'золото', [cell()], [])).not.toContain('(хотя бы один вариант с атомом на CHOSEN');
   });
 
   it('предупреждает не повторять завязку дословно как заголовок', () => {

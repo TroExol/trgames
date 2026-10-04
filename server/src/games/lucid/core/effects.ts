@@ -8,6 +8,7 @@ export const applyEffect = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   effect: LucidShared.TEffect,
+  chosenId?: LucidShared.TPlayerId,
 ): LucidShared.TG => {
   const passed = !effect.condition || checkCondition(G.players[actorId], effect.condition);
   const atoms = passed ? effect.atoms : effect.otherwise ?? [];
@@ -19,8 +20,8 @@ export const applyEffect = (
   }
 
   return atoms.reduce((state, atom) => {
-    const line = describeAtomLog(state, actorId, atom);
-    const applied = applyAtom(state, actorId, atom);
+    const line = describeAtomLog(state, actorId, atom, chosenId);
+    const applied = applyAtom(state, actorId, atom, chosenId);
 
     return { ...applied, log: [...applied.log, line] };
   }, G);

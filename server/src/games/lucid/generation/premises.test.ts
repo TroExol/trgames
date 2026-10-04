@@ -61,6 +61,25 @@ describe('assignPremises', () => {
     expect(assigned.filter(item => item.paid)).toHaveLength(16);
   });
 
+  it('выбор игрока — пятая часть клеток, не на «удар по лидеру» и «помощь отстающему»', () => {
+    ['a', 'b', 'c'].forEach(seed => {
+      const assigned = assignPremises(CELL_IDS, seed);
+
+      expect(assigned.filter(item => item.chosen)).toHaveLength(Math.round(CELL_IDS.length / 5));
+      assigned.filter(item => item.chosen).forEach(item => {
+        expect(item.premise).not.toBe(PREMISE_LEADER);
+        expect(item.premise).not.toBe(PREMISE_LAST);
+      });
+    });
+  });
+
+  it('выбор игрока не меняет раскладку беды и платного', () => {
+    const assigned = assignPremises(CELL_IDS, 'marks');
+
+    expect(assigned.some(item => item.chosen && item.calamity)).toBe(true);
+    expect(assigned.some(item => item.chosen && !item.calamity)).toBe(true);
+  });
+
   it('беда не совпадает с «удар по лидеру» и «помощь отстающему»', () => {
     ['a', 'b', 'c', 'd', 'e'].forEach(seed => {
       assignPremises(CELL_IDS, seed).forEach(item => {

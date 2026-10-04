@@ -209,13 +209,13 @@
           }
         },
         {
-          "text": "Раздать всем поровну",
+          "text": "Перекинуть импульс выбранному",
           "success": {
             "atoms": [
               {
                 "kind": "RESOURCE",
-                "target": "ALL",
-                "value": 2
+                "target": "CHOSEN",
+                "value": 4
               }
             ]
           }
@@ -727,13 +727,18 @@
           }
         },
         {
-          "text": "Пересидеть цикл в нише",
+          "text": "Пересидеть цикл, захлопнув нишу перед выбранным",
           "success": {
             "atoms": [
               {
                 "kind": "SKIP_TURN",
                 "target": "SELF",
                 "value": 1
+              },
+              {
+                "kind": "MOVE",
+                "target": "CHOSEN",
+                "value": -1
               }
             ]
           }
@@ -1006,13 +1011,18 @@
           }
         },
         {
-          "text": "Уйти ни с чем",
+          "text": "Уйти, подставив вместо себя выбранного",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
                 "target": "SELF",
                 "value": -1
+              },
+              {
+                "kind": "MOVE",
+                "target": "CHOSEN",
+                "value": -2
               }
             ]
           }
@@ -1533,13 +1543,13 @@
           }
         },
         {
-          "text": "Оставить всё как было и идти дальше",
+          "text": "Оставить батарею тому, кого выберешь",
           "success": {
             "atoms": [
               {
-                "kind": "MOVE",
-                "target": "SELF",
-                "value": 1
+                "kind": "RESOURCE",
+                "target": "CHOSEN",
+                "value": 3
               }
             ]
           }
@@ -1765,13 +1775,18 @@
       "text": "Кто-то на другом конце станции просит подтвердить приём. Голос дрожит.",
       "options": [
         {
-          "text": "Остаться на связи, пока не успокоится",
+          "text": "Остаться на связи, отдав заряд выбранному",
           "success": {
             "atoms": [
               {
                 "kind": "SKIP_TURN",
                 "target": "SELF",
                 "value": 1
+              },
+              {
+                "kind": "RESOURCE",
+                "target": "CHOSEN",
+                "value": 2
               }
             ]
           }
@@ -2032,12 +2047,12 @@
           }
         },
         {
-          "text": "Обойти по вентиляции",
+          "text": "Заманить в каюту выбранного",
           "success": {
             "atoms": [
               {
                 "kind": "MOVE",
-                "target": "SELF",
+                "target": "CHOSEN",
                 "value": -2
               }
             ]

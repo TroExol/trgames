@@ -42,6 +42,13 @@ describe('resolveTarget', () => {
     expect(resolveTarget(G, 'b', LucidShared.ETarget.LAST)).toEqual(['b']);
   });
 
+  it('выбранный — тот, кого передали; без выбора — никто', () => {
+    const G = threePlayers();
+
+    expect(resolveTarget(G, 'a', LucidShared.ETarget.CHOSEN, 'c')).toEqual(['c']);
+    expect(resolveTarget(G, 'a', LucidShared.ETarget.CHOSEN)).toEqual([]);
+  });
+
   it('себя и всех разрешает верно', () => {
     const G = threePlayers();
 

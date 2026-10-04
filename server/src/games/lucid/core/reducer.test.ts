@@ -288,6 +288,94 @@ describe('события', () => {
     expect(next).toBe(state);
   });
 
+  describe('CHOOSE_OPTION с целью CHOSEN', () => {
+    const chosenParty = () => {
+      const state = setupParty({
+        seed: 'chosen',
+        players: [
+          { id: 'a', nickname: 'Аня' },
+          { id: 'b', nickname: 'Боря' },
+          { id: 'c', nickname: 'Вася' },
+        ],
+        content: {
+          theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#001122', '#334455', '#667788'] },
+          events: {},
+        },
+      });
+
+      state.G.track = lineTrack();
+      state.G.players.a.position = 1;
+      state.G.events = {
+        1: {
+          cellId: 1,
+          title: 'Толчок',
+          text: 'Текст',
+          options: [{
+            text: 'Толкнуть',
+            success: {
+              atoms: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.CHOSEN, value: -2 }],
+            },
+          }],
+        },
+      };
+      state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+      return state;
+    };
+
+    const choose = (state: LucidShared.TState, targetId?: string) => applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+      targetId,
+    });
+
+    it('действует на выбранного, ник цели — в ленте и истории клетки', () => {
+      const state = chosenParty();
+      const before = state.G.players.b.resource;
+      const next = choose(state, 'b');
+
+      expect(next.G.players.b.resource).toBe(before - 2);
+      expect(next.G.players.c.resource).toBe(state.G.players.c.resource);
+      expect(next.G.log).toContain('Боря: дублоны −2');
+      expect(next.G.cellHistory[1][0].targetNickname).toBe('Боря');
+    });
+
+    it('без цели, с собой или с чужим id ход отклоняется', () => {
+      const state = chosenParty();
+
+      expect(choose(state)).toBe(state);
+      expect(choose(state, 'a')).toBe(state);
+      expect(choose(state, 'z')).toBe(state);
+    });
+
+    it('игрок у сейфа может быть целью, но не сдвигается', () => {
+      const state = chosenParty();
+      state.G.events[1].options[0].success.atoms[0] = {
+        kind: LucidShared.EAtomKind.MOVE,
+        target: LucidShared.ETarget.CHOSEN,
+        value: -2,
+      };
+      state.G.players.b.position = state.G.track.finishId;
+
+      const next = choose(state, 'b');
+
+      expect(next.G.players.b.position).toBe(state.G.track.finishId);
+      expect(next.G.log).toContain('у сейфа никого не сдвинуть');
+    });
+
+    it('без атомов CHOSEN цель игнорируется', () => {
+      const state = chosenParty();
+      state.G.events[1].options[0].success.atoms[0].target = LucidShared.ETarget.SELF;
+
+      const next = choose(state, 'zzz');
+
+      expect(next).not.toBe(state);
+      expect(next.G.cellHistory[1][0].targetNickname).toBeUndefined();
+    });
+  });
+
   it('разыгранный вариант завершает ход, даже если игрок не сдвинулся', () => {
     const state = makeParty('stay-put');
     state.G.track = lineTrack();

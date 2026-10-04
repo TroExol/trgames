@@ -20,7 +20,7 @@ export type TMove =
   | { type: EMoveType.CHOOSE_BRANCH; playerId: TPlayerId; stateId: number; cellId: number }
   | { type: EMoveType.CHOOSE_DIE; playerId: TPlayerId; stateId: number; dieIndex: number }
   | { type: EMoveType.CHOOSE_LAW; playerId: TPlayerId; stateId: number; index: number }
-  | { type: EMoveType.CHOOSE_OPTION; playerId: TPlayerId; stateId: number; optionIndex: number }
+  | { type: EMoveType.CHOOSE_OPTION; playerId: TPlayerId; stateId: number; optionIndex: number; targetId?: TPlayerId }
   | { type: EMoveType.END_TURN; playerId: TPlayerId; stateId: number }
   | { type: EMoveType.PLAY_CARD; playerId: TPlayerId; stateId: number; uid: number; targetId?: TPlayerId }
   | { type: EMoveType.OPEN_SAFE; playerId: TPlayerId; stateId: number; bonus: number };

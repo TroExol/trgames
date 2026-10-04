@@ -239,6 +239,24 @@ describe('worldSchema: название ресурса', () => {
   });
 });
 
+describe('eventSchema: цель CHOSEN', () => {
+  const withAtom = (kind: LucidShared.EAtomKind, target: LucidShared.ETarget, value: number) => ({
+    ...validEvent,
+    options: [{ text: 'Толкнуть', success: { atoms: [{ kind, target, value }] } }],
+  });
+
+  it('принимает CHOSEN у сдвига', () => {
+    expect(eventSchema.safeParse(withAtom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.CHOSEN, -2)).success)
+      .toBe(true);
+  });
+
+  it('отклоняет обмен с лидером с целью CHOSEN', () => {
+    const swap = withAtom(LucidShared.EAtomKind.SWAP_WITH_FIRST, LucidShared.ETarget.CHOSEN, 0);
+
+    expect(eventSchema.safeParse(swap).success).toBe(false);
+  });
+});
+
 describe('worldSchema: названия карт', () => {
   const card = { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит, дорога короче' };
 

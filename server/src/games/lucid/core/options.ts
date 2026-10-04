@@ -10,6 +10,7 @@ export const resolveOption = (
   optionIndex: number,
   option: LucidShared.TOption,
   cellId?: number,
+  chosenId?: LucidShared.TPlayerId,
 ): LucidShared.TG | null => {
   const player = G.players[actorId];
 
@@ -55,7 +56,7 @@ export const resolveOption = (
   }
 
   const resolved = effect
-    ? applyEffect(afterRoll, actorId, effect)
+    ? applyEffect(afterRoll, actorId, effect, chosenId)
     : { ...afterRoll, log: [...afterRoll.log, 'ничего не произошло'] };
 
   const entry: LucidShared.THistoryEntry = {
@@ -64,6 +65,7 @@ export const resolveOption = (
     optionIndex,
     branch,
     roll,
+    ...(chosenId && { targetNickname: G.players[chosenId].nickname }),
     lines: resolved.log.slice(logStart),
   };
 

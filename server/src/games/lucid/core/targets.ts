@@ -20,10 +20,13 @@ export const resolveTarget = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   target: LucidShared.ETarget,
+  chosenId?: LucidShared.TPlayerId,
 ): LucidShared.TPlayerId[] => {
   switch (target) {
     case LucidShared.ETarget.ALL:
       return [...G.order];
+    case LucidShared.ETarget.CHOSEN:
+      return chosenId ? [chosenId] : [];
     case LucidShared.ETarget.FIRST:
       return extremePlayer(G, 'max');
     case LucidShared.ETarget.LAST:

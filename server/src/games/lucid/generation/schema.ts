@@ -39,6 +39,10 @@ const atomSchema = z
   .refine(
     atom => atom.value >= ATOM_RANGES[atom.kind].min && atom.value <= ATOM_RANGES[atom.kind].max,
     'значение атома вне диапазона, допустимого для его вида',
+  )
+  .refine(
+    atom => !(atom.kind === LucidShared.EAtomKind.SWAP_WITH_FIRST && atom.target === LucidShared.ETarget.CHOSEN),
+    'обмен с лидером не бывает с целью CHOSEN',
   );
 
 const conditionSchema = z.strictObject({

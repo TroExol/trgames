@@ -132,3 +132,40 @@ describe('buildEffectHint', () => {
     expect(LucidShared.buildEffectHint(undefined)).toEqual([]);
   });
 });
+
+describe('цель CHOSEN', () => {
+  const chosenMove = atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.CHOSEN, -4);
+  const option: LucidShared.TOption = { text: 'Толкнуть', success: { atoms: [chosenMove] } };
+
+  it('подпись цели — «выбранный»', () => {
+    expect(LucidShared.describeAtom(chosenMove, 'монеты')).toBe('выбранный: −4 клетки');
+  });
+
+  it('вариант с CHOSEN в любой ветке требует цель', () => {
+    expect(LucidShared.optionNeedsTarget(option)).toBe(true);
+    expect(LucidShared.optionNeedsTarget({ text: 'Рискнуть', threshold: 3, success: { atoms: [] }, failure: option.success }))
+      .toBe(true);
+    expect(LucidShared.optionNeedsTarget({
+      text: 'Идти',
+      success: { atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 1)] },
+    })).toBe(false);
+  });
+
+  it('запись истории называет цель', () => {
+    const view: LucidShared.TOptionView = {
+      ...option,
+      revealed: { success: true, failure: false },
+      hint: LucidShared.buildOptionHint(option),
+    };
+    const entry: LucidShared.THistoryEntry = {
+      playerId: 'a',
+      nickname: 'Ваня',
+      optionIndex: 0,
+      branch: 'success',
+      targetNickname: 'Петя',
+      lines: [],
+    };
+
+    expect(LucidShared.describeHistoryEntry(entry, view, 'монеты')).toBe('Ваня — «Толкнуть», цель Петя — выбранный: −4 клетки');
+  });
+});

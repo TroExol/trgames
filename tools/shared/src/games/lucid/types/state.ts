@@ -63,6 +63,7 @@ export interface THistoryEntry {
   optionIndex: number;
   branch: TBranch;
   roll?: number;
+  targetNickname?: string;
   lines: string[];
 }
 

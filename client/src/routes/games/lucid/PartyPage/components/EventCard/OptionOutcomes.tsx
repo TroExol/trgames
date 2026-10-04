@@ -11,6 +11,7 @@ const TARGET_PREFIXES: Partial<Record<LucidShared.ETarget, string>> = {
   [LucidShared.ETarget.ALL]: 'все',
   [LucidShared.ETarget.FIRST]: 'лидер',
   [LucidShared.ETarget.LAST]: 'отстающий',
+  [LucidShared.ETarget.CHOSEN]: 'выбранный',
 };
 
 const hintLabel = (item: LucidShared.THintItem, resourceName: string): string => {

@@ -115,11 +115,12 @@ export const Hud = observer(function Hud({ children }: THudProps) {
     });
   };
 
-  const handleChooseOption = (optionIndex: number): void => {
+  const handleChooseOption = (optionIndex: number, targetId?: string): void => {
     setSentStateId(state.stateId);
     socketService.makeMove({
       optionIndex,
       playerId: state.you,
+      targetId,
       stateId: state.stateId,
       type: EMoveType.CHOOSE_OPTION,
     });
@@ -488,6 +489,9 @@ export const Hud = observer(function Hud({ children }: THudProps) {
           onCollapse={() => setCollapsedCell(event.cellId)}
           resource={current.resource}
           resourceName={theme.resourceName}
+          targets={state.G.order
+            .filter(id => id !== state.you)
+            .map(id => ({ id, nickname: state.G.players[id].nickname }))}
         />
       )}
 

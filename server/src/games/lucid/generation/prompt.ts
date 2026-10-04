@@ -17,7 +17,7 @@ const ATOM_DESCRIPTIONS: Record<LucidShared.EAtomKind, string> = {
   [LucidShared.EAtomKind.MOVE]: 'сдвинуть по треку на value клеток, минус — назад (value не 0)',
   [LucidShared.EAtomKind.RESOURCE]: 'изменить запас ресурса на value (value не 0)',
   [LucidShared.EAtomKind.SKIP_TURN]: 'заставить пропустить value ходов (value не 0)',
-  [LucidShared.EAtomKind.SWAP_WITH_FIRST]: 'поменяться местами с лидером, target всегда SELF, value всегда 0',
+  [LucidShared.EAtomKind.SWAP_WITH_FIRST]: 'поменяться местами с лидером, target всегда SELF (не CHOSEN), value всегда 0',
 };
 
 const TARGET_DESCRIPTIONS: Record<LucidShared.ETarget, string> = {
@@ -25,6 +25,7 @@ const TARGET_DESCRIPTIONS: Record<LucidShared.ETarget, string> = {
   [LucidShared.ETarget.FIRST]: 'ближайший к финишу',
   [LucidShared.ETarget.LAST]: 'самый дальний от финиша',
   [LucidShared.ETarget.ALL]: 'все игроки',
+  [LucidShared.ETarget.CHOSEN]: 'игрок, которого выберет ходящий (не он сам)',
 };
 
 const describeAtoms = (): string => {
@@ -54,15 +55,17 @@ const CALAMITY_REQUIREMENT = ' (беда — все варианты с поте
   + ' −2 клетки, −4 ресурса, пропуск хода или рискнуть с провалом хуже; успех рискованного варианта'
   + ' — «обошлось», мелкая потеря или ничего, но не прибыль)';
 const PAID_REQUIREMENT = ' (один вариант платный — cost, без threshold)';
+const CHOSEN_REQUIREMENT = ' (хотя бы один вариант с атомом на CHOSEN — ходящий выберет, кому помочь или помешать)';
 
 // Строка на клетку вместо голого номера: край для атмосферы места, завязка —
 // направление события, не готовый заголовок. Требования к механике — только
-// у пометок, которые раздал код (assignPremises): FIRST/LAST, беда, платный
+// у пометок, которые раздал код (assignPremises): FIRST/LAST, беда, платный, CHOSEN
 const describeCells = (cells: TEventCellBrief[]): string => cells
   .map(cell => {
     const requirement = (cell.target ? REQUIREMENT_BY_TARGET[cell.target] : '')
       + (cell.calamity ? CALAMITY_REQUIREMENT : '')
-      + (cell.paid ? PAID_REQUIREMENT : '');
+      + (cell.paid ? PAID_REQUIREMENT : '')
+      + (cell.chosen ? CHOSEN_REQUIREMENT : '');
 
     return `- клетка ${cell.cellId} — край «${cell.region}», завязка: ${cell.premise}${requirement}`;
   })
@@ -189,7 +192,7 @@ ${describeTargets()}
 
 У клеток с пометкой FIRST/LAST в скобках — обязательное требование к
 механике, оно и держит перекос в пользу отстающих: без этого лидер
-побеждает скучно. Беда и платный вариант — тоже требования из скобок:
+побеждает скучно. Беда, платный вариант и CHOSEN — тоже требования из скобок:
 выполняй их у тех клеток, где они стоят, и не добавляй на остальные.
 
 Пример ниже показывает только формат JSON, не структуру события: число

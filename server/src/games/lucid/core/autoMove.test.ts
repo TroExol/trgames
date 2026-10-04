@@ -147,6 +147,30 @@ describe('chooseAutoMove', () => {
     expect(chooseAutoMove(state)).toMatchObject({ optionIndex: 1 });
   });
 
+  it('вариант с CHOSEN: целью берёт самого глубокого из других, при равенстве — первого по очереди', () => {
+    const state = makeFallbackParty({ seed: 'auto-chosen', playerCount: 3 });
+    const [first, second, third] = state.G.order;
+    state.ctx.currentPlayer = first;
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+    state.G.events = {
+      [state.G.players[first].position]: {
+        cellId: 0,
+        title: 'Толчок',
+        text: 'Текст',
+        options: [{
+          text: 'Толкнуть',
+          success: { atoms: [{ kind: LucidShared.EAtomKind.MOVE, target: LucidShared.ETarget.CHOSEN, value: -2 }] },
+        }],
+      },
+    };
+
+    expect(chooseAutoMove(state)).toMatchObject({ optionIndex: 0, targetId: second });
+
+    state.G.players[third].position = state.G.track.cells[1].id;
+
+    expect(chooseAutoMove(state)).toMatchObject({ optionIndex: 0, targetId: third });
+  });
+
   it('в фазе карт завершает ход', () => {
     const state = makeFallbackParty({ seed: 'auto-cards' });
     state.ctx.phase = LucidShared.EPhase.CARDS;
