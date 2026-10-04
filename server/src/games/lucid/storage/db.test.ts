@@ -23,7 +23,7 @@ describe('storage', () => {
     const storage = createStorage<LucidShared.TState>(':memory:');
     const state = makeState();
 
-    storage.saveParty({ uuid: 'p1', theme: 'станция', document: state });
+    storage.saveParty({ uuid: 'p1', code: '1234', theme: 'станция', document: state });
 
     expect(storage.loadParty('p1')).toEqual(state);
   });
@@ -32,9 +32,9 @@ describe('storage', () => {
     const storage = createStorage<LucidShared.TState>(':memory:');
     const state = makeState();
 
-    storage.saveParty({ uuid: 'p1', theme: 'станция', document: state });
+    storage.saveParty({ uuid: 'p1', code: '1234', theme: 'станция', document: state });
     state.G.players.p0.position = 7;
-    storage.saveParty({ uuid: 'p1', theme: 'станция', document: state });
+    storage.saveParty({ uuid: 'p1', code: '1234', theme: 'станция', document: state });
 
     expect(storage.loadParty('p1')!.G.players.p0.position).toBe(7);
   });
@@ -46,10 +46,25 @@ describe('storage', () => {
   it('удаление партии убирает её из базы', () => {
     const storage = createStorage<LucidShared.TState>(':memory:');
 
-    storage.saveParty({ uuid: 'p1', theme: 'станция', document: makeState() });
+    storage.saveParty({ uuid: 'p1', code: '1234', theme: 'станция', document: makeState() });
     storage.removeParty('p1');
 
     expect(storage.loadParty('p1')).toBeNull();
+  });
+});
+
+describe('поиск партии по коду', () => {
+  it('находит сохранённую партию, после удаления — нет', () => {
+    const storage = createStorage<LucidShared.TState>(':memory:');
+
+    storage.saveParty({ uuid: 'p1', code: '0042', theme: 'станция', document: makeState() });
+
+    expect(storage.findPartyUuidByCode('0042')).toBe('p1');
+    expect(storage.findPartyUuidByCode('9999')).toBeNull();
+
+    storage.removeParty('p1');
+
+    expect(storage.findPartyUuidByCode('0042')).toBeNull();
   });
 });
 
@@ -173,7 +188,7 @@ describe('generationCalls и generations', () => {
 
     // Уборка удаляет parties через несколько минут после опустения комнаты
     // (cleanup.ts) — задолго до того, как кто-то откроет отчёт
-    storage.saveParty({ uuid: 'p1', theme: 'Пиратская бухта', document: makeState() });
+    storage.saveParty({ uuid: 'p1', code: '1234', theme: 'Пиратская бухта', document: makeState() });
     storage.saveGeneration(generationParams({ worldName: 'Пиратская бухта' }));
     storage.removeParty('p1');
 

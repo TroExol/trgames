@@ -6,13 +6,17 @@ import { LucidShared } from '@trgames/shared';
 import { getLucidUrl } from '@/lib/constants';
 
 // Своей комнаты для этого соединения ещё нет — партия ещё не создана,
-// поэтому типов достаточно только на единственное событие лобби
+// поэтому типов достаточно только на события лобби
 type TLobbySocket = Socket<
   LucidShared.TLucidLobbyServerToClientEvents,
   LucidShared.TLucidLobbyClientToServerEvents
 >;
 
-export const createParty = (playerId: string): Promise<string> => {
+type TLobbyEmit = (socket: TLobbySocket, callback: (result: TLobbyResult) => void) => void;
+
+type TLobbyResult = { status: 'ok'; partyId: string } | { status: 'error'; message: string };
+
+const requestLobby = (playerId: string, emit: TLobbyEmit): Promise<string> => {
   return new Promise((resolve, reject) => {
     const socket = io(getLucidUrl('/lobby'), {
       query: { playerId },
@@ -29,7 +33,7 @@ export const createParty = (playerId: string): Promise<string> => {
     });
 
     socket.on('connect', () => {
-      socket.emit(LucidShared.ELucidEvent.createParty, result => {
+      emit(socket, result => {
         finish();
 
         if (result.status === 'ok') {
@@ -39,5 +43,17 @@ export const createParty = (playerId: string): Promise<string> => {
         }
       });
     });
+  });
+};
+
+export const createParty = (playerId: string): Promise<string> => {
+  return requestLobby(playerId, (socket, callback) => {
+    socket.emit(LucidShared.ELucidEvent.createParty, callback);
+  });
+};
+
+export const findParty = (playerId: string, code: string): Promise<string> => {
+  return requestLobby(playerId, (socket, callback) => {
+    socket.emit(LucidShared.ELucidEvent.findParty, code, callback);
   });
 };

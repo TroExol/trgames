@@ -22,6 +22,7 @@ export const THEME_HINTS = [
 
 interface TPartyConstructorParams {
   uuid: string;
+  code: string;
   ownerId: LucidShared.TPlayerId;
 }
 
@@ -58,6 +59,7 @@ interface TStartParams {
 
 export interface TPartySnapshot {
   uuid: string;
+  code?: string;
   ownerId: LucidShared.TPlayerId;
   phase: LucidShared.EPartyPhase;
   members: TMember[];
@@ -70,6 +72,7 @@ export interface TPartySnapshot {
 
 export class Party {
   public readonly uuid: string;
+  public readonly code: string;
   public readonly ownerId: LucidShared.TPlayerId;
 
   private phase: LucidShared.EPartyPhase = LucidShared.EPartyPhase.LOBBY;
@@ -84,8 +87,9 @@ export class Party {
   // Куда уходить после победы, если с этой партии начали следующую
   private nextPartyId?: string;
 
-  constructor({ uuid, ownerId }: TPartyConstructorParams) {
+  constructor({ uuid, code, ownerId }: TPartyConstructorParams) {
     this.uuid = uuid;
+    this.code = code;
     this.ownerId = ownerId;
   }
 
@@ -297,6 +301,7 @@ export class Party {
   // сериализуемым именно ради этого
   public snapshot = (): TPartySnapshot => ({
     uuid: this.uuid,
+    code: this.code,
     ownerId: this.ownerId,
     phase: this.phase,
     members: [...this.members.values()].map(member => ({ ...member })),
@@ -308,7 +313,11 @@ export class Party {
   });
 
   public static fromSnapshot = (snapshot: TPartySnapshot): Party => {
-    const party = new Party({ uuid: snapshot.uuid, ownerId: snapshot.ownerId });
+    const party = new Party({
+      uuid: snapshot.uuid,
+      code: snapshot.code ?? '',
+      ownerId: snapshot.ownerId,
+    });
 
     party.phase = snapshot.phase;
     party.theme = snapshot.theme;
@@ -330,6 +339,7 @@ export class Party {
 
   public view = (playerId: LucidShared.TPlayerId): LucidShared.TPartyView => ({
     partyId: this.uuid,
+    code: this.code,
     phase: this.phase,
     members: [...this.members.values()].map(member => ({ ...member })),
     ownerId: this.ownerId,

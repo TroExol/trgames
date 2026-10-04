@@ -50,6 +50,7 @@ const setupHud = (
   partyStore.reset();
   partyStore.applyView({
     partyId: 'story-party',
+    code: '1234',
     phase: EPartyPhase.PLAYING,
     members: withIds.map(player => ({
       playerId: player.id,

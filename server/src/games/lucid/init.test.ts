@@ -10,7 +10,11 @@ import type { TPartySnapshot } from '@/games/lucid/room/Party';
 
 import { createStorage } from '@/games/lucid/storage/db';
 import { createPartyGroup } from '@/games/lucid/room/PartyGroup';
-import { createHandlers, createParty } from '@/games/lucid/init';
+import {
+  createHandlers,
+  createParty,
+  findParty,
+} from '@/games/lucid/init';
 import { generateContent } from '@/games/lucid/generation/pipeline';
 
 // Настоящий пайплайн стучится в сеть. Подменяем его целиком, чтобы вызвать
@@ -289,5 +293,34 @@ describe('создание партии', () => {
     // Владелец назначается при создании, но состав пуст, пока он не подключился
     expect(party.ownerId).toBe('a');
     expect(party.view(party.ownerId).members).toHaveLength(0);
+  });
+});
+
+describe('вход по коду', () => {
+  const find = (code: string) => {
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
+    const party = group.create({ uuid: 'p1', ownerId: 'a' });
+    const callback = vi.fn();
+
+    findParty({ group }, code === 'real' ? ` ${party.code} ` : code, callback);
+
+    return callback.mock.calls[0][0] as { status: string; partyId?: string; message?: string };
+  };
+
+  it('верный код возвращает идентификатор партии', () => {
+    expect(find('real')).toEqual({ status: 'ok', partyId: 'p1' });
+  });
+
+  it.each(['', '12', '12345', 'abcd'])('неверный формат %j — ошибка', code => {
+    expect(find(code).status).toBe('error');
+  });
+
+  it('несуществующий код — ошибка', () => {
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
+    const callback = vi.fn();
+
+    findParty({ group }, '0000', callback);
+
+    expect(callback).toHaveBeenCalledWith({ status: 'error', message: 'Партия не найдена' });
   });
 });

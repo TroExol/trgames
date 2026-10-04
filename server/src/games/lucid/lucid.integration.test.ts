@@ -90,7 +90,7 @@ describe('партия целиком', () => {
       playerId: state.ctx.currentPlayer,
       stateId: state.stateId,
     });
-    storage.saveParty({ uuid: 'p1', theme: 'станция', document: state });
+    storage.saveParty({ uuid: 'p1', code: '1234', theme: 'станция', document: state });
 
     const restored = storage.loadParty('p1')!;
 

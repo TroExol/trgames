@@ -7,7 +7,7 @@ import { LucidShared } from '@trgames/shared';
 
 import { Party, THEME_HINTS } from '@/games/lucid/room/Party';
 
-const makeParty = () => new Party({ uuid: 'p1', ownerId: 'a' });
+const makeParty = () => new Party({ uuid: 'p1', code: '1234', ownerId: 'a' });
 
 describe('состав партии', () => {
   it('первый вошедший становится владельцем', () => {
@@ -115,7 +115,7 @@ describe('предложения темы', () => {
 
 describe('жеребьёвка темы', () => {
   const partyWithThemes = (uuid: string) => {
-    const party = new Party({ uuid, ownerId: 'a' });
+    const party = new Party({ uuid, code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
     party.join({ playerId: 'b', nickname: 'Боря' });
     party.join({ playerId: 'c', nickname: 'Вася' });
@@ -163,7 +163,7 @@ describe('жеребьёвка темы', () => {
 
 describe('старт партии', () => {
   const readyParty = (uuid: string) => {
-    const party = new Party({ uuid, ownerId: 'a' });
+    const party = new Party({ uuid, code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
     party.join({ playerId: 'b', nickname: 'Боря' });
     party.proposeTheme('a', 'пираты');
@@ -178,7 +178,7 @@ describe('старт партии', () => {
   });
 
   it('одному играть нельзя', () => {
-    const party = new Party({ uuid: 'alone', ownerId: 'a' });
+    const party = new Party({ uuid: 'alone', code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
 
     expect(party.canStart).toBe(false);
@@ -307,7 +307,7 @@ describe('старт партии', () => {
 
 describe('лента событий', () => {
   const playingParty = async (uuid: string) => {
-    const party = new Party({ uuid, ownerId: 'a' });
+    const party = new Party({ uuid, code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
     party.join({ playerId: 'b', nickname: 'Боря' });
     party.proposeTheme('a', 'пираты');

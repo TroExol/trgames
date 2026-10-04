@@ -43,6 +43,7 @@ export interface TLobbyMember {
 
 export interface TPartyView {
   partyId: string;
+  code: string;
   phase: EPartyPhase;
   members: TLobbyMember[];
   ownerId: TPlayerId;

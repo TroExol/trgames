@@ -65,7 +65,7 @@
 ## 2. Путь игрока
 
 1. **Ник.** Анонимный id при первом заходе, живёт в браузере; место в партии закреплено за id, не за соединением (`room/Party.ts:114-123` и `141-147`). В лобби ник можно сменить кнопкой «Сменить ник» — место и ответ про тему сохраняются (`room/Party.ts` `join`, ветка `existing`); после старта партии кнопки нет.
-2. **Вход.** Только по ссылке, списка комнат нет. `/lucid/lobby` создаёт партию, `/lucid` принимает по `partyId+playerId+nickname`.
+2. **Вход.** По ссылке или по коду из 4 цифр (как в Jackbox); списка комнат нет. Код показан в лобби партии и вводится на странице «Новая партия». `/lucid/lobby` создаёт партию и ищет её по коду (`find-party`), `/lucid` принимает по `partyId+playerId+nickname`. Код — только адрес для входа: uuid остаётся сидом генерации и ключом статистики.
 3. **Тема.** Каждый предлагает (≤200 символов) или отказывается — оба варианта считаются готовностью, видно всем до розыгрыша.
 4. **Запуск.** Только владелец (`init.ts:129`), от 2 игроков (`Party.ts:94-96`). Кубик выбирает тему среди предложенных по сиду партии, иначе — из 5 подсказок.
 5. **Ожидание генерации.** «Мир» сразу, затем трек и события одним сообщением (4.2). Потолок 180 с (`init.ts:24`), дальше — запасная партия, честно в ленте.
@@ -433,6 +433,7 @@ OpenRouter. `DEFAULT_MODEL` — `deepseek/deepseek-v4.1-flash:nitro` (`generatio
 | Событие | Payload | Проверки | Что делает |
 |---|---|---|---|
 | `create-party` (`/lucid/lobby`) | — (колбэк) | `playerId` из query | `group.create`, персист, таймер удаления; колбэк `partyId`/ошибка |
+| `find-party` (`/lucid/lobby`) | `code: string` (колбэк) | `trim`, ровно 4 цифры | `group.findByCode`; колбэк `partyId` или ошибка `lucid.errors.partyNotFound` |
 | `propose-theme` | `theme: string` | `LOBBY`, участник, ≤200 симв. | сохраняет предложение, `hasAnswered = true` |
 | `decline-theme` | — | те же | очищает предложение, `hasAnswered = true` |
 | `start-party` | — | `ownerId`, `canStart` (≥2 игрока) | генерация (4, бюджет 180 000 мс), досрочно «Мир», `setupParty` → `PLAYING` |
@@ -445,7 +446,7 @@ OpenRouter. `DEFAULT_MODEL` — `deepseek/deepseek-v4.1-flash:nitro` (`generatio
 
 | Событие | Payload | Кто получает |
 |---|---|---|
-| `update-party` | `TPartyView`: фаза, лобби, тема, `TStateForPlayer?`, `usedFallback`, `nextPartyId` | Лично каждый, `player:<partyId>:<playerId>`, на каждый `broadcast()` |
+| `update-party` | `TPartyView`: `code`, фаза, лобби, тема, `TStateForPlayer?`, `usedFallback`, `nextPartyId` | Лично каждый, `player:<partyId>:<playerId>`, на каждый `broadcast()` |
 | `append-ribbon` | `string[]` — прирост журнала | Вся партия, `<partyId>`, только если прирост не пуст |
 | `show-error` | `{ message: string }` | Только вызвавший, личная комната (в лобби — тот же сокет напрямую) |
 
@@ -481,10 +482,12 @@ OpenRouter. `DEFAULT_MODEL` — `deepseek/deepseek-v4.1-flash:nitro` (`generatio
 
 | Таблица | Поля |
 |---|---|
-| `parties` | `uuid TEXT PRIMARY KEY`, `theme TEXT NOT NULL`, `state TEXT NOT NULL`, `updated_at INTEGER NOT NULL` |
+| `parties` | `uuid TEXT PRIMARY KEY`, `code TEXT` (индекс; 4 цифры, уникален среди живых партий), `theme TEXT NOT NULL`, `state TEXT NOT NULL`, `updated_at INTEGER NOT NULL` |
 | `usage` | не пишется новым кодом, оставлена ради баз, где уже есть (см. ниже) |
 | `generation_calls` | `id`, `party_uuid`, `stage`, `model`, `attempt`, `input_tokens`, `output_tokens`, `cost_usd`, `duration_ms`, `outcome`, `error_message`, `created_at`; индекс на `party_uuid` |
 | `generations` | `id`, `party_uuid`, `model`, `used_fallback`, `duration_ms`, `requested_events`, `calls_count`, `retries_count`, `paid_option_share`, `anti_leader_share`, `help_last_share`, `world_name`, `created_at` |
+
+Код генерирует `PartyGroup.create` (`randomInt`, повтор при занятости); брошенные партии удаляет cleanup, поэтому коды переиспользуются. Колонка `code` добавлена миграцией через `PRAGMA table_info`; у старых партий её нет, `fromSnapshot` берёт `''`, клиент не показывает пустой код.
 
 `state` — `TPartySnapshot` целиком в JSON (секретов нет — `G.random`/`G.log` внутри). `theme`-колонка дублирует `snapshot.theme?.name` — шов модерации, ADR-0005.
 
@@ -504,8 +507,8 @@ CLI-флаги, переменные `.env`, порты — раздел 8.
 
 | Путь | Компонент | Термин задачи |
 |---|---|---|
-| `/game/lucid` (index, `lazy`) | `LobbyPage/index.tsx` | «Новая партия» |
-| фаза `LOBBY` внутри партии | `PartyPage/components/Lobby/` | «Лобби» |
+| `/game/lucid` (index, `lazy`) | `LobbyPage/index.tsx` | «Новая партия»: кнопка создания и форма «Войти по коду» (4 цифры, `findParty`) |
+| фаза `LOBBY` внутри партии | `PartyPage/components/Lobby/` | «Лобби»: крупный код «Код для входа» над ссылкой |
 | `/game/lucid/party/:partyId` (`lazy`) | `PartyPage/index.tsx` | «Страница партии» |
 
 Ловушка: `LobbyPage` — экран **создания** партии, не зал ожидания; тот — компонент `Lobby`, фаза внутри `PartyPage`.

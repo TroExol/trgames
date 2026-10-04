@@ -99,6 +99,23 @@ export const createParty = (
   }
 };
 
+interface TFindPartyContext {
+  group: TPartyGroup;
+}
+
+export const findParty = (
+  { group }: TFindPartyContext,
+  code: string,
+  callback: TCreatePartyCallback,
+): void => {
+  const normalized = typeof code === 'string' ? code.trim() : '';
+  const party = /^\d{4}$/.test(normalized) ? group.findByCode(normalized) : null;
+
+  callback(party
+    ? { status: 'ok', partyId: party.uuid }
+    : { status: 'error', message: t('lucid.errors.partyNotFound', 'ru') });
+};
+
 export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreateHandlersParams) => {
   // Обёртка вместо повторяющегося try/catch в каждом обработчике.
   // Сохранение здесь, а не в отдельных обработчиках: иначе партия, которая
@@ -291,6 +308,10 @@ export const init = (io: Server): void => {
       }
 
       createParty({ group, ownerId, sync: cleanup.sync }, callback);
+    });
+
+    socket.on(LucidShared.ELucidEvent.findParty, (code, callback) => {
+      findParty({ group }, code, callback);
     });
 
     socket.on('error', error => console.error(error));
