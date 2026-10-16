@@ -32,6 +32,13 @@ describe('buildWorldPrompt', () => {
     expect(prompt).toContain('одно слово');
   });
 
+  it('просит строку карты шутить о ситуации, а не пересказывать правило', () => {
+    const prompt = buildWorldPrompt('пираты');
+
+    expect(prompt).toContain('flavor шутит о ситуации карты');
+    expect(prompt).toContain('ироничный рассказчик');
+  });
+
   it('запрещает ключи схемы и слово «ресурс» в названиях и строках карт', () => {
     const prompt = buildWorldPrompt('пираты');
 
@@ -40,6 +47,13 @@ describe('buildWorldPrompt', () => {
 });
 
 describe('buildEventsPrompt', () => {
+  it('задаёт тон: ироничный рассказчик, юмор в духе темы', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
+
+    expect(prompt).toContain('ироничный рассказчик');
+    expect(prompt).toContain('мрачный мир — чёрный юмор');
+  });
+
   it('просит называть цели словами и ресурс — названием темы', () => {
     const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
 
