@@ -15,7 +15,7 @@ export interface TGenerateJsonResult {
 }
 
 // Значение по умолчанию — конкретная модель, а не провайдер: сам провайдер задаётся
-// маршрутизацией OpenRouter. Claude Haiku 5.5 пишет связные сцены и стоит ~$0.0085
+// маршрутизацией OpenRouter. Claude Haiku 5.5 пишет связные сцены и стоит ~$0.011
 // за партию (замер 6 — docs/lucid/MODELS.md). LUCID_MODEL в server/.env
 // по-прежнему её переопределяет
 const DEFAULT_MODEL = 'anthropic/claude-haiku-5.5';

@@ -53,8 +53,18 @@ describe('buildEventsPrompt', () => {
 
     expect(prompt).toContain('text у success и у failure');
     expect(prompt).toContain('глагол в настоящем времени');
-    expect(prompt).toContain('В исходе нет\n  слов «ты», «тебя», «тобой», «ходящий», «выбранный»');
+    expect(prompt).toContain('Исход не называет, кого задело');
+    expect(prompt).toContain('«все», «ходящий», «выбранный»');
+    expect(prompt).not.toContain('цель называй «лидер»');
+    expect(prompt).toContain('«Попугай улетает клевать»');
     expect(prompt).toContain('"success":{"text":"..."');
+  });
+
+  it('требует вариант-действие с предметом и запрещает формулу «Помочь отстающему»', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
+
+    expect(prompt).toContain('«Подтолкнуть тележку к отстающему»');
+    expect(prompt).toContain('Формулу «Помочь отстающему…» не пиши');
   });
 
   it('задаёт тон: ироничный рассказчик, юмор в духе темы', () => {
