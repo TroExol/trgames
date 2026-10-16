@@ -63,8 +63,16 @@ describe('buildEventsPrompt', () => {
   it('требует вариант-действие с предметом и запрещает формулу «Помочь отстающему»', () => {
     const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
 
-    expect(prompt).toContain('«Подтолкнуть тележку к отстающему»');
+    expect(prompt).toContain('Цель называй внутри действия');
     expect(prompt).toContain('Формулу «Помочь отстающему…» не пиши');
+  });
+
+  it('не содержит предметов из старых примеров и запрещает копировать пример', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []).toLowerCase();
+
+    ['болид', 'диван', 'кулер', 'тележк'].forEach(word => expect(prompt).not.toContain(word));
+    expect(prompt).toContain('Предметы, существа и фразы из примера в своих событиях не используй'.toLowerCase());
+    expect(prompt).toContain('Тексты вариантов и исходов в ответе не повторяются'.toLowerCase());
   });
 
   it('задаёт тон: ироничный рассказчик, юмор в духе темы', () => {
