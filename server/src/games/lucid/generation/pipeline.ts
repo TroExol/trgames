@@ -3,13 +3,10 @@ import type { LucidShared } from '@trgames/shared';
 
 import { chunk } from 'lodash';
 
+import type { cardNameSchema } from '@/games/lucid/generation/schema';
 import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model';
 
-import {
-  cardNameSchema,
-  eventBatchSchema,
-  worldSchema,
-} from '@/games/lucid/generation/schema';
+import { eventBatchSchema, worldSchema } from '@/games/lucid/generation/schema';
 import {
   sanitizeEvent,
   sanitizeTheme,
@@ -41,6 +38,8 @@ export const MAX_ATTEMPTS = 3;
 // за 25-270 секунд, кусок по шесть — за 12-60, когда запрос попадал
 // на быстрый эндпоинт
 export const EVENTS_CHUNK_SIZE = 6;
+
+const MAX_TOPUPS = 2;
 
 export type TCallStage = 'events' | 'world';
 export type TCallOutcome = 'error' | 'invalid' | 'ok';
@@ -101,19 +100,16 @@ const toCardId = (key: string): string | undefined => {
   return match ? PROMPT_CARD_IDS[Number(match[1]) - 1] : undefined;
 };
 
-const toCardNames = (cards: unknown[] = []): Record<string, LucidShared.TCardName> => Object.fromEntries(
-  cards
-    .map(card => cardNameSchema.safeParse(card))
-    .flatMap(parsed => {
-      const id = parsed.success ? toCardId(parsed.data.id) : undefined;
+const toCardNames = (
+  cards: (z.infer<typeof cardNameSchema> | undefined)[] = [],
+): Record<string, LucidShared.TCardName> => Object.fromEntries(
+  cards.flatMap(card => {
+    const id = card ? toCardId(card.id) : undefined;
 
-      return parsed.success && id
-        ? [[id, {
-            name: stripSchemaKeys(parsed.data.name),
-            flavor: stripSchemaKeys(parsed.data.flavor),
-          }]]
-        : [];
-    }),
+    return card && id
+      ? [[id, { name: stripSchemaKeys(card.name), flavor: stripSchemaKeys(card.flavor) }]]
+      : [];
+  }),
 );
 
 export const generateContent = async ({
@@ -223,7 +219,7 @@ export const generateContent = async ({
     // иначе одна клетка получила бы два события, другая осталась бы пустой,
     // и ответ всё равно считался бы успешным
     const events = parsed.data.events.filter(event => {
-      if (!known.has(event.cellId) || taken.has(event.cellId)) {
+      if (!event || !known.has(event.cellId) || taken.has(event.cellId)) {
         return false;
       }
 
@@ -232,7 +228,7 @@ export const generateContent = async ({
       return true;
     });
 
-    return events.length > 0 ? events.map(sanitizeEvent) : null;
+    return events.length > 0 ? events.map(event => sanitizeEvent(event!)) : null;
   };
 
   const withFallback = (): TGenerateContentResult => ({
@@ -263,17 +259,20 @@ export const generateContent = async ({
     const cellBriefs = premises.map(premise => ({ ...premise, region: regionNames[premise.cellId] ?? '' }));
     const briefByCellId = new Map(cellBriefs.map(brief => [brief.cellId, brief]));
 
-    // У каждого куска своя валидация и свои попытки, но идут они разом
-    const batches = await Promise.all(chunk(eventCellIds, EVENTS_CHUNK_SIZE).map(chunkIds => {
-      const chunkBriefs = chunkIds.map(cellId => briefByCellId.get(cellId)!);
+    const requestEvents = (chunkIds: number[]) => request(
+      'events',
+      buildEventsPrompt(
+        world.theme.name,
+        world.theme.resourceName,
+        chunkIds.map(cellId => briefByCellId.get(cellId)!),
+        nicknames,
+      ),
+      eventBatchSchema,
+      parseEvents(chunkIds),
+    );
 
-      return request(
-        'events',
-        buildEventsPrompt(world.theme.name, world.theme.resourceName, chunkBriefs, nicknames),
-        eventBatchSchema,
-        parseEvents(chunkIds),
-      );
-    }));
+    // У каждого куска своя валидация и свои попытки, но идут они разом
+    const batches = await Promise.all(chunk(eventCellIds, EVENTS_CHUNK_SIZE).map(requestEvents));
 
     // Не дался хотя бы один кусок — на запасную партию уходит вся: события
     // двух разных миров смешивать нельзя, мир должен остаться цельным
@@ -281,11 +280,22 @@ export const generateContent = async ({
       return withFallback();
     }
 
+    const events = batches.flatMap(batch => batch ?? []);
+    const missingCells = () => eventCellIds.filter(cellId => !events.some(event => event.cellId === cellId));
+
+    // Haiku в одном ответе из пяти-шести останавливается после первого события
+    // (finish_reason=stop, а не обрезка). Добор — не больше MAX_TOPUPS запросов
+    // на все пропуски разом: добор сам короткий в одном случае из пяти. Не вышел —
+    // клетки остаются пустыми, а добор не должен ронять уже собранную партию
+    for (let round = 0; round < MAX_TOPUPS && missingCells().length > 0; round++) {
+      events.push(...(await requestEvents(missingCells()).catch(() => null) ?? []));
+    }
+
     return {
       content: {
         theme: world.theme,
         // Куски не пересекаются по клеткам: каждый сверился со своими номерами
-        events: batches.flatMap(batch => batch ?? []).reduce<Record<number, LucidShared.TEvent>>(
+        events: events.reduce<Record<number, LucidShared.TEvent>>(
           (acc, event) => ({ ...acc, [event.cellId]: event }),
           {},
         ),

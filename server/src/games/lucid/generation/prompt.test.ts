@@ -35,8 +35,9 @@ describe('buildWorldPrompt', () => {
   it('просит строку карты шутить о ситуации, а не пересказывать правило', () => {
     const prompt = buildWorldPrompt('пираты');
 
-    expect(prompt).toContain('flavor шутит о ситуации карты');
+    expect(prompt).toContain('не пересказывай его');
     expect(prompt).toContain('ироничный рассказчик');
+    expect(prompt).not.toContain('заначку');
   });
 
   it('запрещает ключи схемы и слово «ресурс» в названиях и строках карт', () => {
@@ -50,8 +51,9 @@ describe('buildEventsPrompt', () => {
   it('просит text у веток: настоящее время, без рода, без ника и чисел', () => {
     const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
 
-    expect(prompt).toContain('поле text у success и у failure');
-    expect(prompt).toContain('в настоящем времени и без рода');
+    expect(prompt).toContain('text у success и у failure');
+    expect(prompt).toContain('глагол в настоящем времени');
+    expect(prompt).toContain('В исходе нет\n  слов «ты», «тебя», «тобой», «ходящий», «выбранный»');
     expect(prompt).toContain('"success":{"text":"..."');
   });
 
@@ -129,7 +131,15 @@ describe('buildEventsPrompt', () => {
   it('предупреждает не повторять завязку дословно как заголовок', () => {
     const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], []);
 
-    expect(prompt).toContain('не повторяй её название дословно');
+    expect(prompt).toContain('Не повторяй название завязки дословно');
+  });
+
+  it('требует одну связную сцену и уникальные названия', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'золото', [cell()], []);
+
+    expect(prompt).toContain('одна сцена');
+    expect(prompt).toContain('Попугай-ревизор');
+    expect(prompt).toContain('Названия событий (title) в одном ответе не повторяются');
   });
 
   it('просит короткие тексты события и варианта', () => {
@@ -145,7 +155,6 @@ describe('buildEventsPrompt', () => {
     expect(prompt).toContain('В партии играют: Джек, Аня.');
     expect(prompt).toContain('любому');
     expect(prompt).not.toContain('роль');
-    expect(prompt).not.toContain('роли');
   });
 
   it('без ников не оставляет в промпте пустой абзац', () => {

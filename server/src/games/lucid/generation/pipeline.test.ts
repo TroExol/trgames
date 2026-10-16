@@ -179,6 +179,59 @@ describe('generateContent', () => {
     expect(generateJson).toHaveBeenCalledTimes(3);
   });
 
+  it('пропущенные клетки добираются одним дополнительным запросом', async () => {
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockResolvedValueOnce({ data: eventsFor([1]), usage })
+      .mockImplementation((prompt: string) =>
+        Promise.resolve({ data: eventsFor(askedCells(prompt)), usage }));
+
+    const result = await run(generateJson);
+
+    expect(Object.keys(result.content.events).map(Number)).toEqual([1, 2]);
+    expect(result.usedFallback).toBe(false);
+    expect(generateJson).toHaveBeenCalledTimes(3);
+  });
+
+  it('добор делается не больше двух раз', async () => {
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockResolvedValueOnce({ data: eventsFor([1]), usage })
+      .mockImplementation((prompt: string) =>
+        Promise.resolve({ data: eventsFor(askedCells(prompt).slice(0, 1)), usage }));
+
+    const result = await run(generateJson, 10_000, [1, 2, 3, 4]);
+
+    expect(Object.keys(result.content.events).map(Number)).toEqual([1, 2, 3]);
+    expect(generateJson).toHaveBeenCalledTimes(4);
+  });
+
+  it('не давшийся добор оставляет собранные события и не уводит на запасную партию', async () => {
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockResolvedValueOnce({ data: eventsFor([1]), usage })
+      .mockRejectedValue(new Error('сеть'));
+
+    const result = await run(generateJson);
+
+    expect(Object.keys(result.content.events).map(Number)).toEqual([1]);
+    expect(result.usedFallback).toBe(false);
+  });
+
+  it('невалидное событие отбрасывается без повтора куска, клетка добирается', async () => {
+    const broken = { ...eventsFor([2]).events[0], title: '' };
+    const generateJson: TGenerateJson = vi.fn()
+      .mockResolvedValueOnce({ data: validWorld, usage })
+      .mockResolvedValueOnce({ data: { events: [eventsFor([1]).events[0], broken] }, usage })
+      .mockImplementation((prompt: string) =>
+        Promise.resolve({ data: eventsFor(askedCells(prompt)), usage }));
+
+    const result = await run(generateJson);
+
+    expect(Object.keys(result.content.events).map(Number)).toEqual([1, 2]);
+    expect(askedCells(String((generateJson as ReturnType<typeof vi.fn>).mock.calls[2][0]))).toEqual([2]);
+  });
+
   it('неудавшийся кусок уводит на запасную партию целиком', async () => {
     const lastCell = MANY_CELLS[MANY_CELLS.length - 1];
     const generateJson: TGenerateJson = vi.fn()

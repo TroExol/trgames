@@ -19,6 +19,9 @@ export const EFFECT_TEXT_MAX = 60;
 
 export const CARD_NAME_MAX = 30;
 export const CARD_FLAVOR_MAX = 70;
+// Потолок схемы выше цели из промпта: Haiku пишет 71–73 знака, и без запаса
+// четверть карт молча теряла строку
+const CARD_FLAVOR_LIMIT = 100;
 
 export const THRESHOLD_RANGE = { min: 2, max: 6 };
 export const COST_RANGE = { min: 2, max: 5 };
@@ -77,7 +80,7 @@ export const eventSchema = z.strictObject({
 export const cardNameSchema = z.strictObject({
   id: z.string(),
   name: z.string().min(1).max(CARD_NAME_MAX),
-  flavor: z.string().min(1).max(CARD_FLAVOR_MAX),
+  flavor: z.string().min(1).max(CARD_FLAVOR_LIMIT),
 });
 
 export const worldSchema = z.strictObject({
@@ -100,10 +103,13 @@ export const worldSchema = z.strictObject({
     // Неизвестные значки отбрасывает sanitizeTheme: из-за них повтор не нужен
     icons: z.array(z.string()).optional().catch(undefined),
   }),
-  roles: z.unknown().optional(),
-  cards: z.array(z.unknown()).optional().catch(undefined),
+  // Плохая карта становится undefined и отбрасывается, мир при этом не падает.
+  // Типизированный элемент нужен JSON-схеме: пустой узел {} Anthropic отвергает
+  cards: z.array(cardNameSchema.optional().catch(undefined)).optional().catch(undefined),
 });
 
 export const eventBatchSchema = z.strictObject({
-  events: z.array(eventSchema).min(1),
+  // Плохое событие становится undefined и отбрасывается: хорошие из того же
+  // ответа остаются, а клетку без события добирает пайплайн
+  events: z.array(eventSchema.optional().catch(undefined)).min(1),
 });

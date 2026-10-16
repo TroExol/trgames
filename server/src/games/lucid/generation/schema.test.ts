@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   describe,
   expect,
@@ -222,12 +223,6 @@ describe('worldSchema', () => {
 
     expect(worldSchema.safeParse(world).success).toBe(false);
   });
-
-  it('молча игнорирует устаревшее поле roles', () => {
-    const world = { ...validWorld(), roles: [{ nickname: 'Джек', role: 'хранитель компаса' }] };
-
-    expect(worldSchema.safeParse(world).success).toBe(true);
-  });
 });
 
 describe('eventBatchSchema', () => {
@@ -297,5 +292,26 @@ describe('worldSchema: названия карт', () => {
 
   it('cards не массивом не рушит мир', () => {
     expect(worldSchema.safeParse({ ...validWorld(), cards: 'мусор' }).success).toBe(true);
+  });
+});
+
+const hasEmptyNode = (node: unknown): boolean => {
+  if (Array.isArray(node)) {
+    return node.some(hasEmptyNode);
+  }
+
+  if (node && typeof node === 'object') {
+    return Object.keys(node).length === 0 || Object.values(node).some(hasEmptyNode);
+  }
+
+  return false;
+};
+
+describe('JSON-схемы для модели', () => {
+  it.each([
+    ['worldSchema', worldSchema],
+    ['eventBatchSchema', eventBatchSchema],
+  ])('%s без пустых узлов {}', (_name, schema) => {
+    expect(hasEmptyNode(z.toJSONSchema(schema))).toBe(false);
   });
 });
