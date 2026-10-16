@@ -65,7 +65,7 @@ export const Component = observer(function LucidPartyPage() {
   // До неё лобби остаётся в цветах сайта: подставить сюда цвета несуществующей
   // темы значило бы перекрасить текст, но не кнопки, и они слились бы с фоном
   const style = useMemo(
-    () => (theme ? themeStyle(roles, theme.name) : undefined),
+    () => (theme ? themeStyle(roles, theme.name, theme.icons) : undefined),
     [roles, theme],
   );
 

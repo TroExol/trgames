@@ -10,6 +10,7 @@
       "#4ade80"
     ],
     "mood": "DARK",
+    "icons": ["rocket", "orbit", "cog", "cpu", "zap"],
     "regions": [
       {
         "name": "Стыковочный шлюз",

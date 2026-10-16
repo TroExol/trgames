@@ -97,6 +97,8 @@ export const worldSchema = z.strictObject({
       }))
       .min(REGION_RANGE.min)
       .max(REGION_RANGE.max),
+    // Неизвестные значки отбрасывает sanitizeTheme: из-за них повтор не нужен
+    icons: z.array(z.string()).optional().catch(undefined),
   }),
   roles: z.unknown().optional(),
   cards: z.array(z.unknown()).optional().catch(undefined),

@@ -4,7 +4,11 @@ import {
   it,
 } from 'vitest';
 
-import { sanitizeEvent, stripSchemaKeys } from '@/games/lucid/generation/sanitize';
+import {
+  sanitizeEvent,
+  sanitizeTheme,
+  stripSchemaKeys,
+} from '@/games/lucid/generation/sanitize';
 
 describe('stripSchemaKeys', () => {
   it('вырезает ключ посреди фразы вместе с лишним пробелом', () => {
@@ -69,5 +73,19 @@ describe('sanitizeEvent: text веток', () => {
 
     expect('text' in event.options[0].success).toBe(false);
     expect('failure' in event.options[0]).toBe(false);
+  });
+});
+
+describe('sanitizeTheme: значки', () => {
+  const base = { name: 'Мир', regions: [{ name: 'Край' }] };
+
+  it('отбрасывает неизвестные значки и повторы', () => {
+    expect(sanitizeTheme({ ...base, icons: ['anchor', 'nope', 'anchor', 'ship'] }).icons)
+      .toEqual(['anchor', 'ship']);
+  });
+
+  it('убирает поле, если ничего не осталось', () => {
+    expect('icons' in sanitizeTheme({ ...base, icons: ['nope'] })).toBe(false);
+    expect('icons' in sanitizeTheme(base)).toBe(false);
   });
 });

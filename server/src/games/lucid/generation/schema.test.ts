@@ -143,6 +143,13 @@ describe('worldSchema', () => {
     expect(worldSchema.safeParse(world).success).toBe(true);
   });
 
+  it('принимает значки и не падает на неизвестных', () => {
+    const world = validWorld();
+
+    expect(worldSchema.safeParse({ ...world, theme: { ...world.theme, icons: ['anchor', 'nope'] } }).success)
+      .toBe(true);
+  });
+
   it('отклоняет неизвестное настроение', () => {
     const world = validWorld();
 

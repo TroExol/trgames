@@ -1,4 +1,4 @@
-import type { LucidShared } from '@trgames/shared';
+import { LucidShared } from '@trgames/shared';
 
 const KEYS = 'FIRST|LAST|CHOSEN|SELF|ALL|MOVE|RESOURCE|SKIP_TURN|SWAP_WITH_FIRST';
 const KEY = `(?<![A-Za-z0-9_])(?:${KEYS})(?![A-Za-z0-9_])`;
@@ -34,8 +34,15 @@ export const sanitizeEvent = (event: LucidShared.TEvent): LucidShared.TEvent => 
   })),
 });
 
-export const sanitizeTheme = <T extends { name: string; regions: { name: string }[] }>(theme: T): T => ({
-  ...theme,
-  name: stripSchemaKeys(theme.name),
-  regions: theme.regions.map(region => ({ ...region, name: stripSchemaKeys(region.name) })),
-});
+export const sanitizeTheme = <T extends { name: string; regions: { name: string }[]; icons?: string[] }>(
+  { icons, ...theme }: T,
+): { icons?: LucidShared.TThemeIcon[] } & Omit<T, 'icons'> => {
+  const known = [...new Set(icons)].filter(LucidShared.isThemeIcon);
+
+  return {
+    ...theme,
+    name: stripSchemaKeys(theme.name),
+    regions: theme.regions.map(region => ({ ...region, name: stripSchemaKeys(region.name) })),
+    ...(known.length > 0 && { icons: known }),
+  };
+};
