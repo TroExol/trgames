@@ -15,6 +15,7 @@ export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: numb
 // отправлять всю партию на запасную
 export const EVENT_TEXT_MAX = 200;
 export const OPTION_TEXT_MAX = 80;
+export const EFFECT_TEXT_MAX = 60;
 
 export const CARD_NAME_MAX = 30;
 export const CARD_FLAVOR_MAX = 70;
@@ -52,6 +53,7 @@ const conditionSchema = z.strictObject({
 });
 
 const effectSchema = z.strictObject({
+  text: z.string().min(1).max(EFFECT_TEXT_MAX).optional(),
   atoms: z.array(atomSchema).min(1).max(3),
   condition: conditionSchema.optional(),
   otherwise: z.array(atomSchema).min(1).max(3).optional(),

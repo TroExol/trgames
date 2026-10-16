@@ -44,6 +44,7 @@ export interface TCondition {
 
 // Условие ровно одного уровня: вложенных не бывает
 export interface TEffect {
+  text?: string;
   atoms: TAtom[];
   condition?: TCondition;
   otherwise?: TAtom[];

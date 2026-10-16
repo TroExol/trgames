@@ -39,6 +39,70 @@ describe('resolveOption', () => {
     expect(G?.log).toEqual(['Аня выбирает «Заплатить»', 'Аня: монеты +5']);
   });
 
+  it('лента: text ветки идёт после выбора и перед атомами', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Заплатить',
+      cost: 2,
+      success: { text: 'Монеты падают с неба', atoms: [gain(5)] },
+    });
+
+    expect(G?.log).toEqual(['Аня выбирает «Заплатить»', 'Монеты падают с неба', 'Аня: монеты +5']);
+  });
+
+  it('лента: text стоит после строки броска', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Точно',
+      threshold: 1,
+      success: { text: 'Всё получается', atoms: [gain(5)] },
+    });
+
+    expect(G?.log[1]).toMatch(/^Аня бросает кубик/);
+    expect(G?.log[2]).toBe('Всё получается');
+  });
+
+  it('лента: text берётся у сработавшей ветки', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Никогда',
+      threshold: 7,
+      success: { text: 'Удача', atoms: [gain(5)] },
+      failure: { text: 'Провал', atoms: [gain(-1)] },
+    });
+
+    expect(G?.log).toContain('Провал');
+    expect(G?.log).not.toContain('Удача');
+  });
+
+  it('лента: без text строки нет', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Заплатить',
+      success: { atoms: [gain(5)] },
+    });
+
+    expect(G?.log).toHaveLength(2);
+  });
+
+  it('событие закона (без клетки) тоже кладёт text в ленту', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Уплатить пошлину',
+      success: { text: 'Пошлина взыскана', atoms: [gain(-1)] },
+    });
+
+    expect(G?.log[1]).toBe('Пошлина взыскана');
+  });
+
+  it('история клетки получает text в lines', () => {
+    const G = resolveOption(onePlayer(), 'a', 0, {
+      text: 'Заплатить',
+      success: { text: 'Монеты падают с неба', atoms: [gain(5)] },
+    }, 1);
+
+    expect(G?.cellHistory[1][0].lines).toEqual([
+      'Аня выбирает «Заплатить»',
+      'Монеты падают с неба',
+      'Аня: монеты +5',
+    ]);
+  });
+
   it('при нехватке ресурса вариант недоступен', () => {
     const G = resolveOption(onePlayer(), 'a', 0, {
       text: 'Заплатить',

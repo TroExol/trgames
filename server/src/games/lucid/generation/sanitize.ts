@@ -18,11 +18,20 @@ export const stripSchemaKeys = (text: string): string => {
   return cleaned || text;
 };
 
+const sanitizeEffect = (effect: LucidShared.TEffect): LucidShared.TEffect => (
+  effect.text === undefined ? effect : { ...effect, text: stripSchemaKeys(effect.text) }
+);
+
 export const sanitizeEvent = (event: LucidShared.TEvent): LucidShared.TEvent => ({
   ...event,
   title: stripSchemaKeys(event.title),
   text: stripSchemaKeys(event.text),
-  options: event.options.map(option => ({ ...option, text: stripSchemaKeys(option.text) })),
+  options: event.options.map(option => ({
+    ...option,
+    text: stripSchemaKeys(option.text),
+    success: sanitizeEffect(option.success),
+    ...(option.failure && { failure: sanitizeEffect(option.failure) }),
+  })),
 });
 
 export const sanitizeTheme = <T extends { name: string; regions: { name: string }[] }>(theme: T): T => ({

@@ -168,4 +168,22 @@ describe('цель CHOSEN', () => {
 
     expect(LucidShared.describeHistoryEntry(entry, view, 'монеты')).toBe('Ваня — «Толкнуть», цель Петя — выбранный: −4 клетки');
   });
+
+  it('запись истории показывает text ветки перед цифрами', () => {
+    const withText: LucidShared.TOption = { text: 'Толкнуть', success: { text: 'Падает с обрыва', atoms: [chosenMove] } };
+    const view: LucidShared.TOptionView = {
+      ...withText,
+      revealed: { success: true, failure: false },
+      hint: LucidShared.buildOptionHint(withText),
+    };
+    const entry: LucidShared.THistoryEntry = {
+      playerId: 'a',
+      nickname: 'Ваня',
+      optionIndex: 0,
+      branch: 'success',
+      lines: [],
+    };
+
+    expect(LucidShared.describeHistoryEntry(entry, view, 'монеты')).toBe('Ваня — «Толкнуть» — Падает с обрыва · выбранный: −4 клетки');
+  });
 });

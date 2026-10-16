@@ -163,6 +163,11 @@ FIRST, LAST, CHOSEN, SELF, ALL, MOVE, RESOURCE, SKIP_TURN: называй сло
 Текст варианта — одно действие глаголом, до 50 символов, например:
 «Вскрыть ящик ломом».
 
+Что случилось — поле text у success и у failure, до ~45 знаков, в том же тоне:
+глагол в настоящем времени и без рода («повисает на проводе», а не «повис»
+или «повисла»); без ника и без «ты» про цель — событие может выпасть любому;
+без чисел.
+
 Каждое событие — это текст и до трёх вариантов действия. Вариант либо
 гарантированный, либо рискованный. У рискованного есть threshold — значение
 кубика от ${THRESHOLD_RANGE.min} до ${THRESHOLD_RANGE.max}, начиная с которого
@@ -217,14 +222,14 @@ ${describeTargets()}
 Верни JSON строго такого вида, без пояснений:
 {"events":[
   {"cellId":1,"title":"...","text":"...","options":[
-    {"text":"...","threshold":4,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]},
-     "failure":{"atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}},
-    {"text":"...","cost":3,"success":{"atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
+    {"text":"...","threshold":4,"success":{"text":"...","atoms":[{"kind":"MOVE","target":"SELF","value":2}]},
+     "failure":{"text":"...","atoms":[{"kind":"SKIP_TURN","target":"SELF","value":1}]}},
+    {"text":"...","cost":3,"success":{"text":"...","atoms":[{"kind":"MOVE","target":"SELF","value":2}]}}
   ]},
   {"cellId":2,"title":"...","text":"...","options":[
-    {"text":"...","threshold":3,"success":{"atoms":[{"kind":"RESOURCE","target":"SELF","value":4}]},
-     "failure":{"atoms":[{"kind":"MOVE","target":"SELF","value":-1}]}},
-    {"text":"...","success":{"atoms":[{"kind":"MOVE","target":"SELF","value":1}]}}
+    {"text":"...","threshold":3,"success":{"text":"...","atoms":[{"kind":"RESOURCE","target":"SELF","value":4}]},
+     "failure":{"text":"...","atoms":[{"kind":"MOVE","target":"SELF","value":-1}]}},
+    {"text":"...","success":{"text":"...","atoms":[{"kind":"MOVE","target":"SELF","value":1}]}}
   ]}
 ]}
 `.trim();

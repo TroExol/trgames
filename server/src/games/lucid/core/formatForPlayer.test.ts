@@ -172,6 +172,22 @@ describe('formatForPlayer — раскрытие веток варианта', (
     expect(option.failure).toBeUndefined();
   });
 
+  it('text нераскрытой ветки не уходит игроку', () => {
+    const option = baseOption({
+      success: { text: 'СЕКРЕТ УДАЧИ', atoms: baseOption().success.atoms },
+      failure: { text: 'СЕКРЕТ ПРОВАЛА', atoms: baseOption().success.atoms },
+    });
+    const event: LucidShared.TEvent = { cellId: 1, title: 'Ящик', text: 'Заперт', options: [option] };
+
+    expect(JSON.stringify(formatForPlayer(stateWith(event, {}), 'a').G.events[1])).not.toContain('СЕКРЕТ');
+
+    const revealed = formatForPlayer(stateWith(event, { 1: [historyEntry({ branch: 'success' })] }), 'a');
+    const json = JSON.stringify(revealed.G.events[1]);
+
+    expect(json).toContain('СЕКРЕТ УДАЧИ');
+    expect(json).not.toContain('СЕКРЕТ ПРОВАЛА');
+  });
+
   it('cellHistory уезжает клиенту целиком', () => {
     const event: LucidShared.TEvent = { cellId: 1, title: 'Ящик', text: 'Заперт', options: [baseOption()] };
     const entry = historyEntry();

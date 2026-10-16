@@ -47,6 +47,14 @@ describe('buildWorldPrompt', () => {
 });
 
 describe('buildEventsPrompt', () => {
+  it('просит text у веток: настоящее время, без рода, без ника и чисел', () => {
+    const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
+
+    expect(prompt).toContain('поле text у success и у failure');
+    expect(prompt).toContain('в настоящем времени и без рода');
+    expect(prompt).toContain('"success":{"text":"..."');
+  });
+
   it('задаёт тон: ироничный рассказчик, юмор в духе темы', () => {
     const prompt = buildEventsPrompt('Подземелье', 'заряды', [cell()], []);
 

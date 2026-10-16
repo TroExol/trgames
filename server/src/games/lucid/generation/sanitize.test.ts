@@ -4,7 +4,7 @@ import {
   it,
 } from 'vitest';
 
-import { stripSchemaKeys } from '@/games/lucid/generation/sanitize';
+import { sanitizeEvent, stripSchemaKeys } from '@/games/lucid/generation/sanitize';
 
 describe('stripSchemaKeys', () => {
   it('вырезает ключ посреди фразы вместе с лишним пробелом', () => {
@@ -36,5 +36,38 @@ describe('stripSchemaKeys', () => {
 
   it('возвращает исходный текст, если после вырезания ничего не осталось', () => {
     expect(stripSchemaKeys('FIRST')).toBe('FIRST');
+  });
+});
+
+describe('sanitizeEvent: text веток', () => {
+  const atom = { kind: 'MOVE', target: 'SELF', value: 1 } as never;
+
+  it('вырезает ключи схемы из text у success и failure', () => {
+    const event = sanitizeEvent({
+      cellId: 1,
+      title: 'Т',
+      text: 'Т',
+      options: [{
+        text: 'В',
+        threshold: 3,
+        success: { text: 'Лидер FIRST спотыкается', atoms: [atom] },
+        failure: { text: 'Падает (LAST)', atoms: [atom] },
+      }],
+    });
+
+    expect(event.options[0].success.text).toBe('Лидер спотыкается');
+    expect(event.options[0].failure?.text).toBe('Падает');
+  });
+
+  it('не добавляет text и failure, если их не было', () => {
+    const event = sanitizeEvent({
+      cellId: 1,
+      title: 'Т',
+      text: 'Т',
+      options: [{ text: 'В', success: { atoms: [atom] } }],
+    });
+
+    expect('text' in event.options[0].success).toBe(false);
+    expect('failure' in event.options[0]).toBe(false);
   });
 });

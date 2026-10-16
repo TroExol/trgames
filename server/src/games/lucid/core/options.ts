@@ -56,7 +56,12 @@ export const resolveOption = (
   }
 
   const resolved = effect
-    ? applyEffect(afterRoll, actorId, effect, chosenId)
+    ? applyEffect(
+        effect.text ? { ...afterRoll, log: [...afterRoll.log, effect.text] } : afterRoll,
+        actorId,
+        effect,
+        chosenId,
+      )
     : { ...afterRoll, log: [...afterRoll.log, 'ничего не произошло'] };
 
   const entry: LucidShared.THistoryEntry = {

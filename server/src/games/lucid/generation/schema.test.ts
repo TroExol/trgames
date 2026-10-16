@@ -112,6 +112,22 @@ describe('eventSchema', () => {
   });
 });
 
+describe('eventSchema: text ветки', () => {
+  const withText = (text: string) => ({
+    ...validEvent,
+    options: [{ ...validEvent.options[0], success: { ...validEvent.options[0].success, text } }],
+  });
+
+  it('принимает text до 60 знаков и отсутствие text', () => {
+    expect(eventSchema.safeParse(withText('а'.repeat(60))).success).toBe(true);
+    expect(eventSchema.safeParse(validEvent).success).toBe(true);
+  });
+
+  it('отклоняет text длиннее 60 знаков', () => {
+    expect(eventSchema.safeParse(withText('а'.repeat(61))).success).toBe(false);
+  });
+});
+
 describe('worldSchema', () => {
   it('принимает корректную тему', () => {
     const result = worldSchema.safeParse(validWorld());

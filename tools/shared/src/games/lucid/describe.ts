@@ -103,8 +103,9 @@ export const describeHistoryEntry = (entry: THistoryEntry, option: TOptionView, 
     : '';
   const effect = entry.branch === 'success' ? option.success : option.failure;
   const outcome = effect ? describeEffect(effect, resourceName) : 'ничего';
+  const story = effect?.text ? `${effect.text} · ` : '';
 
-  return `${entry.nickname} — «${option.text}»${targetPart}${rollPart} — ${outcome}`;
+  return `${entry.nickname} — «${option.text}»${targetPart}${rollPart} — ${story}${outcome}`;
 };
 
 const hintItemOf = (atom: TAtom): THintItem => {
