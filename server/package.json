@@ -6,6 +6,7 @@
   "scripts": {
     "start:dev": "nodemon -r tsconfig-paths/register src/index.ts",
     "start": "ts-node -r tsconfig-paths/register src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --outfile=dist/server.js",
     "lucid:balance": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runBalanceReport.ts",
     "lucid:sim": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runSimulation.ts",
     "lucid:usage": "ts-node -r tsconfig-paths/register src/games/lucid/reports/runUsageReport.ts",
@@ -30,6 +31,7 @@
     "@types/lodash": "^4.17.13",
     "@types/node": "^22",
     "@types/uuid": "^9.0.8",
+    "esbuild": "^0.25.0",
     "memfs": "^4.14.0",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
