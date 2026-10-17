@@ -1,5 +1,9 @@
+import type { z } from 'zod';
 import type { LucidShared } from '@trgames/shared';
 
+import type { cardNameSchema } from '@/games/lucid/generation/schema';
+
+import { toCardNames } from '@/games/lucid/generation/cardNames';
 import { createRandom, shuffle } from '@/games/lucid/core/random';
 
 // Имя файла не повторяет имя модуля намеренно: ts-node разрешает
@@ -8,6 +12,7 @@ import { createRandom, shuffle } from '@/games/lucid/core/random';
 import fallback from './fallbackContent.json';
 
 const POOL = fallback.events as LucidShared.TEvent[];
+const CARDS = fallback.cards as z.infer<typeof cardNameSchema>[];
 
 // События раскладываются по клеткам перемешанными от сида, а не сидят на своих
 // номерах: иначе на коротком треке хвост пула не увидел бы никто, а при повторном
@@ -27,5 +32,6 @@ export const loadFallbackContent = (
       }),
       {},
     ),
+    cardNames: toCardNames(CARDS),
   };
 };

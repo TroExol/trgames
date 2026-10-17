@@ -5,7 +5,12 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
-import { eventSchema, worldSchema } from '@/games/lucid/generation/schema';
+import {
+  cardNameSchema,
+  eventSchema,
+  worldSchema,
+} from '@/games/lucid/generation/schema';
+import { PROMPT_CARD_IDS } from '@/games/lucid/generation/prompt';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
 import { computeContentMetrics } from '@/games/lucid/generation/contentMetrics';
 import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
@@ -88,5 +93,47 @@ describe('loadFallbackContent', () => {
     const cellIds = trackEventCellIds(6);
 
     expect(loadFallbackContent(cellIds, 'seed-a')).not.toEqual(loadFallbackContent(cellIds, 'seed-b'));
+  });
+
+  it('у каждой ветки есть строка исхода до 45 знаков', () => {
+    const { events } = loadFallbackContent(WHOLE_POOL, 'fallback');
+
+    Object.values(events).forEach(event => event.options.forEach(option => {
+      [option.success, option.failure].forEach(effect => {
+        if (effect) {
+          expect(effect.text?.length).toBeGreaterThan(0);
+          expect(effect.text?.length).toBeLessThanOrEqual(45);
+        }
+      });
+    }));
+  });
+
+  it('в строках исхода нет цели', () => {
+    const { events } = loadFallbackContent(WHOLE_POOL, 'fallback');
+    const words = ['ты', 'тебя', 'тебе', 'тобой', 'лидер\\p{L}*', 'отстающ\\p{L}*', 'кто-то', 'все', 'всех', 'всем', 'всеми',
+      'ходящ\\p{L}*', 'выбранн\\p{L}*', 'игрок\\p{L}*'];
+    const target = new RegExp(`(?<![а-яё])(${words.join('|')})(?![а-яё])`, 'iu');
+
+    Object.values(events).forEach(event => event.options.forEach(option => {
+      [option.success, option.failure].forEach(effect => {
+        expect(effect?.text ?? '').not.toMatch(target);
+      });
+    }));
+  });
+
+  it('названия карт есть у всех 25 карт и проходят валидацию', () => {
+    const { cardNames } = loadFallbackContent(WHOLE_POOL, 'fallback');
+
+    expect(PROMPT_CARD_IDS).toHaveLength(25);
+    expect(Object.keys(cardNames ?? {}).sort()).toEqual([...PROMPT_CARD_IDS].sort());
+    PROMPT_CARD_IDS.forEach((id, index) => {
+      expect(cardNameSchema.safeParse({ id: `card${index + 1}`, ...cardNames?.[id] }).success).toBe(true);
+    });
+  });
+
+  it('названия событий в пуле не повторяются', () => {
+    const titles = Object.values(loadFallbackContent(WHOLE_POOL, 'fallback').events).map(event => event.title);
+
+    expect(new Set(titles).size).toBe(titles.length);
   });
 });
