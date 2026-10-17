@@ -24,6 +24,7 @@ yarn workspace @trgames/server start:dev    # Nodemon watch mode (порт 4001)
 yarn workspace @trgames/server test         # Vitest (все тесты)
 yarn workspace @trgames/server test --run src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест (флаг --run обязателен)
 yarn workspace @trgames/server lint         # typecheck + eslint + тесты
+yarn workspace @trgames/server build        # сборка сервера в один файл dist/server.js (esbuild)
 ```
 
 Флаг `--run` для запуска одного файла обязателен: скрипт `test` заканчивается флагом `--silent`, и без `--run` путь приклеивается к нему как значение — vitest падает с `Unexpected value "--silent=<путь>"`, не начав работу.
@@ -108,3 +109,9 @@ prompts/         — Промпты для генерации контента (
 - Client: `VITE_API_BASE_URL` в `client/.env` (инжектится как `__API_BASE_URL__`)
 - Client: без `VITE_API_BASE_URL` сервер ищется на хосте страницы, порт 4001
 - Server: `server/.env` (пример — `server/.env.example`): `CORS_ORIGIN` (пусто — `*`), ключ и модель lucid
+
+## Деплой
+
+- Прод: https://335227.snk.wtf на vps-de. Выкатка — кнопкой GitHub → Actions → Deploy, только из master.
+- Устройство и разовая настройка VPS — `deploy/README.md`.
+- Ключ OpenRouter прода — секрет GitHub `OPENROUTER_API_KEY`. На VPS его руками не правь: деплой перезапишет `.env`.
