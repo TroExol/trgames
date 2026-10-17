@@ -3,23 +3,15 @@ import type { LucidShared } from '@trgames/shared';
 
 import { chunk } from 'lodash';
 
-import type { cardNameSchema } from '@/games/lucid/generation/schema';
 import type { TGenerateJsonResult, TUsage } from '@/games/lucid/generation/model';
 
 import { eventBatchSchema, worldSchema } from '@/games/lucid/generation/schema';
-import {
-  sanitizeEvent,
-  sanitizeTheme,
-  stripSchemaKeys,
-} from '@/games/lucid/generation/sanitize';
-import {
-  buildEventsPrompt,
-  buildWorldPrompt,
-  PROMPT_CARD_IDS,
-} from '@/games/lucid/generation/prompt';
+import { sanitizeEvent, sanitizeTheme } from '@/games/lucid/generation/sanitize';
+import { buildEventsPrompt, buildWorldPrompt } from '@/games/lucid/generation/prompt';
 import { assignPremises, assignRegionNames } from '@/games/lucid/generation/premises';
 import { MODEL_ID } from '@/games/lucid/generation/model';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
+import { toCardNames } from '@/games/lucid/generation/cardNames';
 
 export type TGenerateJson = (
   prompt: string,
@@ -93,24 +85,6 @@ export interface TGenerateContentResult {
   usedFallback: boolean;
   stats: TGenerateStats;
 }
-
-const toCardId = (key: string): string | undefined => {
-  const match = /^card(\d+)$/.exec(key);
-
-  return match ? PROMPT_CARD_IDS[Number(match[1]) - 1] : undefined;
-};
-
-const toCardNames = (
-  cards: (z.infer<typeof cardNameSchema> | undefined)[] = [],
-): Record<string, LucidShared.TCardName> => Object.fromEntries(
-  cards.flatMap(card => {
-    const id = card ? toCardId(card.id) : undefined;
-
-    return card && id
-      ? [[id, { name: stripSchemaKeys(card.name), flavor: stripSchemaKeys(card.flavor) }]]
-      : [];
-  }),
-);
 
 export const generateContent = async ({
   generateJson,
