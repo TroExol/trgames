@@ -134,7 +134,7 @@ const motifLayer = (icons: LucidShared.TThemeIcon[], worldName: string, color: s
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}" fill="none"`
     + ` stroke="${color}" stroke-opacity="${ICON_OPACITY}" stroke-width="1.7"`
     + ` stroke-linecap="round" stroke-linejoin="round">${marks}</svg>`;
-  const layer = `url("data:image/svg+xml,${encodeURIComponent(svg)}") 0 0 / ${TILE}px ${TILE}px repeat`;
+  const layer = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 
   motifCache.set(key, layer);
 
@@ -157,8 +157,9 @@ export const themeStyle = (
   const cross = roles.supports[1] ?? roles.supports[0] ?? roles.accent;
   const glow = `radial-gradient(120% 90% at 50% 0%, ${withAlpha(weave, density * 2)} 0%, transparent 70%)`;
   // Партии без значков (сгенерированные раньше) остаются на сетке линий
-  const lines = icons && icons.length > 0
-    ? [motifLayer(icons, worldName, roles.text), glow]
+  const hasIcons = Boolean(icons && icons.length > 0);
+  const lines = hasIcons
+    ? [motifLayer(icons ?? [], worldName, roles.text), glow]
     : [
         `repeating-linear-gradient(${angle}deg, ${withAlpha(weave, density)} 0 1px,`
       + ` transparent 1px ${step}px)`,
@@ -181,5 +182,6 @@ export const themeStyle = (
     color: roles.text,
     backgroundColor: roles.base,
     backgroundImage: lines.join(', '),
+    ...(hasIcons && { backgroundSize: `${TILE}px ${TILE}px, auto` }),
   } as CSSProperties;
 };
