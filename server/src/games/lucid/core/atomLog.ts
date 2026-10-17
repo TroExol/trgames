@@ -1,6 +1,7 @@
 import { LucidShared } from '@trgames/shared';
 
 import { resolveTarget } from '@/games/lucid/core/targets';
+import { isAtFinish } from '@/games/lucid/core/atoms';
 
 // Строка ленты для одного применённого атома — с реальными никами целей,
 // в отличие от общей подписи карточки события (LucidShared.describeAtom).
@@ -10,6 +11,7 @@ export const describeAtomLog = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   atom: LucidShared.TAtom,
+  chosenId?: LucidShared.TPlayerId,
 ): string => {
   if (atom.kind === LucidShared.EAtomKind.SWAP_WITH_FIRST) {
     const [firstId] = resolveTarget(G, actorId, LucidShared.ETarget.FIRST);
@@ -21,18 +23,30 @@ export const describeAtomLog = (
       return 'обмена нет: лидер — сам игрок';
     }
 
+    if (isAtFinish(G, G.players[firstId]) || isAtFinish(G, G.players[actorId])) {
+      return 'обмена нет: игрок у сейфа неприкосновенен';
+    }
+
     return `${G.players[actorId].nickname} меняется местами с ${G.players[firstId].nickname}`;
   }
 
-  const targets = resolveTarget(G, actorId, atom.target);
+  const resolved = resolveTarget(G, actorId, atom.target, chosenId);
 
-  if (targets.length === 0) {
+  if (resolved.length === 0) {
     return atom.target === LucidShared.ETarget.FIRST
       ? 'лидера нет — ничья, никого не задело'
       : 'отстающего нет — ничья, никого не задело';
   }
 
-  const label = atom.target === LucidShared.ETarget.ALL
+  const targets = atom.kind === LucidShared.EAtomKind.MOVE
+    ? resolved.filter(id => !isAtFinish(G, G.players[id]))
+    : resolved;
+
+  if (targets.length === 0) {
+    return 'у сейфа никого не сдвинуть';
+  }
+
+  const label = atom.target === LucidShared.ETarget.ALL && targets.length === resolved.length
     ? 'все'
     : targets.map(id => G.players[id].nickname).join(', ');
 

@@ -1,22 +1,17 @@
 import { LucidShared } from '@trgames/shared';
 
+import { freshTurn } from '@/games/lucid/core/turn';
 import { buildTrack } from '@/games/lucid/core/track';
 import { createRandom } from '@/games/lucid/core/random';
+import { createCards } from '@/games/lucid/core/cards';
 
-const START_RESOURCE = 3;
+const START_RESOURCE = 10;
 
 interface TSetupPartyParams {
   seed: string;
   players: { id: LucidShared.TPlayerId; nickname: string }[];
   content: LucidShared.TPartyContent;
 }
-
-// Модель отвечает по нику, а не по playerId — здесь роли находят своих игроков.
-// Ник, которого нет среди игроков, просто не находит адресата; при повторе ника
-// в ответе модели побеждает последняя запись. Ни то ни другое не повод
-// перегенерировать мир — просто часть игроков останется без роли
-const rolesByNickname = (roles: LucidShared.TRole[] = []): Record<string, string> =>
-  roles.reduce<Record<string, string>>((acc, entry) => ({ ...acc, [entry.nickname]: entry.role }), {});
 
 export const setupParty = ({
   seed,
@@ -28,7 +23,6 @@ export const setupParty = ({
     random: createRandom(`${seed}:track`),
     playerCount: players.length,
   });
-  const roleByNickname = rolesByNickname(content.roles);
 
   return {
     G: {
@@ -41,7 +35,6 @@ export const setupParty = ({
             position: track.startId,
             resource: START_RESOURCE,
             skipTurns: 0,
-            role: roleByNickname[player.nickname],
           },
         }),
         {},
@@ -50,12 +43,18 @@ export const setupParty = ({
       track,
       events: content.events,
       theme: content.theme,
+      cardNames: content.cardNames,
       random: createRandom(`${seed}:dice`),
       visited: [track.startId],
       log: [],
       branchChoices: [],
       pendingSteps: 0,
       cellHistory: {},
+      cards: {
+        ...createCards(createRandom(`${seed}:cards`)),
+        hands: Object.fromEntries(players.map(player => [player.id, []])),
+      },
+      turn: freshTurn(),
     },
     ctx: {
       currentPlayer: players[0].id,

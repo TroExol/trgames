@@ -1,4 +1,5 @@
 import type { TOption, TOptionView } from './effect';
+import type { TThemeIcon } from '../themeIcons';
 
 // Настроение мира. Поле решает сразу две задачи: светлая партия или тёмная
 // по палитре и какая играет музыка. Вывести настроение из средней светлоты
@@ -26,6 +27,8 @@ export interface TTheme {
   // Три-пять краёв по порядку следования от старта к финишу.
   // Необязательно: у партий, сгенерированных раньше, поля нет
   regions?: TRegion[];
+  // Три-пять значков для плитки на фоне. Необязательно: у прежних партий поля нет
+  icons?: TThemeIcon[];
 }
 
 export interface TEvent {
@@ -45,19 +48,14 @@ export interface TEventView {
   options: TOptionView[];
 }
 
-// Роль игрока в мире партии, как её вернула модель. Привязана к нику, а не
-// к playerId: на стадии «Мир» модель знает только имена, сопоставление
-// с конкретным игроком делает setupParty
-export interface TRole {
-  nickname: string;
-  role: string;
+export interface TCardName {
+  name: string;
+  flavor: string;
 }
 
 // Всё, что генерирует нейросеть для одной партии
 export interface TPartyContent {
   theme: TTheme;
   events: Record<number, TEvent>;
-  // Необязательное: модель может прислать не для всех игроков или не прислать
-  // вовсе, тогда часть или все останутся без роли
-  roles?: TRole[];
+  cardNames?: Record<string, TCardName>;
 }

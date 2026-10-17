@@ -45,19 +45,7 @@ describe('checkCondition', () => {
     expect(check(resource, EQ, 4)).toBe(false);
   });
 
-  it('сравнивает положение на треке', () => {
-    const { EQ, GT, LT } = LucidShared.EConditionOperator;
-    const position = LucidShared.EConditionField.POSITION;
-
-    expect(check(position, EQ, 4)).toBe(true);
-    expect(check(position, GT, 3)).toBe(true);
-    expect(check(position, LT, 3)).toBe(false);
-  });
-
-  it('поля не путаются между собой', () => {
-    const { EQ } = LucidShared.EConditionOperator;
-
-    expect(check(LucidShared.EConditionField.RESOURCE, EQ, 4)).toBe(false);
-    expect(check(LucidShared.EConditionField.POSITION, EQ, 4)).toBe(true);
+  it('неизвестное поле из старой сохранённой партии — условие не выполнено', () => {
+    expect(check('POSITION' as LucidShared.EConditionField, LucidShared.EConditionOperator.EQ, 4)).toBe(false);
   });
 });

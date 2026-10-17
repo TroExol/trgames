@@ -1,5 +1,7 @@
 import type { LucidShared } from '@trgames/shared';
 
+import { randomInt } from 'node:crypto';
+
 import type { TStorage } from '@/games/lucid/storage/db';
 import type { TPartySnapshot } from '@/games/lucid/room/Party';
 
@@ -17,6 +19,16 @@ interface TCreateParams {
 export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
   const parties = new Map<string, Party>();
 
+  const generateCode = (): string => {
+    let code: string;
+
+    do {
+      code = randomInt(0, 10_000).toString().padStart(4, '0');
+    } while (storage.findPartyUuidByCode(code));
+
+    return code;
+  };
+
   const save = (party: Party): void => {
     // Пока шла долгая генерация, уборка могла удалить опустевшую партию из
     // группы: persist, который придёт следом из init.ts, не должен вернуть
@@ -29,14 +41,36 @@ export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
 
     storage.saveParty({
       uuid: party.uuid,
+      code: party.code,
       theme: snapshot.theme?.name ?? '',
       document: snapshot,
     });
   };
 
+  // Партия поднимается из базы только когда её спросили: держать в памяти
+  // всё, что когда-либо игралось, незачем
+  const get = (uuid: string): Party | null => {
+    const inMemory = parties.get(uuid);
+
+    if (inMemory) {
+      return inMemory;
+    }
+
+    const stored = storage.loadParty(uuid);
+
+    if (!stored) {
+      return null;
+    }
+
+    const party = Party.fromSnapshot(stored);
+    parties.set(uuid, party);
+
+    return party;
+  };
+
   return {
     create: ({ uuid, ownerId }: TCreateParams): Party => {
-      const party = new Party({ uuid, ownerId });
+      const party = new Party({ uuid, code: generateCode(), ownerId });
 
       parties.set(uuid, party);
       save(party);
@@ -44,25 +78,12 @@ export const createPartyGroup = ({ storage }: TCreatePartyGroupParams) => {
       return party;
     },
 
-    // Партия поднимается из базы только когда её спросили: держать в памяти
-    // всё, что когда-либо игралось, незачем
-    get: (uuid: string): Party | null => {
-      const inMemory = parties.get(uuid);
+    get,
 
-      if (inMemory) {
-        return inMemory;
-      }
+    findByCode: (code: string): Party | null => {
+      const uuid = storage.findPartyUuidByCode(code);
 
-      const stored = storage.loadParty(uuid);
-
-      if (!stored) {
-        return null;
-      }
-
-      const party = Party.fromSnapshot(stored);
-      parties.set(uuid, party);
-
-      return party;
+      return uuid ? get(uuid) : null;
     },
 
     persist: (party: Party): void => save(party),

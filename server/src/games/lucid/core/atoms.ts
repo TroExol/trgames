@@ -1,13 +1,17 @@
 import { LucidShared } from '@trgames/shared';
 
 import { resolveTarget } from '@/games/lucid/core/targets';
-import { moveBy } from '@/games/lucid/core/movement';
+import { stepBy } from '@/games/lucid/core/cells';
 
 interface TAtomParams {
   actorId: LucidShared.TPlayerId;
   targets: LucidShared.TPlayerId[];
   value: number;
 }
+
+// Игрок у сейфа неприкосновенен: эффекты не двигают и не меняют его местами
+export const isAtFinish = (G: LucidShared.TG, player: LucidShared.TPlayer): boolean =>
+  player.position === G.track.finishId;
 
 type TAtomHandler = (G: LucidShared.TG, params: TAtomParams) => LucidShared.TG;
 
@@ -24,10 +28,10 @@ const updatePlayers = (
 });
 
 export const ATOMS: Record<LucidShared.EAtomKind, TAtomHandler> = {
-  [LucidShared.EAtomKind.MOVE]: (G, { targets, value }) => updatePlayers(G, targets, player => ({
-    ...player,
-    position: moveBy(G.track, player.position, value),
-  })),
+  [LucidShared.EAtomKind.MOVE]: (G, { targets, value }) => targets.reduce(
+    (state, id) => (isAtFinish(state, state.players[id]) ? state : stepBy(state, id, value)),
+    G,
+  ),
 
   // Долг: отдаёшь сколько есть, отрицательного запаса не бывает
   [LucidShared.EAtomKind.RESOURCE]: (G, { targets, value }) => updatePlayers(G, targets, player => ({
@@ -45,7 +49,7 @@ export const ATOMS: Record<LucidShared.EAtomKind, TAtomHandler> = {
   [LucidShared.EAtomKind.SWAP_WITH_FIRST]: (G, { actorId }) => {
     const [firstId] = resolveTarget(G, actorId, LucidShared.ETarget.FIRST);
 
-    if (!firstId || firstId === actorId) {
+    if (!firstId || firstId === actorId || isAtFinish(G, G.players[firstId]) || isAtFinish(G, G.players[actorId])) {
       return G;
     }
 
@@ -64,8 +68,9 @@ export const applyAtom = (
   G: LucidShared.TG,
   actorId: LucidShared.TPlayerId,
   atom: LucidShared.TAtom,
+  chosenId?: LucidShared.TPlayerId,
 ): LucidShared.TG => ATOMS[atom.kind](G, {
   actorId,
   value: atom.value,
-  targets: resolveTarget(G, actorId, atom.target),
+  targets: resolveTarget(G, actorId, atom.target, chosenId),
 });

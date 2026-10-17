@@ -1,9 +1,14 @@
 import { useMediaQuery, useResizeObserver } from 'usehooks-ts';
-import { useEffect, useRef } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
 import type { TMood } from '@/lib/lucid/colors';
+import type { TCellIcon, TCellShape } from '@/lib/lucid/cellLook';
 
 import {
   CELL_STEP,
@@ -15,12 +20,21 @@ import {
 import { hashString } from '@/lib/lucid/theme';
 import { resolveRegions } from '@/lib/lucid/regions';
 import { deriveRoles } from '@/lib/lucid/colors';
+import {
+  cellLook,
+  SAFE_LABEL,
+  ZONE_LABEL,
+  zoneStarts,
+} from '@/lib/lucid/cellLook';
+import { cellHint } from '@/lib/lucid/cellHint';
 
 import type { TSpot } from './linkPath';
 
 import {
+  housePath,
   linkMiddle,
   linkPath,
+  polygonPath,
   tilePath,
 } from './linkPath';
 
@@ -35,6 +49,7 @@ export interface TBoardProps {
 }
 
 // Размеры в условных единицах раскладки, где клетка отстоит от клетки на 132
+const HINT_MS = 4000;
 const RIBBON_WIDTH = 30;
 // Плитка события: вдоль пути на поперёк
 const TILE_ALONG = 36;
@@ -45,6 +60,61 @@ const EDGE_SIZE = 42;
 // Скругление делается обводкой, а не радиусом: два — почти угол
 const TILE_STROKE = 2;
 const TILE_FILL_VISITED = 0.95;
+const DIAMOND_RADIUS = 25;
+const HEX_RADIUS = 24;
+const DOT_RADIUS = 9;
+const DISC_RADIUS = 18;
+const PORTAL_OUTER_RADIUS = 23;
+const PORTAL_INNER_RADIUS = 13;
+const WHITE = '#ffffff';
+// Толщина обводки по форме
+const SHAPE_STROKE: Record<TCellShape, number> = {
+  diamond: 2.5,
+  disc: 2,
+  dot: 2.5,
+  hex: 2,
+  house: 2,
+  portal: 5,
+  tile: TILE_STROKE,
+};
+// Пиктограммы нарисованы в квадрате 24×24 вокруг нуля; здесь их сдвиг вниз и размер
+const ICON_SPEC: Record<TCellIcon, { dy: number; size: number }> = {
+  FINISH: { dy: 0, size: 1.2 },
+  GREEN: { dy: 0, size: 1 },
+  LAW: { dy: 0, size: 0.95 },
+  RED: { dy: 0, size: 1 },
+  SHOP: { dy: 4, size: 0.9 },
+  START: { dy: 0, size: 1.2 },
+};
+const ICON_PATHS: Record<TCellIcon, JSX.Element> = {
+  FINISH: (
+    <>
+      <rect height="16" rx="2" width="16" x="-8" y="-8" />
+      <circle r="4" />
+      <path d="M0 -4v-2" />
+    </>
+  ),
+  GREEN: <path d="M-6 0h12M0 -6v12" />,
+  LAW: (
+    <>
+      <path d="M0 -8v15M-5 7h10M-8 -5h16" />
+      <path d="M-8 -5l-3 6h6zM8 -5l-3 6h6z" />
+    </>
+  ),
+  RED: <path d="M-6 0h12" />,
+  SHOP: (
+    <>
+      <path d="M-7 -2h14l-1.6 10h-10.8z" />
+      <path d="M-3.5 -2v-2.5a3.5 3.5 0 0 1 7 0v2.5" />
+    </>
+  ),
+  START: <path d="M-5 9v-18M-5 -8h11l-3 4l3 4h-11" />,
+};
+// Насколько пиктограммы и знаки растут на телефоне вместе с подписями; больше
+// не растут, иначе не влезут в форму
+const ICON_BOOST_MAX = 1.25;
+const MARK_SIZE = 22;
+const PORTAL_MARK_SIZE = 16;
 // Насколько обводка выбора шире самой плитки
 const CHOICE_GROWTH = 12;
 // Невидимая область нажатия шире плитки: пальцем в неё не попасть. Шире
@@ -85,6 +155,8 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
   const isDrawn = useRef(false);
   const { width = 0, height = 0 } = useResizeObserver({ ref: containerRef, box: 'border-box' });
   const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const hintRef = useRef<HTMLParagraphElement>(null);
+  const [hintCellId, setHintCellId] = useState<number>();
 
   const { theme, track } = state.G;
   const roles = deriveRoles(theme.palette, theme.mood as TMood | undefined);
@@ -132,26 +204,112 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
     .filter(ribbon => ribbon.d.length > 0);
 
   const visited = new Set(state.G.visited);
-  // Плитки одного вида собираются в один path со множеством подпутей: их
-  // полсотни, и каждая отдельным элементом ничего не добавляет
-  const tiles = new Map<string, { d: string; fill: string; ink: string; isVisited: boolean }>();
+  const boost = Math.min(Math.max(textSize / LABEL_SIZE, 1), ICON_BOOST_MAX);
+  // Формы-пути одного вида собираются в один path со множеством подпутей: их
+  // полсотни, и каждая отдельным элементом ничего не добавляет. Круги и
+  // пиктограммы рисуются отдельными элементами
+  const tiles = new Map<string, { d: string; fill: string; ink: string; isVisited: boolean; width: number }>();
+  const cellById = new Map(track.cells.map(cell => [cell.id, cell]));
+  const marks: { id: number; node: JSX.Element }[] = [];
 
   layout.cells.forEach(cell => {
     const region = regionAt(cell.depth);
     const ink = region?.ink ?? 'var(--lucid-line)';
+    const hollow = region?.hollow ?? 'var(--lucid-base)';
     const isVisited = visited.has(cell.id);
-    const isEdge = cell.id === track.startId || cell.id === track.finishId;
-    const key = `${ink}:${isVisited}`;
-    const d = isEdge
-      ? tilePath(cell, EDGE_SIZE, EDGE_SIZE)
-      : tilePath(cell, TILE_ALONG, TILE_ACROSS);
+    const look = cellLook(cellById.get(cell.id)!, isVisited);
+    const isInk = look.fill === 'ink';
+    const fill = isInk ? ink : look.fill === 'hollow' ? hollow : look.fill;
+    const outline = SHAPE_STROKE[look.shape];
+    const pathByShape: Partial<Record<TCellShape, string>> = {
+      diamond: polygonPath(cell, 4, DIAMOND_RADIUS),
+      hex: polygonPath(cell, 6, HEX_RADIUS, Math.PI / 6),
+      house: housePath(cell),
+      tile: tilePath(cell, EDGE_SIZE, EDGE_SIZE),
+    };
+    const d = pathByShape[look.shape];
 
-    tiles.set(key, {
-      d: [tiles.get(key)?.d, d].filter(Boolean).join(' '),
-      fill: isVisited ? ink : region?.hollow ?? 'var(--lucid-base)',
-      ink,
-      isVisited,
-    });
+    if (d) {
+      const key = `${ink}:${fill}:${isInk}:${outline}`;
+
+      tiles.set(key, {
+        d: [tiles.get(key)?.d, d].filter(Boolean).join(' '),
+        fill,
+        ink,
+        isVisited: isInk,
+        width: outline,
+      });
+    }
+
+    if (look.shape === 'dot') {
+      marks.push({
+        id: cell.id,
+        node: <circle cx={cell.x} cy={cell.y} fill={fill} r={DOT_RADIUS} stroke={ink} strokeWidth={outline} />,
+      });
+    }
+
+    if (look.shape === 'disc') {
+      marks.push({
+        id: cell.id,
+        node: <circle cx={cell.x} cy={cell.y} fill={fill} r={DISC_RADIUS} stroke={ink} strokeWidth={outline} />,
+      });
+    }
+
+    if (look.shape === 'portal') {
+      marks.push({
+        id: cell.id,
+        node: (
+          <>
+            <circle cx={cell.x} cy={cell.y} fill="var(--lucid-base)" r={PORTAL_OUTER_RADIUS} stroke={fill} strokeWidth={outline} />
+            <circle cx={cell.x} cy={cell.y} fill="none" r={PORTAL_INNER_RADIUS} stroke={fill} strokeWidth={3} />
+          </>
+        ),
+      });
+    }
+
+    if (look.icon) {
+      const spec = ICON_SPEC[look.icon];
+      const isEdge = look.shape === 'tile';
+      const color = isEdge ? (isInk ? hollow : ink) : WHITE;
+
+      marks.push({
+        id: cell.id,
+        node: (
+          <g
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2.6}
+            transform={`translate(${cell.x} ${cell.y + spec.dy}) scale(${spec.size * boost})`}
+          >
+            {ICON_PATHS[look.icon]}
+          </g>
+        ),
+      });
+    }
+
+    if (look.label) {
+      const isPortal = look.shape === 'portal';
+
+      marks.push({
+        id: cell.id,
+        node: (
+          <text
+            className="font-golos"
+            dominantBaseline="central"
+            fill={isPortal ? fill : ink}
+            fontSize={(isPortal ? PORTAL_MARK_SIZE : MARK_SIZE) * boost}
+            fontWeight={600}
+            textAnchor="middle"
+            x={cell.x}
+            y={cell.y}
+          >
+            {look.label}
+          </text>
+        ),
+      });
+    }
   });
 
   // Фишки нескольких игроков на одной клетке расходятся по кругу, иначе
@@ -167,6 +325,12 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
   // Точки, которых подпись края сторонится: центры клеток, середины связей и
   // ники. Этого хватает, чтобы не наехать ни на соседний ряд, ни на прядь
   // развилки, ни на чужую подпись
+  const finishCell = layout.byId[track.finishId];
+  const safeHalfWidth = (SAFE_LABEL.length * textSize * 0.85) / 3;
+  const safeY = finishCell ? finishCell.y + TILE_ACROSS / 2 + 4 + textSize * 0.4 : 0;
+  const safeSpots = finishCell
+    ? [finishCell.x - safeHalfWidth, finishCell.x, finishCell.x + safeHalfWidth].map(x => ({ x, y: safeY }))
+    : [];
   const busy = [
     ...layout.cells,
     ...layout.links.map(link => linkMiddle(layout.byId[link.from], layout.byId[link.to])),
@@ -176,6 +340,19 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
 
       return cell ? [{ x: cell.x, y: cell.y - LABEL_GAP }] : [];
     }),
+    ...zoneStarts(track).flatMap(start => {
+      const cell = layout.byId[start.cellId];
+
+      if (!cell) {
+        return [];
+      }
+
+      const halfWidth = (ZONE_LABEL[start.zone].length * textSize * 0.85) / 3;
+      const y = cell.y + TILE_ACROSS / 2 + 4 + textSize * 0.4;
+
+      return [cell.x - halfWidth, cell.x, cell.x + halfWidth].map(x => ({ x, y }));
+    }),
+    ...safeSpots,
   ];
 
   // Подпись края стоит у его первой клетки и отходит поперёк пути: на ленте её
@@ -225,6 +402,26 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
     return [{ ink: region.ink, name: region.name, x: point.x, y: point.y }];
   });
 
+  useEffect(() => {
+    if (hintCellId === undefined) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setHintCellId(undefined), HINT_MS);
+    const handleOutside = (event: PointerEvent): void => {
+      if (!hintRef.current?.contains(event.target as Node)) {
+        setHintCellId(undefined);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutside);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('pointerdown', handleOutside);
+    };
+  }, [hintCellId]);
+
   // Прочерчивание — событие начала партии, а не отклик на перерисовку: оно
   // случается один раз, поэтому у эффекта нет списка зависимостей, а есть флаг.
   // Края чертятся подряд, от старта к финишу, а не разом
@@ -254,8 +451,20 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
     });
   });
 
+  const handleTapCell = (cellId: number): void => {
+    if ((state.G.cellHistory[cellId]?.length ?? 0) > 0) {
+      onViewCell?.(cellId);
+
+      return;
+    }
+
+    setHintCellId(cellId);
+  };
+
+  const hintCell = hintCellId === undefined ? undefined : track.cells.find(cell => cell.id === hintCellId);
+
   return (
-    <div className="size-full" ref={containerRef}>
+    <div className="relative size-full" ref={containerRef}>
       {width
         ? (
             <svg
@@ -309,9 +518,58 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                   key={key}
                   stroke={tile.ink}
                   strokeLinejoin="round"
-                  strokeWidth={TILE_STROKE}
+                  strokeWidth={tile.width}
                 />
               ))}
+
+              <g pointerEvents="none">
+                {marks.map((mark, index) => (
+                  <g key={`${mark.id}-${index}`}>{mark.node}</g>
+                ))}
+              </g>
+
+              {finishCell && (
+                <text
+                  className="font-golos"
+                  dominantBaseline="hanging"
+                  fill="var(--lucid-text)"
+                  fontSize={textSize * 0.85}
+                  paintOrder="stroke"
+                  pointerEvents="none"
+                  stroke="var(--lucid-base)"
+                  strokeWidth={4}
+                  textAnchor="middle"
+                  x={finishCell.x}
+                  y={finishCell.y + TILE_ACROSS / 2 + 4}
+                >
+                  {SAFE_LABEL}
+                </text>
+              )}
+
+              {zoneStarts(track).map(start => {
+                const cell = layout.byId[start.cellId];
+
+                return cell
+                  ? (
+                      <text
+                        className="font-golos"
+                        dominantBaseline="hanging"
+                        fill="var(--lucid-text)"
+                        fontSize={textSize * 0.85}
+                        key={`zone-${start.zone}`}
+                        paintOrder="stroke"
+                        pointerEvents="none"
+                        stroke="var(--lucid-base)"
+                        strokeWidth={4}
+                        textAnchor="middle"
+                        x={cell.x}
+                        y={cell.y + TILE_ACROSS / 2 + 4}
+                      >
+                        {ZONE_LABEL[start.zone]}
+                      </text>
+                    )
+                  : null;
+              })}
 
               {/* Подпись края поверх ленты и в обводке основы: место ей
                   подобрано в стороне от пути, но фишка или чужой ряд могут
@@ -369,21 +627,16 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
                 );
               })}
 
-              {/* Просмотр клетки: только там, где уже что-то разыграно —
-                  клетка без записи в cellHistory нечего показывать, и это
-                  само собой исключает и непосещённые клетки, и клетку
-                  текущего нерешённого события (запись появляется только
-                  после выбора) */}
-              {layout.cells.filter(cell => (state.G.cellHistory[cell.id]?.length ?? 0) > 0).map(cell => (
+              {layout.cells.filter(cell => !onSelectCell || !state.G.branchChoices.includes(cell.id)).map(cell => (
                 <g
                   aria-label="Посмотреть клетку"
                   className="cursor-pointer"
                   key={`view-${cell.id}`}
-                  onClick={() => onViewCell?.(cell.id)}
+                  onClick={() => handleTapCell(cell.id)}
                   onKeyDown={event => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      onViewCell?.(cell.id);
+                      handleTapCell(cell.id);
                     }
                   }}
                   role="button"
@@ -459,6 +712,17 @@ export const Board = observer(function Board({ state, onSelectCell, onViewCell }
             </svg>
           )
         : null}
+
+      {hintCell && (
+        <p
+          className="absolute inset-x-2 bottom-2 z-10 rounded-md border-2 px-3 py-2 text-sm leading-snug"
+          ref={hintRef}
+          role="status"
+          style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+        >
+          {cellHint(hintCell, state.G, state.you)}
+        </p>
+      )}
     </div>
   );
 });

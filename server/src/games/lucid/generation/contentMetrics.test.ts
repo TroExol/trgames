@@ -39,6 +39,7 @@ describe('computeContentMetrics', () => {
       antiLeaderShare: 0,
       helpLastShare: 0,
       calamityShare: 0,
+      resourceWordShare: 0,
       avgEventTextLength: 0,
       avgOptionTextLength: 0,
     });
@@ -111,7 +112,7 @@ describe('computeContentMetrics', () => {
         success: {
           atoms: [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 1)],
           condition: {
-            field: LucidShared.EConditionField.POSITION,
+            field: LucidShared.EConditionField.RESOURCE,
             operator: LucidShared.EConditionOperator.GT,
             value: 3,
           },
@@ -180,5 +181,13 @@ describe('computeContentMetrics', () => {
 
     expect(metrics.avgEventTextLength).toBe(6);
     expect(metrics.avgOptionTextLength).toBe(3);
+  });
+
+  it('считает долю событий со словом «ресурс» в любом падеже и регистре', () => {
+    const atoms = [atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 1)];
+    const clean = event(1, [option({ success: { atoms } })]);
+    const dirty = event(2, [option({ text: 'Потратить Ресурсы', success: { atoms } })]);
+
+    expect(computeContentMetrics(content([clean, dirty])).resourceWordShare).toBe(0.5);
   });
 });

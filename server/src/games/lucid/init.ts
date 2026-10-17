@@ -41,6 +41,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   'cannot-start': t('lucid.errors.cannotStart', 'ru'),
   'empty-nickname': t('lucid.errors.emptyNickname', 'ru'),
   'empty-theme': t('lucid.errors.emptyTheme', 'ru'),
+  'nickname-too-long': t('lucid.errors.nicknameTooLong', 'ru'),
   'nickname-taken': t('lucid.errors.nicknameTaken', 'ru'),
   'not-a-member': t('lucid.errors.notAMember', 'ru'),
   'party-already-started': t('lucid.errors.partyAlreadyStarted', 'ru'),
@@ -97,6 +98,23 @@ export const createParty = (
   } catch (error) {
     callback({ status: 'error', message: messageForError(error) });
   }
+};
+
+interface TFindPartyContext {
+  group: TPartyGroup;
+}
+
+export const findParty = (
+  { group }: TFindPartyContext,
+  code: string,
+  callback: TCreatePartyCallback,
+): void => {
+  const normalized = typeof code === 'string' ? code.trim() : '';
+  const party = /^\d{4}$/.test(normalized) ? group.findByCode(normalized) : null;
+
+  callback(party
+    ? { status: 'ok', partyId: party.uuid }
+    : { status: 'error', message: t('lucid.errors.partyNotFound', 'ru') });
 };
 
 export const createHandlers = ({ group, storage, broadcast, fail, sync }: TCreateHandlersParams) => {
@@ -291,6 +309,10 @@ export const init = (io: Server): void => {
       }
 
       createParty({ group, ownerId, sync: cleanup.sync }, callback);
+    });
+
+    socket.on(LucidShared.ELucidEvent.findParty, (code, callback) => {
+      findParty({ group }, code, callback);
     });
 
     socket.on('error', error => console.error(error));

@@ -1,22 +1,22 @@
 import type { ReactNode } from 'react';
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { LucidShared } from '@trgames/shared';
 
 import { partyStore } from '@/routes/games/lucid/PartyPage/stores';
 import { socketService } from '@/routes/games/lucid/PartyPage/services';
 import { Ribbon } from '@/routes/games/lucid/PartyPage/components/Ribbon';
+import { PlayerView } from '@/routes/games/lucid/PartyPage/components/PlayerView';
+import { LawsStrip } from '@/routes/games/lucid/PartyPage/components/LawsStrip';
+import { Hand } from '@/routes/games/lucid/PartyPage/components/Hand';
 import { EventBar } from '@/routes/games/lucid/PartyPage/components/EventCard/EventBar';
 import { EventCard } from '@/routes/games/lucid/PartyPage/components/EventCard';
+import { CardPick } from '@/routes/games/lucid/PartyPage/components/CardPick';
 import { pluralizeSteps } from '@/lib/lucid/pluralize';
+import { ZONE_LABEL } from '@/lib/lucid/cellLook';
 import { Button } from '@/components/ui/Button';
 
-import { Outcome } from './Outcome';
 import { TruncatedText } from './components/TruncatedText';
 import { Die } from './components/Die';
 
@@ -30,45 +30,23 @@ const EPhase = LucidShared.EPhase;
 // направлением, а не номером: номер клетки человеку ничего не говорит
 const BRANCH_LABELS = ['Верхняя тропа', 'Нижняя тропа'];
 
-// Интерфейс лежит поверх поля узкими полосами сверху и снизу: поле занимает
-// экран целиком и остаётся героем экрана, полосы молчат
-export const Hud = observer(function Hud() {
+interface THudProps {
+  children: ReactNode;
+}
+
+// Шапка, поле и нижняя панель идут столбиком: поле получает ровно остаток
+// высоты, ничто его не перекрывает, кроме полноэкранных модалок
+export const Hud = observer(function Hud({ children }: THudProps) {
   // Оптимистичных ходов нет: после нажатия кнопка молчит до прихода нового
   // stateId, а не до применения хода у себя
   const [sentStateId, setSentStateId] = useState<number>();
+  const [pendingBuy, setPendingBuy] = useState<{ index: number; stateId: number }>();
   // Клетка, событие которой свёрнуто. Именно клетка, а не флаг: следующее
   // событие открывается само, разворачивать его руками не нужно
   const [collapsedCell, setCollapsedCell] = useState<number>();
-  // Итог только что разыгранного варианта — своя клетка и запись истории,
-  // не флаг: пока он висит, следующее событие всё равно открывается само
-  const [outcome, setOutcome] = useState<{ cellId: number; entry: LucidShared.THistoryEntry }>();
-  // Клетка события с прошлого рендера: пропадает или меняется — значит по
-  // ней только что разыграли вариант. Ref, а не state: хук должен звать
-  // хуки безусловно, а state ниже вычисляется уже после возможного раннего return
-  const prevEventCellRef = useRef<number>();
+  const [collapsedPick, setCollapsedPick] = useState<string>();
+  const [viewedPlayerId, setViewedPlayerId] = useState<LucidShared.TPlayerId>();
   const { state, view } = partyStore;
-  const currentEventCellId = state && state.ctx.phase === LucidShared.EPhase.CHOICE
-    ? state.G.events[state.G.players[state.ctx.currentPlayer].position]?.cellId
-    : undefined;
-
-  useEffect(() => {
-    const prevCellId = prevEventCellRef.current;
-
-    prevEventCellRef.current = currentEventCellId;
-
-    if (!state || prevCellId === undefined || prevCellId === currentEventCellId) {
-      return;
-    }
-
-    const entry = state.G.cellHistory[prevCellId]?.at(-1);
-
-    if (entry) {
-      setOutcome({ cellId: prevCellId, entry });
-    }
-    // Реагируем только на смену состояния партии — currentEventCellId и cellHistory
-    // берутся из его же снимка, отдельно отслеживать их незачем
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state?.stateId]);
 
   if (!state || !view) {
     return null;
@@ -83,19 +61,48 @@ export const Hud = observer(function Hud() {
   // ещё не применён — нажатие ушло бы по устаревшему виду
   const isRevealing = partyStore.isRevealing;
   const offline = new Set(view.members.filter(member => !member.isConnected).map(member => member.playerId));
-  // Без единой роли (запасная партия, 4.7) колонки грида ниже ни на что не
-  // тратятся — нечего обрезать. Тогда строке выгоднее обычный flex-wrap:
-  // он пакует короткие ники по факту их ширины, а не по минимуму колонки
-  const hasAnyRole = state.G.order.some(playerId => Boolean(state.G.players[playerId].role));
   // Событие берётся по клетке ходящего игрока: его читают все, а не только тот,
   // чей ход
-  const event = state.ctx.phase === EPhase.CHOICE ? state.G.events[current.position] : undefined;
+  const event = state.ctx.phase === EPhase.CHOICE
+    ? state.G.turn.lawEvent ?? state.G.events[state.G.turn.eventCellId ?? current.position]
+    : undefined;
   const isCollapsed = event !== undefined && collapsedCell === event.cellId;
+  const isDiscarding = pendingBuy !== undefined && pendingBuy.stateId === state.stateId;
+  const pickTitle = !isMyTurn
+    ? undefined
+    : state.ctx.phase === EPhase.LAW
+      ? 'Выбор закона'
+      : state.ctx.phase === EPhase.SHOP
+        ? isDiscarding ? 'Сброс карты' : 'Лавка'
+        : undefined;
+  const pickKey = `${state.stateId}:${isDiscarding ? 'discard' : state.ctx.phase}`;
+  const isPickCollapsed = collapsedPick === pickKey;
+  const handlePickCollapse = (): void => setCollapsedPick(pickKey);
 
   const handleRoll = (): void => {
     setSentStateId(state.stateId);
     // stateId — версия состояния, на которой игрок принимал решение
     socketService.makeMove({ playerId: state.you, stateId: state.stateId, type: EMoveType.ROLL });
+  };
+
+  const handleOpenSafe = (bonus: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      bonus,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.OPEN_SAFE,
+    });
+  };
+
+  const handleChooseDie = (dieIndex: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      dieIndex,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.CHOOSE_DIE,
+    });
   };
 
   const handleChooseBranch = (cellId: number): void => {
@@ -108,14 +115,53 @@ export const Hud = observer(function Hud() {
     });
   };
 
-  const handleChooseOption = (optionIndex: number): void => {
+  const handleChooseOption = (optionIndex: number, targetId?: string): void => {
     setSentStateId(state.stateId);
     socketService.makeMove({
       optionIndex,
       playerId: state.you,
+      targetId,
       stateId: state.stateId,
       type: EMoveType.CHOOSE_OPTION,
     });
+  };
+
+  const handleChooseLaw = (index: number): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      index,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.CHOOSE_LAW,
+    });
+  };
+
+  const handleBuy = (index: number | null, discardUid?: number): void => {
+    setSentStateId(state.stateId);
+    setPendingBuy(undefined);
+    socketService.makeMove({
+      discardUid,
+      index,
+      playerId: state.you,
+      stateId: state.stateId,
+      type: EMoveType.BUY_CARD,
+    });
+  };
+
+  const handlePlayCard = (uid: number, targetId?: string): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({
+      playerId: state.you,
+      stateId: state.stateId,
+      targetId,
+      type: EMoveType.PLAY_CARD,
+      uid,
+    });
+  };
+
+  const handleEndTurn = (): void => {
+    setSentStateId(state.stateId);
+    socketService.makeMove({ playerId: state.you, stateId: state.stateId, type: EMoveType.END_TURN });
   };
 
   // Невозможное нельзя нажать: не твой ход — кнопок нет вовсе. Тогда отказ
@@ -125,6 +171,32 @@ export const Hud = observer(function Hud() {
       const winner = state.G.winner && state.G.players[state.G.winner];
 
       return <p className="font-unbounded text-base">{winner ? `Побеждает ${winner.nickname}` : 'Партия окончена'}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.LAW) {
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} выбирает закон`}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.SHOP) {
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} в Лавке`}</p>;
+    }
+
+    if (state.ctx.phase === EPhase.CARDS) {
+      if (!isMyTurn) {
+        return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
+      }
+
+      return (
+        <Button
+          className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
+          disabled={isSent || isRevealing}
+          onClick={handleEndTurn}
+          style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+          variant="outline"
+        >
+          Закончить ход
+        </Button>
+      );
     }
 
     // Остаток шагов у развилки виден всем, не только ходящему: ждущие видят,
@@ -167,11 +239,64 @@ export const Hud = observer(function Hud() {
       );
     }
 
+    if (state.ctx.phase === EPhase.DICE) {
+      const values = state.G.lastRoll?.values ?? [];
+
+      if (!isMyTurn) {
+        return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`${current.nickname} выбирает кубик`}</p>;
+      }
+
+      return (
+        <div className="flex flex-wrap gap-2">
+          {values.map((value, index) => (
+            <Button
+              className="whitespace-normal border-2 bg-transparent hover:bg-transparent"
+              disabled={isSent || isRevealing}
+              key={index}
+              onClick={() => handleChooseDie(index)}
+              size="sm"
+              style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+              variant="outline"
+            >
+              {`Идти на ${value}`}
+            </Button>
+          ))}
+        </div>
+      );
+    }
+
+    const isAtSafe = state.ctx.phase === EPhase.ROLL && current.position === state.G.track.finishId;
+
     if (!isMyTurn) {
-      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{`Ходит ${current.nickname}`}</p>;
+      const text = isAtSafe ? `${current.nickname} открывает сейф` : `Ходит ${current.nickname}`;
+
+      return <p className="text-sm" style={{ color: 'var(--lucid-muted)' }}>{text}</p>;
+    }
+
+    if (isAtSafe) {
+      return (
+        <div className="flex flex-col gap-2">
+          {LucidShared.SAFE_BONUS_COSTS.map((cost, bonus) => (
+            <Button
+              className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
+              disabled={isSent || isRevealing || you.resource < cost}
+              key={bonus}
+              onClick={() => handleOpenSafe(bonus)}
+              size="sm"
+              style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
+              variant="outline"
+            >
+              {`${bonus === 0 ? 'Открыть сейф' : `+${bonus} за ${cost}`} · нужно ${LucidShared.safeNeed(bonus)}+`}
+            </Button>
+          ))}
+        </div>
+      );
     }
 
     if (state.ctx.phase === EPhase.ROLL) {
+      const depths = LucidShared.trackDepths(state.G.track);
+      const zone = LucidShared.diceZoneForDepth(depths[current.position] ?? 0, depths[state.G.track.finishId] ?? 0);
+
       return (
         <Button
           className="w-full whitespace-normal border-2 bg-transparent hover:bg-transparent"
@@ -180,7 +305,7 @@ export const Hud = observer(function Hud() {
           style={{ borderColor: 'var(--lucid-accent)', color: 'var(--lucid-text)' }}
           variant="outline"
         >
-          Бросить кубик
+          {zone === LucidShared.EDiceZone.ONE ? 'Бросить кубик' : `Бросить: ${ZONE_LABEL[zone]}`}
         </Button>
       );
     }
@@ -188,11 +313,60 @@ export const Hud = observer(function Hud() {
     return <p className="text-sm">Событие ждёт решения</p>;
   };
 
+  const renderShop = (): ReactNode => {
+    const hand = state.G.cards.hands[state.you] ?? [];
+    const { resourceName } = theme;
+
+    if (isDiscarding) {
+      return (
+        <CardPick
+          isSent={isSent || isRevealing}
+          items={hand.map(item => ({
+            actionLabel: 'Сбросить',
+            key: String(item.uid),
+            name: LucidShared.cardName(state.G, item.card),
+            rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
+          }))}
+          onCollapse={handlePickCollapse}
+          onPick={index => handleBuy(pendingBuy.index, hand[index].uid)}
+          onSkip={() => setPendingBuy(undefined)}
+          skipLabel="Назад"
+          title="Рука полна: что сбросить?"
+        />
+      );
+    }
+
+    return (
+      <CardPick
+        isSent={isSent || isRevealing}
+        items={state.G.cards.shopOffer.map(item => ({
+          actionLabel: 'Купить',
+          disabled: you.resource < LucidShared.SHOP_PRICE,
+          flavor: state.G.cardNames?.[item.card]?.flavor,
+          key: String(item.uid),
+          name: LucidShared.cardName(state.G, item.card),
+          rule: LucidShared.SHOP_TEXT[item.card].rule(resourceName),
+        }))}
+        onCollapse={handlePickCollapse}
+        onPick={index => {
+          if (hand.length >= LucidShared.HAND_LIMIT) {
+            setPendingBuy({ index, stateId: state.stateId });
+          } else {
+            handleBuy(index);
+          }
+        }}
+        onSkip={() => handleBuy(null)}
+        skipLabel="Ничего не беру"
+        title={`Лавка: одна карта за ${LucidShared.SHOP_PRICE}`}
+      />
+    );
+  };
+
   return (
     <>
       <header
-        className="absolute inset-x-0 top-0 flex flex-col gap-1 px-3 py-2 backdrop-blur-sm"
-        style={{ backgroundColor: 'var(--lucid-veil)' }}
+        className="flex flex-none flex-col gap-1 border-b px-3 py-2"
+        style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-muted)' }}
       >
         <div className="flex items-baseline justify-between gap-3">
           <h1 className="min-w-0 font-unbounded text-base">
@@ -209,57 +383,49 @@ export const Hud = observer(function Hud() {
           </p>
         </div>
 
-        {/* Пока за отвалившегося ходит автопилот, это видно всем: иначе
-            остальные обсуждают решения, которых человек не принимал */}
-        {/* grid вместо flex-wrap: ширина колонки не зависит от длины роли, а
-            auto-fit схлопывает пустые колонки — при 2 игроках им достаётся вся
-            строка, при 6 на 360-390px колонок ровно две (см. комментарий у
-            роли), как и раньше */}
+        {/* Строка игрока — одна кнопка: тап открывает PlayerView. Ресурс и число
+            карт не сжимаются, ник обрезается. */}
         <ul
-          className={
-            hasAnyRole
-              ? 'grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-x-3 text-xs'
-              : 'flex flex-wrap gap-x-3 text-xs'
-          }
+          className="flex flex-wrap gap-x-3 text-xs"
           style={{ color: 'var(--lucid-muted)' }}
         >
-          {state.G.order.map(playerId => (
-            <li
-              className="flex min-w-0 items-center gap-1"
-              key={playerId}
-              style={playerId === state.ctx.currentPlayer ? { color: 'var(--lucid-text)' } : undefined}
-            >
-              {playerId === state.ctx.currentPlayer && (
-                <span
-                  aria-hidden
-                  className="size-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: 'var(--lucid-accent)' }}
-                />
-              )}
-              <span className="shrink-0">{state.G.players[playerId].nickname}</span>
-              {/* Роль — не секрет, но и не главное: всегда приглушена, даже у текущего
-                  игрока, хотя кегль (text-xs) тот же — меньше 12px уже неразборчиво.
-                  Без max-w: ширину задаёт колонка грида, а не сама роль, поэтому
-                  свободное место в строке достаётся роли честно, а не по фикс.
-                  потолку. minmax(9rem,...) — 9rem подобран под 360/390px: при
-                  шести игроках колонок ровно две (floor(336/(144+12))=2), строка
-                  остаётся в 3 ряда, как и раньше (замерено в Storybook) */}
-              {state.G.players[playerId].role && (
-                <TruncatedText
-                  className="min-w-0 truncate text-xs"
-                  style={{ color: 'var(--lucid-muted)' }}
-                  text={`— ${state.G.players[playerId].role}`}
-                />
-              )}
-              {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
-            </li>
-          ))}
+          {state.G.order.map(playerId => {
+            const player = state.G.players[playerId];
+            const handSize = (state.G.cards.hands[playerId] ?? []).length;
+
+            return (
+              <li className="min-w-0" key={playerId}>
+                <button
+                  className="flex w-full min-w-0 items-center gap-1 text-left"
+                  onClick={() => setViewedPlayerId(playerId)}
+                  style={playerId === state.ctx.currentPlayer ? { color: 'var(--lucid-text)' } : undefined}
+                  type="button"
+                >
+                  {playerId === state.ctx.currentPlayer && (
+                    <span
+                      aria-hidden
+                      className="size-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: 'var(--lucid-accent)' }}
+                    />
+                  )}
+                  <span className="min-w-0 shrink truncate">{player.nickname}</span>
+                  <span className="shrink-0">{`· ${player.resource}`}</span>
+                  {handSize > 0 && <span className="shrink-0">{`· карт ${handSize}`}</span>}
+                  {offline.has(playerId) && <span className="shrink-0">· связь потеряна</span>}
+                </button>
+              </li>
+            );
+          })}
         </ul>
+
+        <LawsStrip />
       </header>
 
+      <div className="flex min-h-0 grow px-2">{children}</div>
+
       <div
-        className="absolute inset-x-0 bottom-0 flex flex-col gap-2 px-3 pb-3 pt-2 backdrop-blur-sm"
-        style={{ backgroundColor: 'var(--lucid-veil)' }}
+        className="flex flex-none flex-col gap-2 border-t px-3 pb-3 pt-2"
+        style={{ backgroundColor: 'var(--lucid-veil)', borderColor: 'var(--lucid-muted)' }}
       >
         {event && isCollapsed && (
           <EventBar
@@ -270,11 +436,22 @@ export const Hud = observer(function Hud() {
           />
         )}
 
-        {outcome && (
-          <Outcome lines={outcome.entry.lines} onClose={() => setOutcome(undefined)} />
+        {pickTitle && isPickCollapsed && (
+          <EventBar
+            currentNickname={current.nickname}
+            isMyTurn
+            onExpand={() => setCollapsedPick(undefined)}
+            title={pickTitle}
+          />
         )}
 
         <Ribbon />
+
+        <Hand
+          canPlay={isMyTurn && state.ctx.phase === EPhase.CARDS}
+          isSent={isSent || isRevealing}
+          onPlay={handlePlayCard}
+        />
 
         <div className="flex items-center gap-3">
           <Die
@@ -284,6 +461,23 @@ export const Hud = observer(function Hud() {
           <div className="min-w-0 grow">{renderAction()}</div>
         </div>
       </div>
+
+      {state.ctx.phase === EPhase.LAW && isMyTurn && !isPickCollapsed && (
+        <CardPick
+          isSent={isSent || isRevealing}
+          items={state.G.cards.lawDraw.map(law => ({
+            actionLabel: 'Ввести',
+            key: law,
+            name: LucidShared.cardName(state.G, law),
+            rule: LucidShared.LAW_TEXT[law].rule(theme.resourceName),
+          }))}
+          onCollapse={handlePickCollapse}
+          onPick={handleChooseLaw}
+          title="Закон: какой ввести?"
+        />
+      )}
+
+      {state.ctx.phase === EPhase.SHOP && isMyTurn && !isPickCollapsed && renderShop()}
 
       {event && !isCollapsed && (
         <EventCard
@@ -295,8 +489,13 @@ export const Hud = observer(function Hud() {
           onCollapse={() => setCollapsedCell(event.cellId)}
           resource={current.resource}
           resourceName={theme.resourceName}
+          targets={state.G.order
+            .filter(id => id !== state.you)
+            .map(id => ({ id, nickname: state.G.players[id].nickname }))}
         />
       )}
+
+      {viewedPlayerId && <PlayerView onClose={() => setViewedPlayerId(undefined)} playerId={viewedPlayerId} />}
     </>
   );
 });

@@ -7,6 +7,7 @@ export enum EAtomKind {
 
 export enum ETarget {
   ALL = 'ALL',
+  CHOSEN = 'CHOSEN',
   FIRST = 'FIRST',
   LAST = 'LAST',
   SELF = 'SELF',
@@ -20,11 +21,10 @@ export interface TAtom {
   value: number;
 }
 
-// Условия могут смотреть только на запас ресурса и положение на треке.
+// Условия смотрят только на запас ресурса.
 // Пропуск хода намеренно исключён: событие, срабатывающее по-разному
 // в зависимости от пропуска хода, непонятно игроку.
 export enum EConditionField {
-  POSITION = 'POSITION',
   RESOURCE = 'RESOURCE',
 }
 
@@ -44,6 +44,7 @@ export interface TCondition {
 
 // Условие ровно одного уровня: вложенных не бывает
 export interface TEffect {
+  text?: string;
   atoms: TAtom[];
   condition?: TCondition;
   otherwise?: TAtom[];
@@ -58,6 +59,17 @@ export interface TOption {
   failure?: TEffect;
 }
 
+export interface THintItem {
+  kind: EAtomKind;
+  target: ETarget;
+  sign?: 1 | -1;
+}
+
+export interface TOptionHint {
+  success: THintItem[];
+  failure: THintItem[];
+}
+
 // Вариант глазами игрока: исход виден только по раскрытым веткам (5.5).
 // text/threshold/cost видны всегда, success/failure — только раскрытые.
 // revealed отличает «ветка раскрыта и пуста» (failure отсутствует,
@@ -67,6 +79,7 @@ export interface TOptionView {
   threshold?: number;
   cost?: number;
   revealed: { success: boolean; failure: boolean };
+  hint: TOptionHint;
   success?: TEffect;
   failure?: TEffect;
 }

@@ -5,6 +5,7 @@ export enum ELucidEvent {
   appendRibbon = 'append-ribbon',
   createParty = 'create-party',
   declineTheme = 'decline-theme',
+  findParty = 'find-party',
   makeMove = 'make-move',
   playAgain = 'play-again',
   proposeTheme = 'propose-theme',
@@ -32,6 +33,10 @@ export interface TLucidClientToServerEvents {
 
 export interface TLucidLobbyClientToServerEvents {
   [ELucidEvent.createParty]: (
+    callback: (result: { status: 'ok'; partyId: string } | { status: 'error'; message: string }) => void
+  ) => void;
+  [ELucidEvent.findParty]: (
+    code: string,
     callback: (result: { status: 'ok'; partyId: string } | { status: 'error'; message: string }) => void
   ) => void;
 }

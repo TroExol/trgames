@@ -119,6 +119,8 @@ const makeParty = ({
       pendingSteps: 2,
       lastRoll: { playerId: walker, value: 5 },
       cellHistory: {},
+      cards: { laws: [null, null, null], lawDraw: [], shopOffer: [], hands: {} },
+      turn: { step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] },
     },
     ctx: {
       currentPlayer: walker,
@@ -212,6 +214,52 @@ export const LongTrack: Story = {
         { name: 'Шлюзовой отсек', color: '#778da9' },
       ],
     }),
+  },
+};
+
+const CELL_TYPE_CYCLE = [
+  ECellType.EVENT,
+  ECellType.EMPTY,
+  ECellType.GREEN,
+  ECellType.RED,
+  ECellType.SHOP,
+  ECellType.LAW,
+];
+const PORTAL_PAIRS = [[3, 20], [9, 28]];
+
+const withCellTypes = (track: LucidShared.TTrack): LucidShared.TTrack => ({
+  ...track,
+  cells: track.cells.map(cell => {
+    const pair = PORTAL_PAIRS.findIndex(ids => ids.includes(cell.id));
+
+    if (pair >= 0) {
+      const to = PORTAL_PAIRS[pair].find(id => id !== cell.id) as number;
+
+      return { ...cell, type: ECellType.PORTAL, portal: { pair, to } };
+    }
+
+    return cell.id === track.startId || cell.id === track.finishId
+      ? cell
+      : { ...cell, type: CELL_TYPE_CYCLE[cell.id % CELL_TYPE_CYCLE.length] };
+  }),
+});
+
+export const CellTypes: Story = {
+  args: {
+    state: (() => {
+      const state = makeParty({
+        track: withCellTypes(buildTrack([7, 7, 6, 6, 6])),
+        nicknames: SIX,
+        world: 'Заброшенная станция',
+        resource: 'заряды',
+        palette: STATION_PALETTE,
+        regions: STATION_REGIONS,
+      });
+
+      state.G.visited = [0, 1, 2, 3, 4, 5];
+
+      return state;
+    })(),
   },
 };
 

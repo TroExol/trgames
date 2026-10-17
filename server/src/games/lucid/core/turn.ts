@@ -1,0 +1,165 @@
+import { LucidShared } from '@trgames/shared';
+
+import type { TLawRun, TLawTiming } from '@/games/lucid/core/lawEffects';
+
+import { runPassives } from '@/games/lucid/core/passiveCards';
+import { runLaws } from '@/games/lucid/core/lawEffects';
+import { landOnCell } from '@/games/lucid/core/cells';
+import { drawLaws, openShop } from '@/games/lucid/core/cards';
+import { drawEvent } from '@/games/lucid/core/calamity';
+
+export const freshTurn = (): LucidShared.TTurn => ({
+  step: LucidShared.ETurnStep.START,
+  fired: [],
+  extraTurn: false,
+  used: [],
+});
+
+export const withTurn = (G: LucidShared.TG, patch: Partial<LucidShared.TTurn>): LucidShared.TG => ({
+  ...G,
+  turn: { ...G.turn, ...patch },
+});
+
+const withPhase = (state: LucidShared.TState, phase: LucidShared.EPhase): LucidShared.TState => ({
+  ...state,
+  ctx: { ...state.ctx, phase },
+});
+
+export const currentEvent = (G: LucidShared.TG, playerId: LucidShared.TPlayerId): LucidShared.TEvent | undefined =>
+  G.turn.lawEvent ?? G.events[G.turn.eventCellId ?? G.players[playerId].position];
+
+const isAffordable = (event: LucidShared.TEvent | undefined, player: LucidShared.TPlayer): boolean =>
+  Boolean(event?.options.some(option => !option.cost || option.cost <= player.resource));
+
+const applyPause = (state: LucidShared.TState, run: TLawRun): LucidShared.TState | null => {
+  const next = { ...state, G: run.G };
+
+  switch (run.pause?.kind) {
+    case 'EVENT':
+      return withPhase({ ...next, G: withTurn(next.G, { eventCellId: run.pause.cellId }) }, LucidShared.EPhase.CHOICE);
+    case 'LAW_EVENT':
+      return withPhase({ ...next, G: withTurn(next.G, { lawEvent: run.pause.event }) }, LucidShared.EPhase.CHOICE);
+    default:
+      return null;
+  }
+};
+
+const settle = (
+  state: LucidShared.TState,
+  timing: TLawTiming,
+  onClear: (state: LucidShared.TState) => LucidShared.TState,
+): LucidShared.TState => {
+  const lawRun = runLaws(state.G, state.ctx.currentPlayer, timing);
+  const run = timing === 'LANDED' && !lawRun.pause ? runPassives(lawRun.G, state.ctx.currentPlayer) : lawRun;
+
+  return applyPause(state, run) ?? onClear({ ...state, G: run.G });
+};
+
+const applyCurse = (state: LucidShared.TState): LucidShared.TState => {
+  const player = state.G.players[state.ctx.currentPlayer];
+
+  if (!player.cursed) {
+    return state;
+  }
+
+  const cursed = {
+    ...state.G,
+    players: { ...state.G.players, [player.id]: { ...player, cursed: player.cursed - 1 } },
+  };
+  const drawn = drawEvent(cursed, 'bad');
+  const event = drawn.cellId === undefined ? undefined : drawn.G.events[drawn.cellId];
+
+  if (drawn.cellId !== undefined && isAffordable(event, player)) {
+    return withPhase({ ...state, G: withTurn(drawn.G, { eventCellId: drawn.cellId }) }, LucidShared.EPhase.CHOICE);
+  }
+
+  const line = event
+    ? `${player.nickname}: событие «${event.title}» не по карману`
+    : `${player.nickname}: порча не нашла беды`;
+
+  return { ...state, G: { ...drawn.G, log: [...drawn.G.log, line] } };
+};
+
+export const startTurn = (state: LucidShared.TState): LucidShared.TState => {
+  const started = withPhase({ ...state, G: { ...state.G, turn: freshTurn() } }, LucidShared.EPhase.ROLL);
+  const cursed = applyCurse(started);
+
+  return cursed.ctx.phase === LucidShared.EPhase.CHOICE ? cursed : proceed(cursed);
+};
+
+export const nextTurn = (state: LucidShared.TState): LucidShared.TState => {
+  const index = state.G.order.indexOf(state.ctx.currentPlayer);
+  const currentPlayer = state.G.turn.extraTurn
+    ? state.ctx.currentPlayer
+    : state.G.order[(index + 1) % state.G.order.length];
+
+  return startTurn({ ...state, ctx: { ...state.ctx, currentPlayer, turn: state.ctx.turn + 1 } });
+};
+
+const landOn = (state: LucidShared.TState): LucidShared.TState => {
+  const playerId = state.ctx.currentPlayer;
+  const player = state.G.players[playerId];
+  const { G } = state;
+
+  if (isAffordable(G.events[player.position], player)) {
+    return withPhase(state, LucidShared.EPhase.CHOICE);
+  }
+
+  const cell = G.track.cells.find(item => item.id === player.position);
+
+  if (cell?.type === LucidShared.ECellType.LAW) {
+    const drawn = drawLaws(G, 2);
+
+    if (drawn.cards.lawDraw.length > 0) {
+      return withPhase({ ...state, G: drawn }, LucidShared.EPhase.LAW);
+    }
+  }
+
+  if (cell?.type === LucidShared.ECellType.SHOP) {
+    if (player.resource < LucidShared.SHOP_PRICE) {
+      const line = `${player.nickname}: в Лавке не по карману`;
+
+      return proceed({ ...state, G: { ...G, log: [...G.log, line] } });
+    }
+
+    return withPhase({ ...state, G: openShop(G) }, LucidShared.EPhase.SHOP);
+  }
+
+  return proceed({ ...state, G: landOnCell(G, playerId) });
+};
+
+export const land = (state: LucidShared.TState): LucidShared.TState => {
+  const player = state.G.players[state.ctx.currentPlayer];
+  const G = withTurn(
+    { ...state.G, branchChoices: [], pendingSteps: 0 },
+    { step: LucidShared.ETurnStep.LANDED, landedCellId: player.position },
+  );
+  const landed = { ...state, G };
+
+  if (G.turn.from === undefined) {
+    return landOn(landed);
+  }
+
+  const run = runLaws(G, state.ctx.currentPlayer, 'ROLLED');
+  const cleared = { ...landed, G: withTurn(run.G, { from: undefined }) };
+
+  return applyPause(cleared, { ...run, G: cleared.G }) ?? landOn(cleared);
+};
+
+export const proceed = (state: LucidShared.TState): LucidShared.TState => {
+  switch (state.G.turn.step) {
+    case LucidShared.ETurnStep.CARDS:
+      return LucidShared.hasPlayable(state.G, state.ctx.currentPlayer)
+        ? withPhase(state, LucidShared.EPhase.CARDS)
+        : proceed({ ...state, G: withTurn(state.G, { step: LucidShared.ETurnStep.END }) });
+    case LucidShared.ETurnStep.END:
+      return settle(state, 'END', nextTurn);
+    case LucidShared.ETurnStep.LANDED:
+      return settle(state, 'LANDED', next => proceed({
+        ...next,
+        G: withTurn(next.G, { step: LucidShared.ETurnStep.CARDS }),
+      }));
+    case LucidShared.ETurnStep.START:
+      return settle(state, 'START', next => withPhase(next, LucidShared.EPhase.ROLL));
+  }
+};

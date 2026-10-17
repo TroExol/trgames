@@ -11,3 +11,8 @@ export const isNewRoll = (
   previous: LucidShared.TRoll | undefined,
   incoming: LucidShared.TRoll | undefined,
 ): boolean => incoming?.stateId !== undefined && incoming.stateId !== previous?.stateId;
+
+export const revealPlan = (roll: LucidShared.TRoll): { spin: boolean; walk: boolean } => ({
+  spin: roll.picked === undefined,
+  walk: roll.threshold === undefined && !roll.pending,
+});

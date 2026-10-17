@@ -98,6 +98,13 @@ export const Lobby = observer(function Lobby() {
         <p className="font-golos">Партию придумывает нейросеть по теме, которую выберет кубик</p>
       </div>
 
+      {view.code && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="font-golos text-muted-foreground">Код для входа</span>
+          <span className="font-unbounded text-5xl tracking-widest">{view.code}</span>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         <Input readOnly value={inviteLink} />
         <Button onClick={() => void handleCopyLink()} type="button" variant="outline">
@@ -124,7 +131,7 @@ export const Lobby = observer(function Lobby() {
             maxLength={THEME_MAX_LENGTH}
             name="theme"
             onChange={event => setThemeDraft(event.target.value)}
-            placeholder="Тема партии, например «заброшенная космическая станция»"
+            placeholder="Заброшенная космическая станция"
             value={themeDraft}
           />
           <div className="flex flex-col gap-2">

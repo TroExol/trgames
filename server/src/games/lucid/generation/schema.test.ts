@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   describe,
   expect,
@@ -112,6 +113,22 @@ describe('eventSchema', () => {
   });
 });
 
+describe('eventSchema: text ветки', () => {
+  const withText = (text: string) => ({
+    ...validEvent,
+    options: [{ ...validEvent.options[0], success: { ...validEvent.options[0].success, text } }],
+  });
+
+  it('принимает text до 60 знаков и отсутствие text', () => {
+    expect(eventSchema.safeParse(withText('а'.repeat(60))).success).toBe(true);
+    expect(eventSchema.safeParse(validEvent).success).toBe(true);
+  });
+
+  it('отклоняет text длиннее 60 знаков', () => {
+    expect(eventSchema.safeParse(withText('а'.repeat(61))).success).toBe(false);
+  });
+});
+
 describe('worldSchema', () => {
   it('принимает корректную тему', () => {
     const result = worldSchema.safeParse(validWorld());
@@ -125,6 +142,13 @@ describe('worldSchema', () => {
     world.theme.mood = LucidShared.EThemeMood.DARK;
 
     expect(worldSchema.safeParse(world).success).toBe(true);
+  });
+
+  it('принимает значки и не падает на неизвестных', () => {
+    const world = validWorld();
+
+    expect(worldSchema.safeParse({ ...world, theme: { ...world.theme, icons: ['anchor', 'nope'] } }).success)
+      .toBe(true);
   });
 
   it('отклоняет неизвестное настроение', () => {
@@ -199,22 +223,6 @@ describe('worldSchema', () => {
 
     expect(worldSchema.safeParse(world).success).toBe(false);
   });
-
-  it('принимает роли игроков', () => {
-    const world = { ...validWorld(), roles: [{ nickname: 'Джек', role: 'хранитель компаса' }] };
-
-    expect(worldSchema.safeParse(world).success).toBe(true);
-  });
-
-  it('роли необязательны: мир годится и вовсе без них', () => {
-    expect(worldSchema.safeParse(validWorld()).success).toBe(true);
-  });
-
-  it('отклоняет слишком длинную роль', () => {
-    const world = { ...validWorld(), roles: [{ nickname: 'Джек', role: 'а'.repeat(51) }] };
-
-    expect(worldSchema.safeParse(world).success).toBe(false);
-  });
 });
 
 describe('eventBatchSchema', () => {
@@ -224,5 +232,86 @@ describe('eventBatchSchema', () => {
 
   it('отклоняет пустую пачку', () => {
     expect(eventBatchSchema.safeParse({ events: [] }).success).toBe(false);
+  });
+});
+
+describe('worldSchema: название ресурса', () => {
+  const withResource = (resourceName: string) => {
+    const world = validWorld();
+    world.theme.resourceName = resourceName;
+    return worldSchema.safeParse(world).success;
+  };
+
+  it('принимает одно слово и слово с дефисом', () => {
+    expect(withResource('гроши')).toBe(true);
+    expect(withResource('кварц-чипы')).toBe(true);
+  });
+
+  it('отклоняет фразу с пробелом', () => {
+    expect(withResource('звёздные гроши')).toBe(false);
+  });
+
+  it('отклоняет слово длиннее 20 знаков', () => {
+    expect(withResource('я'.repeat(21))).toBe(false);
+    expect(withResource('я'.repeat(20))).toBe(true);
+  });
+});
+
+describe('eventSchema: цель CHOSEN', () => {
+  const withAtom = (kind: LucidShared.EAtomKind, target: LucidShared.ETarget, value: number) => ({
+    ...validEvent,
+    options: [{ text: 'Толкнуть', success: { atoms: [{ kind, target, value }] } }],
+  });
+
+  it('принимает CHOSEN у сдвига', () => {
+    expect(eventSchema.safeParse(withAtom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.CHOSEN, -2)).success)
+      .toBe(true);
+  });
+
+  it('отклоняет обмен с лидером с целью CHOSEN', () => {
+    const swap = withAtom(LucidShared.EAtomKind.SWAP_WITH_FIRST, LucidShared.ETarget.CHOSEN, 0);
+
+    expect(eventSchema.safeParse(swap).success).toBe(false);
+  });
+});
+
+describe('worldSchema: названия карт', () => {
+  const card = { id: 'ROCKET', name: 'Паровой рывок', flavor: 'Котёл гудит, дорога короче' };
+
+  it('принимает мир с названиями карт', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: [card] }).success).toBe(true);
+  });
+
+  it('принимает мир без cards', () => {
+    expect(worldSchema.safeParse(validWorld()).success).toBe(true);
+  });
+
+  it('мир с названием длиннее 30 знаков валиден: кривая карта не рушит мир', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: [{ ...card, name: 'я'.repeat(31) }] }).success).toBe(true);
+  });
+
+  it('cards не массивом не рушит мир', () => {
+    expect(worldSchema.safeParse({ ...validWorld(), cards: 'мусор' }).success).toBe(true);
+  });
+});
+
+const hasEmptyNode = (node: unknown): boolean => {
+  if (Array.isArray(node)) {
+    return node.some(hasEmptyNode);
+  }
+
+  if (node && typeof node === 'object') {
+    return Object.keys(node).length === 0 || Object.values(node).some(hasEmptyNode);
+  }
+
+  return false;
+};
+
+describe('JSON-схемы для модели', () => {
+  it.each([
+    ['worldSchema', worldSchema],
+    ['eventBatchSchema', eventBatchSchema],
+  ])('%s без пустых узлов {}', (_name, schema) => {
+    expect(hasEmptyNode(z.toJSONSchema(schema))).toBe(false);
   });
 });

@@ -7,7 +7,7 @@ import { LucidShared } from '@trgames/shared';
 
 import { Party, THEME_HINTS } from '@/games/lucid/room/Party';
 
-const makeParty = () => new Party({ uuid: 'p1', ownerId: 'a' });
+const makeParty = () => new Party({ uuid: 'p1', code: '1234', ownerId: 'a' });
 
 describe('состав партии', () => {
   it('первый вошедший становится владельцем', () => {
@@ -23,6 +23,26 @@ describe('состав партии', () => {
     party.join({ playerId: 'b', nickname: 'Боря' });
 
     expect(party.view('a').members.map(member => member.nickname)).toEqual(['Аня', 'Боря']);
+  });
+
+  it('ник длиннее потолка отклоняется, ровно потолок проходит', () => {
+    const party = makeParty();
+
+    expect(() => party.join({ playerId: 'a', nickname: 'я'.repeat(LucidShared.NICKNAME_MAX_LENGTH + 1) }))
+      .toThrow('nickname-too-long');
+    expect(() => party.join({ playerId: 'a', nickname: 'я'.repeat(LucidShared.NICKNAME_MAX_LENGTH) }))
+      .not.toThrow();
+  });
+
+  it('длинный ник из старой партии не мешает переподключиться, а смена на другой длинный отклоняется', () => {
+    const party = makeParty();
+    const longNickname = 'я'.repeat(25);
+
+    party.join({ playerId: 'a', nickname: 'Аня' });
+    (party as unknown as { members: Map<string, { nickname: string }> }).members.get('a')!.nickname = longNickname;
+
+    expect(() => party.join({ playerId: 'a', nickname: longNickname })).not.toThrow();
+    expect(() => party.join({ playerId: 'a', nickname: 'ю'.repeat(25) })).toThrow('nickname-too-long');
   });
 
   it('ник, занятый другим игроком, отклоняется', () => {
@@ -115,7 +135,7 @@ describe('предложения темы', () => {
 
 describe('жеребьёвка темы', () => {
   const partyWithThemes = (uuid: string) => {
-    const party = new Party({ uuid, ownerId: 'a' });
+    const party = new Party({ uuid, code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
     party.join({ playerId: 'b', nickname: 'Боря' });
     party.join({ playerId: 'c', nickname: 'Вася' });
@@ -163,7 +183,7 @@ describe('жеребьёвка темы', () => {
 
 describe('старт партии', () => {
   const readyParty = (uuid: string) => {
-    const party = new Party({ uuid, ownerId: 'a' });
+    const party = new Party({ uuid, code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
     party.join({ playerId: 'b', nickname: 'Боря' });
     party.proposeTheme('a', 'пираты');
@@ -178,7 +198,7 @@ describe('старт партии', () => {
   });
 
   it('одному играть нельзя', () => {
-    const party = new Party({ uuid: 'alone', ownerId: 'a' });
+    const party = new Party({ uuid: 'alone', code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
 
     expect(party.canStart).toBe(false);
@@ -307,7 +327,7 @@ describe('старт партии', () => {
 
 describe('лента событий', () => {
   const playingParty = async (uuid: string) => {
-    const party = new Party({ uuid, ownerId: 'a' });
+    const party = new Party({ uuid, code: '1234', ownerId: 'a' });
     party.join({ playerId: 'a', nickname: 'Аня' });
     party.join({ playerId: 'b', nickname: 'Боря' });
     party.proposeTheme('a', 'пираты');

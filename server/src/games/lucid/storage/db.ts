@@ -5,6 +5,7 @@ import type { TContentMetrics } from '@/games/lucid/generation/contentMetrics';
 
 interface TSavePartyParams<TDocument> {
   uuid: string;
+  code: string;
   // Тема сохраняется вместе с партией: основа будущей модерации
   theme: string;
   document: TDocument;
@@ -93,6 +94,7 @@ export const createStorage = <TDocument>(path: string) => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS parties (
       uuid TEXT PRIMARY KEY,
+      code TEXT,
       theme TEXT NOT NULL,
       state TEXT NOT NULL,
       updated_at INTEGER NOT NULL
@@ -155,12 +157,35 @@ export const createStorage = <TDocument>(path: string) => {
     db.exec('ALTER TABLE generations ADD COLUMN world_name TEXT');
   }
 
+  const hasCodeColumn = (db.prepare('PRAGMA table_info(parties)').all() as { name: string }[])
+    .some(column => column.name === 'code');
+
+  if (!hasCodeColumn) {
+    db.exec('ALTER TABLE parties ADD COLUMN code TEXT');
+  }
+
+  db.exec('CREATE INDEX IF NOT EXISTS idx_parties_code ON parties(code)');
+
   return {
-    saveParty: ({ uuid, theme, document }: TSavePartyParams<TDocument>): void => {
+    saveParty: ({
+      uuid,
+      code,
+      theme,
+      document,
+    }: TSavePartyParams<TDocument>): void => {
       db.prepare(`
-        INSERT INTO parties (uuid, theme, state, updated_at) VALUES (?, ?, ?, ?)
-        ON CONFLICT(uuid) DO UPDATE SET theme = excluded.theme, state = excluded.state, updated_at = excluded.updated_at
-      `).run(uuid, theme, JSON.stringify(document), Date.now());
+        INSERT INTO parties (uuid, code, theme, state, updated_at) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(uuid) DO UPDATE SET
+          code = excluded.code, theme = excluded.theme, state = excluded.state, updated_at = excluded.updated_at
+      `).run(uuid, code, theme, JSON.stringify(document), Date.now());
+    },
+
+    findPartyUuidByCode: (code: string): string | null => {
+      const row = db.prepare('SELECT uuid FROM parties WHERE code = ?').get(code) as
+        | { uuid: string }
+        | undefined;
+
+      return row?.uuid ?? null;
     },
 
     loadParty: (uuid: string): TDocument | null => {

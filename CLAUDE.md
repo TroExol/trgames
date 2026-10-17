@@ -24,6 +24,7 @@ yarn workspace @trgames/server start:dev    # Nodemon watch mode (порт 4001)
 yarn workspace @trgames/server test         # Vitest (все тесты)
 yarn workspace @trgames/server test --run src/games/cryptoz/entities/Cards/customCards/CardName.test.ts  # Конкретный тест (флаг --run обязателен)
 yarn workspace @trgames/server lint         # typecheck + eslint + тесты
+yarn workspace @trgames/server lucid:sim base 100 --generated  # симуляция партий lucid ботами: режимы base/skill/ablate/cards, число партий, --generated — события модели из lucid.db
 yarn workspace @trgames/server build        # сборка сервера в один файл dist/server.js (esbuild)
 ```
 
@@ -102,7 +103,7 @@ prompts/         — Промпты для генерации контента (
 - Решения о продукте, UI, UX и архитектуре записывать в `OPEN-QUESTIONS.md` со статусом «ждёт апрува». Их утверждает владелец. Чисто технические решения туда не писать, их объясняет коммит. Некритичное решать самостоятельно и не блокироваться. Критичное откладывать: вливание в master, деньги, удаление данных, объём версии.
 - Главная сессия ставит задачи и принимает работу. Код пишут сабагенты на Sonnet или Haiku. Отчёту не верить: читать дифф и тесты. В одном дереве одновременно пишет только один агент.
 - Замеры моделей — `docs/lucid/MODELS.md`. OpenRouter присылает заголовки ответа сразу, поэтому время засекать после чтения тела.
-- `feat/lucid` в master не вливать, пока владелец не скажет (PR #14).
+- `feat/lucid` в master не вливать без слова владельца. Первая версия влита (PR #14), вторая версия — в `feat/lucid`.
 
 ## Переменные окружения
 

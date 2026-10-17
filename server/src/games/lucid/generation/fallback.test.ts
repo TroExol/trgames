@@ -3,6 +3,7 @@ import {
   expect,
   it,
 } from 'vitest';
+import { LucidShared } from '@trgames/shared';
 
 import { eventSchema, worldSchema } from '@/games/lucid/generation/schema';
 import { loadFallbackContent } from '@/games/lucid/generation/fallback';
@@ -15,6 +16,8 @@ import { createRandom } from '@/games/lucid/core/random';
 const trackEventCellIds = (playerCount: number, seed = 'fallback'): number[] =>
   eventCellIds(buildTrack({ random: createRandom(`${seed}:track`), playerCount }));
 
+const WHOLE_POOL = Array.from({ length: 48 }, (_, index) => index + 1);
+
 describe('loadFallbackContent', () => {
   it('запасная тема проходит валидацию', () => {
     const { theme } = loadFallbackContent(trackEventCellIds(6), 'fallback');
@@ -23,9 +26,7 @@ describe('loadFallbackContent', () => {
   });
 
   it('каждое событие пула проходит валидацию', () => {
-    // На треке для двоих игроков клеток событий ровно 48 — столько же, сколько в пуле,
-    // так что раскладка захватывает весь пул целиком, без остатка
-    const { events } = loadFallbackContent(trackEventCellIds(2), 'fallback');
+    const { events } = loadFallbackContent(WHOLE_POOL, 'fallback');
 
     expect(Object.values(events)).toHaveLength(48);
     Object.values(events).forEach(event => {
@@ -34,7 +35,7 @@ describe('loadFallbackContent', () => {
   });
 
   it('тексты пула короткие: событие до 140 символов, вариант до 50', () => {
-    const { events } = loadFallbackContent(trackEventCellIds(2), 'fallback');
+    const { events } = loadFallbackContent(WHOLE_POOL, 'fallback');
 
     Object.values(events).forEach(event => {
       expect(event.text.length).toBeLessThanOrEqual(140);
@@ -43,15 +44,22 @@ describe('loadFallbackContent', () => {
   });
 
   it('пул держит целевые доли: платных около трети, бед около четверти', () => {
-    const metrics = computeContentMetrics(loadFallbackContent(trackEventCellIds(2), 'fallback'));
+    const metrics = computeContentMetrics(loadFallbackContent(WHOLE_POOL, 'fallback'));
 
     expect(metrics.paidOptionShare).toBeCloseTo(1 / 3, 1);
     expect(metrics.calamityShare).toBeCloseTo(1 / 4, 1);
   });
 
+  it('в пуле есть варианты с целью CHOSEN: 5–6 событий', () => {
+    const { events } = loadFallbackContent(WHOLE_POOL, 'fallback');
+    const chosen = Object.values(events).filter(event => event.options.some(LucidShared.optionNeedsTarget));
+
+    expect(chosen.length).toBeGreaterThanOrEqual(5);
+    expect(chosen.length).toBeLessThanOrEqual(6);
+  });
+
   it('события покрывают ровно переданные клетки — без лишних и без пропусков', () => {
-    // На коротком треке (шесть игроков) в игру попадает только часть пула,
-    // на длинном (двое) — весь пул: раскладка обязана сойтись в обоих случаях
+    // В игру попадает только часть пула — на любой длине трека раскладка обязана сойтись
     [6, 2].forEach(playerCount => {
       const cellIds = trackEventCellIds(playerCount);
       const { events } = loadFallbackContent(cellIds, 'fallback');

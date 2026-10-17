@@ -24,6 +24,7 @@ import { CellView } from '@/routes/games/lucid/PartyPage/components/CellView';
 import { Board } from '@/routes/games/lucid/PartyPage/components/Board';
 import { themeStyle } from '@/lib/lucid/theme';
 import { deriveRoles } from '@/lib/lucid/colors';
+import { cellHint } from '@/lib/lucid/cellHint';
 import { usePlayerId } from '@/hooks/usePlayerId';
 import { useNickname } from '@/hooks/useNickname';
 import { Input } from '@/components/ui/Input';
@@ -64,7 +65,7 @@ export const Component = observer(function LucidPartyPage() {
   // До неё лобби остаётся в цветах сайта: подставить сюда цвета несуществующей
   // темы значило бы перекрасить текст, но не кнопки, и они слились бы с фоном
   const style = useMemo(
-    () => (theme ? themeStyle(roles, theme.name) : undefined),
+    () => (theme ? themeStyle(roles, theme.name, theme.icons) : undefined),
     [roles, theme],
   );
 
@@ -198,6 +199,7 @@ export const Component = observer(function LucidPartyPage() {
         <form className="flex flex-col gap-3" onSubmit={handleSubmitNickname}>
           <Input
             aria-labelledby="nickname-heading"
+            maxLength={LucidShared.NICKNAME_MAX_LENGTH}
             name="nickname"
             onChange={event => setNicknameDraft(event.target.value)}
             placeholder="Ник"
@@ -280,30 +282,26 @@ export const Component = observer(function LucidPartyPage() {
       );
     }
 
+    const viewCell = state.G.track.cells.find(cell => cell.id === viewCellId);
+
     return (
       <>
-        {/* Высота задана точно, а не минимумом: при min-height высота
-            контейнера остаётся неопределённой, h-full у поля схлопывается,
-            и оно возвращается к своим пропорциям. Отступы равны высоте полос:
-            они лежат поверх поля, и без отступов под ними прятались бы
-            крайние ряды клеток */}
-        <div className="flex min-h-0 grow px-2 pb-32 pt-16">
+        <Hud>
           <Board
             onSelectCell={isMyBranch ? handleSelectCell : undefined}
             onViewCell={setViewCellId}
             state={state}
           />
-        </div>
-
-        <Hud />
+        </Hud>
 
         {/* Поле остаётся видимым вокруг экрана победы: партия закончилась
             на нём, и это стоит показать */}
         {view.phase === LucidShared.EPartyPhase.ENDED && <Ending />}
 
-        {viewCellId !== undefined && state.G.events[viewCellId] && (
+        {viewCellId !== undefined && viewCell && state.G.events[viewCellId] && (
           <CellView
             event={state.G.events[viewCellId]}
+            hint={cellHint(viewCell, state.G, state.you)}
             history={state.G.cellHistory[viewCellId] ?? []}
             onClose={() => setViewCellId(undefined)}
             resourceName={state.G.theme.resourceName}

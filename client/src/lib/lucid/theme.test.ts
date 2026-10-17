@@ -1,3 +1,5 @@
+import type { LucidShared } from '@trgames/shared';
+
 import {
   describe,
   expect,
@@ -44,5 +46,29 @@ describe('оформление темы', () => {
 
   it('устойчив к пустому названию мира', () => {
     expect(() => themeStyle(roles, '')).not.toThrow();
+  });
+});
+
+describe('фон с мотивом темы', () => {
+  const icons: LucidShared.TThemeIcon[] = ['anchor', 'ship', 'waves'];
+
+  it('со значками даёт плитку вместо сетки линий', () => {
+    const image = themeStyle(roles, 'Пираты Карибского моря', icons).backgroundImage;
+
+    expect(image).toContain('url("data:image/svg+xml');
+    expect(image).not.toContain('repeating-linear-gradient');
+    expect(image).toContain('radial-gradient');
+  });
+
+  it('одинаков для одного названия мира', () => {
+    expect(themeStyle(roles, 'Пираты Карибского моря', icons))
+      .toEqual(themeStyle(roles, 'Пираты Карибского моря', icons));
+  });
+
+  it('без значков даёт прежний фон', () => {
+    expect(themeStyle(roles, 'Пираты Карибского моря', []).backgroundImage)
+      .toBe(themeStyle(roles, 'Пираты Карибского моря').backgroundImage);
+    expect(themeStyle(roles, 'Пираты Карибского моря').backgroundImage)
+      .toContain('repeating-linear-gradient');
   });
 });

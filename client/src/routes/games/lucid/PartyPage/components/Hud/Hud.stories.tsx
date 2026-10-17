@@ -30,13 +30,18 @@ const WORLD_NAME = 'Заброшенная станция';
 
 interface TPlayerSetup {
   nickname: string;
-  role?: string;
 }
 
 // HUD читает партию из partyStore напрямую, не пропсами (как и боевой
 // SocketService.connect → partyStore.applyView) — история наполняет тот же
 // синглтон-стор, а не подменяет компонент
-const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = false): void => {
+const setupHud = (
+  players: TPlayerSetup[],
+  ribbon: string[],
+  usedFallback = false,
+  dice?: { phase: LucidShared.EPhase; lastRoll: LucidShared.TRoll },
+  atFinish = false,
+): void => {
   const withIds = players.map((player, index) => ({ id: `p${index + 1}`, ...player }));
   const order = withIds.map(player => player.id);
   const theme: LucidShared.TTheme = { name: WORLD_NAME, resourceName: 'заряды', palette: PALETTE };
@@ -44,6 +49,7 @@ const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = fals
   partyStore.reset();
   partyStore.applyView({
     partyId: 'story-party',
+    code: '1234',
     phase: EPartyPhase.PLAYING,
     members: withIds.map(player => ({
       playerId: player.id,
@@ -60,10 +66,9 @@ const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = fals
         players: Object.fromEntries(withIds.map(player => [player.id, {
           id: player.id,
           nickname: player.nickname,
-          position: TRACK.cells[1].id,
-          resource: 3,
+          position: atFinish ? TRACK.finishId : TRACK.cells[1].id,
+          resource: atFinish ? 7 : 3,
           skipTurns: 0,
-          role: player.role,
         }])),
         order,
         track: TRACK,
@@ -72,14 +77,16 @@ const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = fals
         visited: [0],
         branchChoices: [],
         pendingSteps: 0,
-        lastRoll: undefined,
+        lastRoll: dice?.lastRoll,
         cellHistory: {},
+        cards: { laws: [null, null, null], lawDraw: [], shopOffer: [], hands: {} },
+        turn: { step: LucidShared.ETurnStep.START, fired: [], extraTurn: false, used: [] },
       },
       ctx: {
         currentPlayer: order[0],
         turn: 1,
         numPlayers: order.length,
-        phase: EPhase.ROLL,
+        phase: dice?.phase ?? EPhase.ROLL,
       },
       stateId: 1,
       you: order[0],
@@ -89,15 +96,17 @@ const setupHud = (players: TPlayerSetup[], ribbon: string[], usedFallback = fals
 };
 
 // Обёртка повторяет разметку сцены партии (PartyPage/index.tsx): relative-блок
-// на весь экран, HUD лежит над ним двумя полосами сверху и снизу.
+// на весь экран, шапка и панель идут столбиком, между ними место под поле.
 // -m-6 гасит отступ общей обёртки Storybook (`p-6`) — тот же приём, что и в
 // withTheme из Board.stories.tsx
 const HudFrame = observer(() => {
   const roles = deriveRoles(PALETTE);
 
   return (
-    <div className="relative -m-6 h-dvh overflow-hidden font-golos" style={themeStyle(roles, WORLD_NAME)}>
-      <Hud />
+    <div className="relative -m-6 flex h-dvh flex-col overflow-hidden font-golos" style={themeStyle(roles, WORLD_NAME)}>
+      <Hud>
+        <div className="grow rounded border border-dashed" style={{ borderColor: 'var(--lucid-muted)' }} />
+      </Hud>
     </div>
   );
 });
@@ -105,6 +114,7 @@ const HudFrame = observer(() => {
 const meta = {
   title: 'Games/Lucid/Hud',
   component: Hud,
+  args: { children: null },
   parameters: {
     layout: 'fullscreen',
   },
@@ -113,42 +123,36 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Двое игроков: свободного места в строке много, роль должна быть видна
-// почти целиком
-export const TwoPlayersLongRoles: Story = {
-  name: 'Двое, длинные роли',
+export const TwoPlayers: Story = {
+  name: 'Двое',
   render: () => {
     setupHud([
-      { nickname: 'Ваня', role: 'механик ржавых шестерёнок' },
-      { nickname: 'Аня', role: 'хранитель забытых чертежей' },
+      { nickname: 'Ваня' },
+      { nickname: 'Аня' },
     ], ['Ваня бросил кубик и получил 5.']);
 
     return <HudFrame />;
   },
 };
 
-// Шесть игроков: свободного места на каждого меньше, роль режется сильнее —
-// но строка не должна стать выше, чем с прежним фиксированным max-w-24
-export const SixPlayersLongRoles: Story = {
-  name: 'Шестеро, длинные роли',
+export const SixPlayers: Story = {
+  name: 'Шестеро',
   render: () => {
     setupHud([
-      { nickname: 'Ваня', role: 'механик ржавых шестерёнок' },
-      { nickname: 'Аня', role: 'хранитель забытых чертежей' },
-      { nickname: 'Борис', role: 'смотритель дальнего маяка' },
-      { nickname: 'Вика', role: 'проводник по гулким тоннелям' },
-      { nickname: 'Гриша', role: 'сборщик потерянных сигналов' },
-      { nickname: 'Даша', role: 'хранительница тихих архивов' },
+      { nickname: 'Ваня' },
+      { nickname: 'Аня' },
+      { nickname: 'Борис' },
+      { nickname: 'Вика' },
+      { nickname: 'Гриша' },
+      { nickname: 'Даша' },
     ], ['Ход переходит по кругу.']);
 
     return <HudFrame />;
   },
 };
 
-// Запасная партия (4.7): модель не прислала роли вовсе — строка игроков
-// держит вёрстку и без единой роли, без падения
-export const NoRoles: Story = {
-  name: 'Без ролей',
+export const FallbackParty: Story = {
+  name: 'Запасная партия',
   render: () => {
     setupHud([
       { nickname: 'Ваня' },
@@ -156,6 +160,35 @@ export const NoRoles: Story = {
       { nickname: 'Борис' },
       { nickname: 'Вика' },
     ], ['Придумать ваш мир не получилось, играем на запасном.'], true);
+
+    return <HudFrame />;
+  },
+};
+
+export const PickDie: Story = {
+  name: 'Два кубика на выбор',
+  render: () => {
+    setupHud(
+      [{ nickname: 'Ваня' }, { nickname: 'Аня' }],
+      ['Ваня бросил два кубика.'],
+      false,
+      { phase: EPhase.DICE, lastRoll: { playerId: 'p1', value: 2, values: [2, 5], pending: true, stateId: 1 } },
+    );
+
+    return <HudFrame />;
+  },
+};
+
+export const Safe: Story = {
+  name: 'Сейф',
+  render: () => {
+    setupHud(
+      [{ nickname: 'Ваня' }, { nickname: 'Аня' }],
+      ['Ваня бросает за сейф: 3 — не открыл'],
+      false,
+      undefined,
+      true,
+    );
 
     return <HudFrame />;
   },

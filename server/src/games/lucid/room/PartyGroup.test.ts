@@ -39,6 +39,25 @@ describe('PartyGroup', () => {
     expect(group.get('p1')?.uuid).toBe('p1');
   });
 
+  it('у партии код из четырёх цифр, по нему она находится', () => {
+    const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
+    const party = group.create({ uuid: 'p1', ownerId: 'a' });
+
+    expect(party.code).toMatch(/^\d{4}$/);
+    expect(group.findByCode(party.code)).toBe(party);
+    expect(group.findByCode('нет')).toBeNull();
+  });
+
+  it('партия, поднятая из базы после перезапуска, находится по коду', () => {
+    const storage = createStorage<TPartySnapshot>(':memory:');
+    const { code } = createPartyGroup({ storage }).create({ uuid: 'p1', ownerId: 'a' });
+
+    const found = createPartyGroup({ storage }).findByCode(code);
+
+    expect(found?.uuid).toBe('p1');
+    expect(found?.code).toBe(code);
+  });
+
   it('несуществующая партия не находится', () => {
     const group = createPartyGroup({ storage: createStorage<TPartySnapshot>(':memory:') });
 

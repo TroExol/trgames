@@ -5,7 +5,11 @@ import {
 } from 'vitest';
 import { LucidShared } from '@trgames/shared';
 
-import { lineTrack, makeG } from '@/games/lucid/vitest/factories';
+import {
+  lineTrack,
+  makeFallbackParty,
+  makeG,
+} from '@/games/lucid/vitest/factories';
 import { setupParty } from '@/games/lucid/core/setup';
 import { formatForPlayer } from '@/games/lucid/core/formatForPlayer';
 
@@ -66,21 +70,6 @@ describe('formatForPlayer', () => {
 
     expect(formatForPlayer(state, 'a').G.lastRoll).toEqual({ playerId: 'a', value: 4 });
   });
-
-  it('отдаёт роли игроков: они не секрет', () => {
-    const state = setupParty({
-      seed: 'roles',
-      players: [{ id: 'a', nickname: 'Аня' }, { id: 'b', nickname: 'Боря' }],
-      content: {
-        theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#001122'] },
-        events: {},
-        roles: [{ nickname: 'Аня', role: 'хранитель компаса' }],
-      },
-    });
-
-    expect(formatForPlayer(state, 'a').G.players.a.role).toBe('хранитель компаса');
-    expect(formatForPlayer(state, 'a').G.players.b.role).toBeUndefined();
-  });
 });
 
 const baseOption = (overrides: Partial<LucidShared.TOption> = {}): LucidShared.TOption => ({
@@ -130,9 +119,30 @@ describe('formatForPlayer — раскрытие веток варианта', (
       threshold: 4,
       cost: 2,
       revealed: { success: false, failure: false },
+      hint: {
+        success: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, sign: 1 }],
+        failure: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, sign: -1 }],
+      },
       success: undefined,
       failure: undefined,
     });
+  });
+
+  it('подсказка есть у нераскрытой ветки, а value в ней нет', () => {
+    const event: LucidShared.TEvent = { cellId: 1, title: 'Ящик', text: 'Заперт', options: [baseOption()] };
+    const option = formatForPlayer(stateWith(event, {}), 'a').G.events[1].options[0];
+
+    expect(option.success).toBeUndefined();
+    expect(option.hint.success).toHaveLength(1);
+    expect(JSON.stringify(option.hint)).not.toContain('value');
+  });
+
+  it('событие закона тоже получает подсказку', () => {
+    const state = stateWith({ cellId: 1, title: 'Ящик', text: 'Заперт', options: [baseOption()] }, {});
+
+    state.G.turn.lawEvent = { cellId: 1, title: 'Пошлина', text: 'Плати', options: [baseOption()] };
+
+    expect(formatForPlayer(state, 'a').G.turn.lawEvent?.options[0].hint.failure).toHaveLength(1);
   });
 
   it('раскрытая success-ветка отдаёт success, failure остаётся скрытой', () => {
@@ -162,11 +172,45 @@ describe('formatForPlayer — раскрытие веток варианта', (
     expect(option.failure).toBeUndefined();
   });
 
+  it('text нераскрытой ветки не уходит игроку', () => {
+    const option = baseOption({
+      success: { text: 'СЕКРЕТ УДАЧИ', atoms: baseOption().success.atoms },
+      failure: { text: 'СЕКРЕТ ПРОВАЛА', atoms: baseOption().success.atoms },
+    });
+    const event: LucidShared.TEvent = { cellId: 1, title: 'Ящик', text: 'Заперт', options: [option] };
+
+    expect(JSON.stringify(formatForPlayer(stateWith(event, {}), 'a').G.events[1])).not.toContain('СЕКРЕТ');
+
+    const revealed = formatForPlayer(stateWith(event, { 1: [historyEntry({ branch: 'success' })] }), 'a');
+    const json = JSON.stringify(revealed.G.events[1]);
+
+    expect(json).toContain('СЕКРЕТ УДАЧИ');
+    expect(json).not.toContain('СЕКРЕТ ПРОВАЛА');
+  });
+
   it('cellHistory уезжает клиенту целиком', () => {
     const event: LucidShared.TEvent = { cellId: 1, title: 'Ящик', text: 'Заперт', options: [baseOption()] };
     const entry = historyEntry();
     const state = stateWith(event, { 1: [entry] });
 
     expect(formatForPlayer(state, 'a').G.cellHistory).toEqual({ 1: [entry] });
+  });
+});
+
+describe('formatForPlayer: законы', () => {
+  it('колода законов не уходит игроку', () => {
+    const state = makeFallbackParty({ seed: 'secret' });
+    const view = formatForPlayer(state, 'p0');
+
+    expect(view.G.cards).toEqual({
+      laws: [null, null, null],
+      lawDraw: [],
+      shopOffer: [],
+      hands: { p0: [], p1: [], p2: [] },
+    });
+    expect(JSON.stringify(view)).not.toContain('lawDeck');
+    expect(JSON.stringify(view)).not.toContain('lawDiscard');
+    expect(JSON.stringify(view)).not.toContain('shopDeck');
+    expect(JSON.stringify(view)).not.toContain('shopDiscard');
   });
 });

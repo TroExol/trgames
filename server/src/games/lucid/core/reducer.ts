@@ -1,7 +1,21 @@
 import { LucidShared } from '@trgames/shared';
 
+import {
+  currentEvent,
+  land,
+  nextTurn,
+  proceed,
+  withTurn,
+} from '@/games/lucid/core/turn';
+import { playCard } from '@/games/lucid/core/playCard';
 import { resolveOption } from '@/games/lucid/core/options';
-import { rollAndMove, takeBranch } from '@/games/lucid/core/moves';
+import {
+  openSafe,
+  pickDie,
+  rollAndMove,
+  takeBranch,
+} from '@/games/lucid/core/moves';
+import { buyCard, placeLaw } from '@/games/lucid/core/cards';
 
 // @trgames/shared отдаёт эти типы только через неймспейс LucidShared,
 // плоского реэкспорта не существует — извлекаем сами, чтобы обращения
@@ -15,88 +29,119 @@ export type TMove = LucidShared.TMove;
 const PHASE_FOR_MOVE: Record<EMoveType, LucidShared.EPhase> = {
   [EMoveType.ROLL]: LucidShared.EPhase.ROLL,
   [EMoveType.CHOOSE_BRANCH]: LucidShared.EPhase.BRANCH,
+  [EMoveType.CHOOSE_DIE]: LucidShared.EPhase.DICE,
   [EMoveType.CHOOSE_OPTION]: LucidShared.EPhase.CHOICE,
+  [EMoveType.OPEN_SAFE]: LucidShared.EPhase.ROLL,
+  [EMoveType.CHOOSE_LAW]: LucidShared.EPhase.LAW,
+  [EMoveType.BUY_CARD]: LucidShared.EPhase.SHOP,
+  [EMoveType.PLAY_CARD]: LucidShared.EPhase.CARDS,
+  [EMoveType.END_TURN]: LucidShared.EPhase.CARDS,
 };
 
 // null означает «ход невозможен»: состояние остаётся прежним
 type TMoveHandler = (state: LucidShared.TState, move: TMove) => LucidShared.TState | null;
 
-const nextPlayer = (state: LucidShared.TState): LucidShared.TCtx => {
-  const index = state.G.order.indexOf(state.ctx.currentPlayer);
-
-  return {
-    ...state.ctx,
-    currentPlayer: state.G.order[(index + 1) % state.G.order.length],
-    turn: state.ctx.turn + 1,
-    phase: LucidShared.EPhase.ROLL,
-  };
-};
-
-// После перемещения: либо конец партии, либо выбор ветки, либо событие, либо ход дальше
-const finishIfWon = (state: LucidShared.TState): LucidShared.TState | null => {
-  const winner = state.G.order.find(id => state.G.players[id].position >= state.G.track.finishId);
-
-  if (!winner) {
-    return null;
-  }
-
-  return {
-    ...state,
-    G: { ...state.G, winner, branchChoices: [], pendingSteps: 0 },
-    ctx: { ...state.ctx, phase: LucidShared.EPhase.ENDED },
-  };
-};
-
-// Событие разыграно — ход на этом заканчивается. Проверять клетку заново нельзя:
-// вариант мог не сдвинуть игрока, и то же событие предлагалось бы ему бесконечно
-const endTurn = (state: LucidShared.TState): LucidShared.TState => {
-  return finishIfWon(state) ?? { ...state, ctx: nextPlayer(state) };
-};
-
 const afterMove = (state: LucidShared.TState): LucidShared.TState => {
-  const won = finishIfWon(state);
-
-  if (won) {
-    return won;
-  }
-
   if (state.G.branchChoices.length > 1) {
     return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.BRANCH } };
   }
 
-  const player = state.G.players[state.ctx.currentPlayer];
-  const event = state.G.events[player.position];
-  // Вариант, который игроку не по карману, выбрать нельзя. Если таковы все варианты,
-  // выбирать не из чего и событие проходит мимо: иначе у игрока не осталось бы
-  // ни одного допустимого хода и партия встала бы намертво
-  const affordable = event?.options.some(option => !option.cost || option.cost <= player.resource);
+  return land(state);
+};
 
-  if (affordable) {
-    return { ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.CHOICE } };
-  }
+const isAtFinish = (state: LucidShared.TState, player: LucidShared.TPlayer): boolean =>
+  player.position === state.G.track.finishId;
 
-  return { ...state, ctx: nextPlayer(state) };
+const skipTurn = (state: LucidShared.TState, player: LucidShared.TPlayer): LucidShared.TState => {
+  const G: LucidShared.TG = {
+    ...state.G,
+    players: {
+      ...state.G.players,
+      [player.id]: { ...player, skipTurns: player.skipTurns - 1 },
+    },
+    log: [...state.G.log, `${player.nickname} пропускает ход`],
+  };
+
+  return nextTurn({ ...state, G });
 };
 
 const HANDLERS: Record<EMoveType, TMoveHandler> = {
+  [EMoveType.PLAY_CARD]: (state, move) => {
+    if (move.type !== EMoveType.PLAY_CARD || !Number.isInteger(move.uid)) {
+      return null;
+    }
+
+    return playCard(state, move.uid, move.targetId);
+  },
+  [EMoveType.END_TURN]: state =>
+    proceed({ ...state, G: withTurn(state.G, { step: LucidShared.ETurnStep.END }) }),
+  [EMoveType.BUY_CARD]: (state, move) => {
+    if (move.type !== EMoveType.BUY_CARD) {
+      return null;
+    }
+
+    const G = buyCard(state.G, state.ctx.currentPlayer, move.index, move.discardUid);
+
+    return G ? proceed({ ...state, G }) : null;
+  },
+  [EMoveType.CHOOSE_LAW]: (state, move) => {
+    if (move.type !== EMoveType.CHOOSE_LAW) {
+      return null;
+    }
+
+    const G = placeLaw(state.G, state.ctx.currentPlayer, move.index);
+
+    return G ? proceed({ ...state, G }) : null;
+  },
   [EMoveType.ROLL]: state => {
     const player = state.G.players[state.ctx.currentPlayer];
 
-    // Пропуск хода тратится вместо броска
-    if (player.skipTurns > 0) {
-      const G: LucidShared.TG = {
-        ...state.G,
-        players: {
-          ...state.G.players,
-          [player.id]: { ...player, skipTurns: player.skipTurns - 1 },
-        },
-        log: [...state.G.log, `${player.nickname} пропускает ход`],
-      };
-
-      return { ...state, G, ctx: nextPlayer({ ...state, G }) };
+    // У сейфа бросок на движение не нужен: только попытка открыть
+    if (isAtFinish(state, player)) {
+      return null;
     }
 
-    return afterMove({ ...state, G: rollAndMove(state.G, player.id) });
+    // Пропуск хода тратится вместо броска
+    if (player.skipTurns > 0) {
+      return skipTurn(state, player);
+    }
+
+    const rolled = { ...state, G: rollAndMove(withTurn(state.G, { from: player.position }), player.id) };
+
+    if (rolled.G.lastRoll?.pending) {
+      return { ...rolled, ctx: { ...rolled.ctx, phase: LucidShared.EPhase.DICE } };
+    }
+
+    return afterMove(rolled);
+  },
+
+  [EMoveType.OPEN_SAFE]: (state, move) => {
+    if (move.type !== EMoveType.OPEN_SAFE) {
+      return null;
+    }
+
+    const player = state.G.players[state.ctx.currentPlayer];
+    const cost = Number.isInteger(move.bonus) ? LucidShared.SAFE_BONUS_COSTS[move.bonus] : undefined;
+
+    if (cost === undefined || !isAtFinish(state, player)) {
+      return null;
+    }
+
+    if (player.skipTurns > 0) {
+      return skipTurn(state, player);
+    }
+
+    const G = openSafe(state.G, player.id, move.bonus);
+
+    if (!G) {
+      return null;
+    }
+
+    if (G.winner) {
+      return { ...state, G, ctx: { ...state.ctx, phase: LucidShared.EPhase.ENDED } };
+    }
+
+    return nextTurn({ ...state, G });
   },
 
   [EMoveType.CHOOSE_BRANCH]: (state, move) => {
@@ -110,19 +155,42 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
     });
   },
 
+  [EMoveType.CHOOSE_DIE]: (state, move) => {
+    if (move.type !== EMoveType.CHOOSE_DIE) {
+      return null;
+    }
+
+    const G = pickDie(state.G, state.ctx.currentPlayer, move.dieIndex);
+
+    return G ? afterMove({ ...state, G }) : null;
+  },
+
   [EMoveType.CHOOSE_OPTION]: (state, move) => {
     if (move.type !== EMoveType.CHOOSE_OPTION) {
       return null;
     }
 
-    const player = state.G.players[state.ctx.currentPlayer];
-    const option = state.G.events[player.position]?.options[move.optionIndex];
-
-    if (!option) {
+    if (!Number.isInteger(move.optionIndex)) {
       return null;
     }
 
-    const G = resolveOption(state.G, player.id, move.optionIndex, option);
+    const player = state.G.players[state.ctx.currentPlayer];
+    const event = currentEvent(state.G, player.id);
+    const option = event?.options[move.optionIndex];
+
+    if (!event || !option) {
+      return null;
+    }
+
+    const needsTarget = LucidShared.optionNeedsTarget(option);
+    const { targetId } = move;
+
+    if (needsTarget && (!targetId || targetId === player.id || !state.G.order.includes(targetId))) {
+      return null;
+    }
+
+    const cellId = state.G.turn.lawEvent ? undefined : event.cellId;
+    const G = resolveOption(state.G, player.id, move.optionIndex, option, cellId, needsTarget ? targetId : undefined);
 
     // Вариант недоступен, например не хватает ресурса: ход не состоялся,
     // игрок не теряет право выбрать другой
@@ -130,7 +198,10 @@ const HANDLERS: Record<EMoveType, TMoveHandler> = {
       return null;
     }
 
-    return endTurn({ ...state, G: { ...G, branchChoices: [], pendingSteps: 0 } });
+    return proceed({
+      ...state,
+      G: withTurn({ ...G, branchChoices: [], pendingSteps: 0 }, { eventCellId: undefined, lawEvent: undefined }),
+    });
   },
 };
 

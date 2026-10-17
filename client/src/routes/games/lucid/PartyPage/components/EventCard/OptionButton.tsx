@@ -1,7 +1,10 @@
+import type { LucidShared } from '@trgames/shared';
+
 import { observer } from 'mobx-react-lite';
-import { LucidShared } from '@trgames/shared';
 
 import { Button } from '@/components/ui/Button';
+
+import { OptionOutcomes } from './OptionOutcomes';
 
 interface TProps {
   option: LucidShared.TOptionView;
@@ -32,21 +35,6 @@ export const OptionButton = observer(function OptionButton({
     // остаётся в верхней полосе, а здесь подпись со значением: «цена 5»
     option.cost ? `цена ${option.cost}` : undefined,
   ].filter(Boolean);
-  // Исход скрыт, пока ветка не раскрылась (кто-то её не задел): с порогом —
-  // раздельно удача/провал, нераскрытая ветка — «удача/провал — ?» (вопрос,
-  // а не пустая строка: игрок видит, что развилка есть, просто ещё неизвестна).
-  // Без порога ветка одна — до раскрытия строки нет вовсе, показывать «?»
-  // под единственным исходом было бы лишним драматизмом на пустом месте
-  const outcomes = option.threshold
-    ? [
-        option.revealed.success
-          ? `удача — ${option.success ? LucidShared.describeEffect(option.success, resourceName) : 'ничего'}`
-          : 'удача — ?',
-        option.revealed.failure
-          ? `провал — ${option.failure ? LucidShared.describeEffect(option.failure, resourceName) : 'ничего'}`
-          : 'провал — ?',
-      ]
-    : (option.revealed.success && option.success ? [LucidShared.describeEffect(option.success, resourceName)] : []);
 
   return (
     <Button
@@ -64,11 +52,7 @@ export const OptionButton = observer(function OptionButton({
         </span>
       )}
 
-      {outcomes.map(outcome => (
-        <span className="text-sm leading-snug" key={outcome} style={{ color: 'var(--lucid-muted)' }}>
-          {outcome}
-        </span>
-      ))}
+      <OptionOutcomes option={option} resourceName={resourceName} />
 
       {/* Вариант виден, но недоступен: рядом стоит то, что есть, — разница с
           ценой читается сама */}

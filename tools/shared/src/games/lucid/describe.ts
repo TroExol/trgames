@@ -8,6 +8,9 @@ import {
   type TAtom,
   type TCondition,
   type TEffect,
+  type THintItem,
+  type TOption,
+  type TOptionHint,
   type TOptionView,
 } from './types/effect';
 
@@ -27,6 +30,7 @@ const TARGET_LABELS: Record<ETarget, string> = {
   [ETarget.FIRST]: 'лидер',
   [ETarget.LAST]: 'отстающий',
   [ETarget.SELF]: 'ты',
+  [ETarget.CHOSEN]: 'выбранный',
 };
 
 // Действие атома без цели: используется и для карточки события (с общей
@@ -55,7 +59,6 @@ export const describeAtom = (atom: TAtom, resourceName: string): string => {
 };
 
 const CONDITION_FIELD_LABELS: Record<EConditionField, (resourceName: string) => string> = {
-  [EConditionField.POSITION]: () => 'клетка',
   [EConditionField.RESOURCE]: resourceName => resourceName,
 };
 
@@ -94,11 +97,44 @@ export const describeEffect = (effect: TEffect, resourceName: string): string =>
 // Используется и карточкой итога, и просмотром клетки — обе показывают уже
 // случившееся, эффект берётся по сработавшей ветке записи
 export const describeHistoryEntry = (entry: THistoryEntry, option: TOptionView, resourceName: string): string => {
+  const targetPart = entry.targetNickname ? `, цель ${entry.targetNickname}` : '';
   const rollPart = entry.roll !== undefined && option.threshold
     ? `, выпало ${entry.roll} из ${option.threshold}`
     : '';
   const effect = entry.branch === 'success' ? option.success : option.failure;
   const outcome = effect ? describeEffect(effect, resourceName) : 'ничего';
+  const story = effect?.text ? `${effect.text} · ` : '';
 
-  return `${entry.nickname} — «${option.text}»${rollPart} — ${outcome}`;
+  return `${entry.nickname} — «${option.text}»${targetPart}${rollPart} — ${story}${outcome}`;
 };
+
+const hintItemOf = (atom: TAtom): THintItem => {
+  const hasSign = atom.kind === EAtomKind.MOVE || atom.kind === EAtomKind.RESOURCE;
+
+  return {
+    kind: atom.kind,
+    target: atom.target,
+    ...(hasSign && { sign: atom.value < 0 ? -1 : 1 }),
+  };
+};
+
+export const buildEffectHint = (effect?: TEffect): THintItem[] => {
+  const items = [...(effect?.atoms ?? []), ...(effect?.otherwise ?? [])].map(hintItemOf);
+
+  const same = (first: THintItem, second: THintItem): boolean => (
+    first.kind === second.kind && first.target === second.target && first.sign === second.sign
+  );
+
+  return items.filter((item, index) => items.findIndex(other => same(other, item)) === index);
+};
+
+export const buildOptionHint = (option: TOption): TOptionHint => ({
+  success: buildEffectHint(option.success),
+  failure: buildEffectHint(option.failure),
+});
+
+export const hintNeedsTarget = (hint: TOptionHint): boolean => (
+  [...hint.success, ...hint.failure].some(item => item.target === ETarget.CHOSEN)
+);
+
+export const optionNeedsTarget = (option: TOption): boolean => hintNeedsTarget(buildOptionHint(option));

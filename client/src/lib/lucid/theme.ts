@@ -1,7 +1,12 @@
 import type { CSSProperties } from 'react';
+import type { LucidShared } from '@trgames/shared';
+
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement } from 'react';
 
 import type { TThemeRoles } from '@/lib/lucid/colors';
 
+import { THEME_ICON_COMPONENTS } from '@/lib/lucid/themeIcons';
 import {
   contrastRatio,
   ensureContrast,
@@ -60,7 +65,87 @@ const lineColor = (roles: TThemeRoles): string => {
   return rgb ? toHex(ensureContrast(rgb, base, 3)) : roles.accent;
 };
 
-export const themeStyle = (roles: TThemeRoles, worldName: string): CSSProperties => {
+// mulberry32: тот же сид даёт ту же последовательность у всех игроков
+const seededRandom = (seed: number) => (): number => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+const TILE = 240;
+const GRID = 3;
+const GAP = 4;
+const ICON_SIZE = 24;
+const ICON_OPACITY = 0.1;
+
+const iconBodies = new Map<LucidShared.TThemeIcon, string>();
+
+// Геометрию берём у самого компонента lucide, а не храним копии путей
+const iconBody = (icon: LucidShared.TThemeIcon): string => {
+  let body = iconBodies.get(icon);
+
+  if (body === undefined) {
+    body = renderToStaticMarkup(createElement(THEME_ICON_COMPONENTS[icon]))
+      .replace(/^<svg[^>]*>/, '')
+      .replace(/<\/svg>$/, '');
+    iconBodies.set(icon, body);
+  }
+
+  return body;
+};
+
+const motifCache = new Map<string, string>();
+
+const motifLayer = (icons: LucidShared.TThemeIcon[], worldName: string, color: string): string => {
+  const key = `${icons.join(',')}|${worldName}|${color}`;
+  const cached = motifCache.get(key);
+
+  if (cached) {
+    return cached;
+  }
+
+  const random = seededRandom(hashString(worldName));
+  const cell = TILE / GRID;
+  let marks = '';
+
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      if (random() < 0.2) {
+        continue;
+      }
+
+      const icon = icons[Math.floor(random() * icons.length)];
+      const scale = (ICON_SIZE + random() * 18) / ICON_SIZE;
+      const span = ICON_SIZE * scale;
+      const x = col * cell + GAP + random() * (cell - GAP * 2 - span);
+      const y = row * cell + GAP + random() * (cell - GAP * 2 - span);
+      const angle = (random() - 0.5) * 60;
+      const center = (ICON_SIZE / 2) * scale;
+
+      marks += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})`
+        + ` rotate(${angle.toFixed(1)} ${center.toFixed(1)} ${center.toFixed(1)})`
+        + ` scale(${scale.toFixed(3)})">${iconBody(icon)}</g>`;
+    }
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}" fill="none"`
+    + ` stroke="${color}" stroke-opacity="${ICON_OPACITY}" stroke-width="1.7"`
+    + ` stroke-linecap="round" stroke-linejoin="round">${marks}</svg>`;
+  const layer = `url("data:image/svg+xml,${encodeURIComponent(svg)}") 0 0 / ${TILE}px ${TILE}px repeat`;
+
+  motifCache.set(key, layer);
+
+  return layer;
+};
+
+export const themeStyle = (
+  roles: TThemeRoles,
+  worldName: string,
+  icons?: LucidShared.TThemeIcon[],
+): CSSProperties => {
   const hash = hashString(worldName);
   // Угол, шаг и плотность выводятся из названия мира: один код, разный
   // результат для каждой партии
@@ -70,13 +155,17 @@ export const themeStyle = (roles: TThemeRoles, worldName: string): CSSProperties
 
   const weave = roles.supports[0] ?? roles.accent;
   const cross = roles.supports[1] ?? roles.supports[0] ?? roles.accent;
-  const lines = [
-    `repeating-linear-gradient(${angle}deg, ${withAlpha(weave, density)} 0 1px,`
-    + ` transparent 1px ${step}px)`,
-    `repeating-linear-gradient(${angle + 90}deg, ${withAlpha(cross, density)} 0 1px,`
-    + ` transparent 1px ${step}px)`,
-    `radial-gradient(120% 90% at 50% 0%, ${withAlpha(weave, density * 2)} 0%, transparent 70%)`,
-  ];
+  const glow = `radial-gradient(120% 90% at 50% 0%, ${withAlpha(weave, density * 2)} 0%, transparent 70%)`;
+  // Партии без значков (сгенерированные раньше) остаются на сетке линий
+  const lines = icons && icons.length > 0
+    ? [motifLayer(icons, worldName, roles.text), glow]
+    : [
+        `repeating-linear-gradient(${angle}deg, ${withAlpha(weave, density)} 0 1px,`
+      + ` transparent 1px ${step}px)`,
+        `repeating-linear-gradient(${angle + 90}deg, ${withAlpha(cross, density)} 0 1px,`
+      + ` transparent 1px ${step}px)`,
+        glow,
+      ];
 
   const variables = {
     '--lucid-base': roles.base,

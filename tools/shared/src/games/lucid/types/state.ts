@@ -1,6 +1,11 @@
 import type { TTrack } from './track';
 import type { TRandomState } from './random';
-import type { TEvent, TTheme } from './content';
+import type {
+  TCardName,
+  TEvent,
+  TTheme,
+} from './content';
+import type { TCards, TTurn } from './cards';
 
 export type TPlayerId = string;
 
@@ -10,17 +15,18 @@ export interface TPlayer {
   position: number;
   resource: number;
   skipTurns: number;
-  // Роль в мире партии, придуманная нейросетью в честь игрока. Необязательна:
-  // модель могла не прислать роль на всех, а партии, сгенерированные раньше,
-  // лежат в базе вовсе без ролей
-  role?: string;
+  cursed?: number;
 }
 
 export enum EPhase {
   BRANCH = 'BRANCH',
+  CARDS = 'CARDS',
   CHOICE = 'CHOICE',
+  DICE = 'DICE',
   ENDED = 'ENDED',
+  LAW = 'LAW',
   ROLL = 'ROLL',
+  SHOP = 'SHOP',
 }
 
 // Последний бросок кубика в партии. Нужен клиенту, чтобы нарисовать грань и
@@ -31,6 +37,12 @@ export interface TRoll {
   value: number;
   // Есть, если бросок был проверкой варианта события, а не броском на движение
   threshold?: number;
+  // Все кубики броска, если их было два
+  values?: number[];
+  // Два кубика на выбор: фишка ещё не двигалась, ждём CHOOSE_DIE
+  pending?: boolean;
+  // Индекс выбранного кубика в values
+  picked?: number;
   // Версия состояния, в которой этот бросок случился (TState.stateId после хода).
   // Нужна клиенту, чтобы отличить новый бросок от старого: два броска подряд
   // могут выпасть одинаковыми, а по одному lastRoll.value такой случай не отличить
@@ -51,6 +63,7 @@ export interface THistoryEntry {
   optionIndex: number;
   branch: TBranch;
   roll?: number;
+  targetNickname?: string;
   lines: string[];
 }
 
@@ -62,6 +75,7 @@ export interface TG {
   // Дальше партия развивается независимо от исходных данных
   events: Record<number, TEvent>;
   theme: TTheme;
+  cardNames?: Record<string, TCardName>;
   random: TRandomState;
   // Клетки, содержимое которых уже открыто всем
   visited: number[];
@@ -78,6 +92,8 @@ export interface TG {
   // (какая из success/failure уже случалась на этой клетке) и посещённой
   // истории для просмотра клетки. Ключ — cellId
   cellHistory: Record<number, THistoryEntry[]>;
+  cards: TCards;
+  turn: TTurn;
 }
 
 export interface TCtx {

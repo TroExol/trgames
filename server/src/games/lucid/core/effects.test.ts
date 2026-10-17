@@ -60,10 +60,10 @@ describe('applyEffect', () => {
     expect(G.players.a.resource).toBe(2);
   });
 
-  it('условие проверяется по положению игрока', () => {
+  it('условие проверяется по ресурсу игрока', () => {
     const G = applyEffect(twoPlayers(), 'a', {
       condition: {
-        field: LucidShared.EConditionField.POSITION,
+        field: LucidShared.EConditionField.RESOURCE,
         operator: LucidShared.EConditionOperator.GT,
         value: 0,
       },

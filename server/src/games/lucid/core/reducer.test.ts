@@ -9,7 +9,9 @@ import {
   doubleForkTrack,
   forkTrack,
   lineTrack,
+  makeG,
 } from '@/games/lucid/vitest/factories';
+import { land, withTurn } from '@/games/lucid/core/turn';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove, EMoveType } from '@/games/lucid/core/reducer';
 import { createRandom } from '@/games/lucid/core/random';
@@ -98,23 +100,19 @@ describe('applyMove', () => {
     expect(next.ctx.currentPlayer).toBe('b');
   });
 
-  it('дойдя до финиша, игрок побеждает и партия заканчивается', () => {
+  it('приход на финиш не победа: игрок стоит, ход переходит дальше', () => {
     const state = makeParty();
     state.G.players.a.position = state.G.track.finishId - 1;
 
-    const next = roll(state);
+    const rolled = roll(state);
+    const next = rolled.ctx.phase === LucidShared.EPhase.DICE
+      ? applyMove(rolled, { type: EMoveType.CHOOSE_DIE, playerId: 'a', stateId: rolled.stateId, dieIndex: 0 })
+      : rolled;
 
-    expect(next.G.winner).toBe('a');
-    expect(next.ctx.phase).toBe(LucidShared.EPhase.ENDED);
-  });
-
-  it('после конца партии ходы не принимаются', () => {
-    const state = makeParty();
-    state.G.players.a.position = state.G.track.finishId - 1;
-
-    const ended = roll(state);
-
-    expect(roll(ended)).toBe(ended);
+    expect(next.G.players.a.position).toBe(state.G.track.finishId);
+    expect(next.G.winner).toBeUndefined();
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(next.ctx.currentPlayer).toBe('b');
   });
 
   it('свежий бросок клеймится версией состояния, в которой случился', () => {
@@ -266,6 +264,118 @@ describe('события', () => {
     expect(next.ctx.phase).not.toBe(LucidShared.EPhase.CHOICE);
   });
 
+  it('CHOOSE_OPTION с нецелым номером варианта игнорируется', () => {
+    const state = makeParty('bad-option');
+    state.G.track = lineTrack();
+    state.G.players.a.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Находка',
+        text: 'Текст',
+        options: [{ text: 'Подобрать', success: { atoms: [] } }],
+      },
+    };
+    state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 'length' as unknown as number,
+    });
+
+    expect(next).toBe(state);
+  });
+
+  describe('CHOOSE_OPTION с целью CHOSEN', () => {
+    const chosenParty = () => {
+      const state = setupParty({
+        seed: 'chosen',
+        players: [
+          { id: 'a', nickname: 'Аня' },
+          { id: 'b', nickname: 'Боря' },
+          { id: 'c', nickname: 'Вася' },
+        ],
+        content: {
+          theme: { name: 'Пираты', resourceName: 'дублоны', palette: ['#001122', '#334455', '#667788'] },
+          events: {},
+        },
+      });
+
+      state.G.track = lineTrack();
+      state.G.players.a.position = 1;
+      state.G.events = {
+        1: {
+          cellId: 1,
+          title: 'Толчок',
+          text: 'Текст',
+          options: [{
+            text: 'Толкнуть',
+            success: {
+              atoms: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.CHOSEN, value: -2 }],
+            },
+          }],
+        },
+      };
+      state.ctx.phase = LucidShared.EPhase.CHOICE;
+
+      return state;
+    };
+
+    const choose = (state: LucidShared.TState, targetId?: string) => applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+      targetId,
+    });
+
+    it('действует на выбранного, ник цели — в ленте и истории клетки', () => {
+      const state = chosenParty();
+      const before = state.G.players.b.resource;
+      const next = choose(state, 'b');
+
+      expect(next.G.players.b.resource).toBe(before - 2);
+      expect(next.G.players.c.resource).toBe(state.G.players.c.resource);
+      expect(next.G.log).toContain('Боря: дублоны −2');
+      expect(next.G.cellHistory[1][0].targetNickname).toBe('Боря');
+    });
+
+    it('без цели, с собой или с чужим id ход отклоняется', () => {
+      const state = chosenParty();
+
+      expect(choose(state)).toBe(state);
+      expect(choose(state, 'a')).toBe(state);
+      expect(choose(state, 'z')).toBe(state);
+    });
+
+    it('игрок у сейфа может быть целью, но не сдвигается', () => {
+      const state = chosenParty();
+      state.G.events[1].options[0].success.atoms[0] = {
+        kind: LucidShared.EAtomKind.MOVE,
+        target: LucidShared.ETarget.CHOSEN,
+        value: -2,
+      };
+      state.G.players.b.position = state.G.track.finishId;
+
+      const next = choose(state, 'b');
+
+      expect(next.G.players.b.position).toBe(state.G.track.finishId);
+      expect(next.G.log).toContain('у сейфа никого не сдвинуть');
+    });
+
+    it('без атомов CHOSEN цель игнорируется', () => {
+      const state = chosenParty();
+      state.G.events[1].options[0].success.atoms[0].target = LucidShared.ETarget.SELF;
+
+      const next = choose(state, 'zzz');
+
+      expect(next).not.toBe(state);
+      expect(next.G.cellHistory[1][0].targetNickname).toBeUndefined();
+    });
+  });
+
   it('разыгранный вариант завершает ход, даже если игрок не сдвинулся', () => {
     const state = makeParty('stay-put');
     state.G.track = lineTrack();
@@ -287,6 +397,7 @@ describe('события', () => {
         }],
       },
     };
+    state.G.turn = { ...state.G.turn, step: LucidShared.ETurnStep.LANDED };
     state.ctx.phase = LucidShared.EPhase.CHOICE;
 
     const next = applyMove(state, {
@@ -411,11 +522,10 @@ describe('события', () => {
     expect(next.G.cellHistory[1][0].roll).toBeLessThan(7);
   });
 
-  it('победить можно эффектом варианта, а не только броском', () => {
-    const state = makeParty('effect-win');
+  it('эффект варианта, доведший лидера до финиша, не объявляет победу', () => {
+    const state = makeParty('effect-finish');
     state.G.track = lineTrack();
     state.G.players.a.position = 1;
-    // Лидер в шаге от финиша, и эффект варианта дотолкнёт именно его
     state.G.players.b.position = 3;
     state.G.events = {
       1: {
@@ -443,8 +553,456 @@ describe('события', () => {
       optionIndex: 0,
     });
 
-    // Победитель ищется среди всех игроков, а не только среди ходящего
-    expect(next.G.winner).toBe('b');
+    expect(next.G.players.b.position).toBe(4);
+    expect(next.G.winner).toBeUndefined();
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+  });
+});
+
+describe('клетка после хода', () => {
+  const longTrack = (type: LucidShared.ECellType): LucidShared.TTrack => ({
+    startId: 0,
+    finishId: 10,
+    cells: Array.from({ length: 11 }, (_, id) => ({
+      id,
+      type: id === 0 ? LucidShared.ECellType.START : id === 10 ? LucidShared.ECellType.FINISH : type,
+      next: id === 10 ? [] : [id + 1],
+    })),
+  });
+
+  it('зелёная клетка без законов не даёт Ресурс, ход переходит дальше', () => {
+    const state = makeParty('green');
+    state.G.track = longTrack(LucidShared.ECellType.GREEN);
+    const before = state.G.players.a.resource;
+
+    const next = roll(state);
+
+    expect(next.G.players.a.resource).toBe(before);
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(next.ctx.currentPlayer).toBe('b');
+  });
+
+  it('клетка события даёт выбор и не трогает Ресурс', () => {
+    const state = makeParty('event');
+    state.G.track = longTrack(LucidShared.ECellType.EVENT);
+    state.G.events = Object.fromEntries(Array.from({ length: 9 }, (_, index) => [
+      index + 1,
+      {
+        cellId: index + 1,
+        title: 'Развилка судьбы',
+        text: 'Что выберешь',
+        options: [{ text: 'Взять', success: { atoms: [] } }],
+      },
+    ]));
+    const before = state.G.players.a.resource;
+
+    const next = roll(state);
+
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.CHOICE);
+    expect(next.G.players.a.resource).toBe(before);
+  });
+});
+
+describe('выбор кубика', () => {
+  const straight = (length: number): LucidShared.TTrack => ({
+    cells: Array.from({ length }, (_, id) => ({
+      id,
+      type: id === 0
+        ? LucidShared.ECellType.START
+        : id === length - 1 ? LucidShared.ECellType.FINISH : LucidShared.ECellType.EMPTY,
+      next: id === length - 1 ? [] : [id + 1],
+    })),
+    startId: 0,
+    finishId: length - 1,
+  });
+
+  const inPickZone = () => {
+    const state = makeParty('dice-pick');
+    state.G.track = straight(31);
+    state.G.players.a.position = 15;
+
+    return state;
+  };
+
+  const choose = (state: LucidShared.TState, dieIndex: number) => applyMove(state, {
+    type: EMoveType.CHOOSE_DIE,
+    playerId: state.ctx.currentPlayer,
+    stateId: state.stateId,
+    dieIndex,
+  });
+
+  it('ROLL в зоне выбора переводит в фазу DICE без движения', () => {
+    const rolled = roll(inPickZone());
+
+    expect(rolled.ctx.phase).toBe(LucidShared.EPhase.DICE);
+    expect(rolled.ctx.currentPlayer).toBe('a');
+    expect(rolled.G.players.a.position).toBe(15);
+  });
+
+  it('CHOOSE_DIE двигает фишку и передаёт ход', () => {
+    const rolled = roll(inPickZone());
+    const after = choose(rolled, 0);
+
+    expect(after.G.players.a.position).toBe(15 + (rolled.G.lastRoll?.values?.[0] ?? 0));
+    expect(after.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(after.ctx.currentPlayer).toBe('b');
+  });
+
+  it('CHOOSE_DIE с несуществующим кубиком игнорируется', () => {
+    const rolled = roll(inPickZone());
+
+    expect(choose(rolled, 2)).toBe(rolled);
+  });
+
+  it('CHOOSE_DIE с нецелым номером кубика игнорируется', () => {
+    const rolled = roll(inPickZone());
+
+    expect(choose(rolled, 'length' as unknown as number)).toBe(rolled);
+    expect(choose(rolled, '1' as unknown as number)).toBe(rolled);
+  });
+
+  it('CHOOSE_DIE в фазе ROLL игнорируется', () => {
+    const state = inPickZone();
+
+    expect(choose(state, 0)).toBe(state);
+  });
+});
+
+describe('сейф на финише', () => {
+  const atSafe = (seed = 'safe', resource = 10) => {
+    const state = makeParty(seed);
+    state.G.track = lineTrack();
+    state.G.players.a.position = state.G.track.finishId;
+    state.G.players.a.resource = resource;
+
+    return state;
+  };
+
+  const open = (state: LucidShared.TState, bonus: number, playerId = state.ctx.currentPlayer) => applyMove(state, {
+    type: EMoveType.OPEN_SAFE,
+    playerId,
+    stateId: state.stateId,
+    bonus,
+  });
+
+  const findSeed = (opened: boolean, bonus: number): LucidShared.TState => {
+    for (let index = 0; index < 200; index++) {
+      const state = atSafe(`safe-${index}`);
+      const next = open(state, bonus);
+
+      if (Boolean(next.G.winner) === opened) {
+        return state;
+      }
+    }
+
+    throw new Error('сид не найден');
+  };
+
+  it('удачная попытка — победа и конец партии', () => {
+    const state = findSeed(true, 0);
+    const next = open(state, 0);
+
+    expect(next.G.winner).toBe('a');
     expect(next.ctx.phase).toBe(LucidShared.EPhase.ENDED);
+    expect(next.G.lastRoll?.value).toBeGreaterThanOrEqual(LucidShared.SAFE_THRESHOLD);
+    expect(next.G.lastRoll?.threshold).toBe(LucidShared.SAFE_THRESHOLD);
+    expect(next.G.log.at(-1)).toMatch(/^Аня бросает за сейф: \d — сейф открыт$/);
+  });
+
+  it('провал — ход следующему, фишка на месте', () => {
+    const state = findSeed(false, 0);
+    const next = open(state, 0);
+
+    expect(next.G.winner).toBeUndefined();
+    expect(next.ctx.currentPlayer).toBe('b');
+    expect(next.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(next.G.players.a.position).toBe(state.G.track.finishId);
+    expect(next.G.log.at(-1)).toMatch(/^Аня бросает за сейф: \d — не открыл$/);
+  });
+
+  it('доплата списывается до броска, сгорает при провале и сдвигает порог', () => {
+    [1, 2].forEach(bonus => {
+      const cost = LucidShared.SAFE_BONUS_COSTS[bonus];
+      const lost = findSeed(false, bonus);
+      const won = findSeed(true, bonus);
+      const failed = open(lost, bonus);
+      const opened = open(won, bonus);
+
+      expect(failed.G.players.a.resource).toBe(10 - cost);
+      expect(opened.G.players.a.resource).toBe(10 - cost);
+      expect(failed.G.lastRoll?.threshold).toBe(LucidShared.SAFE_THRESHOLD - bonus);
+      expect(opened.G.lastRoll!.value + bonus).toBeGreaterThanOrEqual(LucidShared.SAFE_THRESHOLD);
+      expect(failed.G.lastRoll!.value + bonus).toBeLessThan(LucidShared.SAFE_THRESHOLD);
+      expect(failed.G.log.at(-1)).toContain(`платит ${cost} и бросает за сейф`);
+      expect(failed.G.log.at(-1)).toContain(`${failed.G.lastRoll!.value} + ${bonus} = ${failed.G.lastRoll!.value + bonus}`);
+    });
+  });
+
+  it('доплата действует только на эту попытку', () => {
+    const next = open(findSeed(false, 2), 2);
+
+    expect(next.G.players.a.skipTurns).toBe(0);
+    expect(next.G.players.b.resource).toBe(makeParty().G.players.b.resource);
+  });
+
+  it('неверный bonus отклоняется', () => {
+    const state = atSafe();
+
+    [-1, 3, 0.5, NaN, '1' as unknown as number, undefined as unknown as number].forEach(bonus => {
+      expect(open(state, bonus)).toBe(state);
+    });
+  });
+
+  it('не хватает Ресурса на доплату — отклоняется', () => {
+    const state = atSafe('poor', 4);
+
+    expect(open(state, 1)).toBe(state);
+    expect(open(state, 2)).toBe(state);
+    expect(open(atSafe('poor', 5), 1).stateId).toBe(1);
+    expect(open(atSafe('poor', 10), 2).stateId).toBe(1);
+  });
+
+  it('не на финише — отклоняется', () => {
+    const state = makeParty('away');
+
+    expect(open(state, 0)).toBe(state);
+  });
+
+  it('не в свой ход и не в фазе ROLL — отклоняется', () => {
+    const state = atSafe();
+    state.G.players.b.position = state.G.track.finishId;
+
+    expect(open(state, 0, 'b')).toBe(state);
+    expect(open({ ...state, ctx: { ...state.ctx, phase: LucidShared.EPhase.CHOICE } }, 0).stateId).toBe(state.stateId);
+  });
+
+  it('обычный ROLL на финише отклоняется', () => {
+    const state = atSafe();
+
+    expect(roll(state)).toBe(state);
+  });
+
+  it('пропуск хода пропускает и попытку у сейфа', () => {
+    const state = atSafe();
+    state.G.players.a.skipTurns = 1;
+
+    const next = open(state, 2);
+
+    expect(next.G.players.a.skipTurns).toBe(0);
+    expect(next.G.players.a.resource).toBe(10);
+    expect(next.G.winner).toBeUndefined();
+    expect(next.ctx.currentPlayer).toBe('b');
+    expect(next.G.log.at(-1)).toBe('Аня пропускает ход');
+  });
+
+  it('игрок на финише не двигается ничьими эффектами и не меняется местами', () => {
+    const state = atSafe('immune');
+    state.G.players.b.position = 1;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Шторм',
+        text: 'Бушует',
+        options: [{
+          text: 'Переждать',
+          success: {
+            atoms: [
+              { kind: LucidShared.EAtomKind.MOVE, target: LucidShared.ETarget.ALL, value: -2 },
+              { kind: LucidShared.EAtomKind.MOVE, target: LucidShared.ETarget.FIRST, value: -2 },
+              { kind: LucidShared.EAtomKind.SWAP_WITH_FIRST, target: LucidShared.ETarget.SELF, value: 0 },
+              { kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.FIRST, value: -3 },
+              { kind: LucidShared.EAtomKind.SKIP_TURN, target: LucidShared.ETarget.FIRST, value: 1 },
+            ],
+          },
+        }],
+      },
+    };
+    state.ctx = { ...state.ctx, currentPlayer: 'b', phase: LucidShared.EPhase.CHOICE };
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'b',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    expect(next.G.players.a.position).toBe(state.G.track.finishId);
+    expect(next.G.players.b.position).toBe(0);
+    expect(next.G.players.a.resource).toBe(7);
+    expect(next.G.players.a.skipTurns).toBe(1);
+  });
+
+  it('обмен не происходит, если лидер на финише', () => {
+    const state = atSafe('immune-first');
+    state.G.players.a.position = 1;
+    state.G.players.b.position = state.G.track.finishId;
+    state.G.events = {
+      1: {
+        cellId: 1,
+        title: 'Обмен',
+        text: 'Меняемся',
+        options: [{
+          text: 'Поменяться',
+          success: {
+            atoms: [{ kind: LucidShared.EAtomKind.SWAP_WITH_FIRST, target: LucidShared.ETarget.SELF, value: 0 }],
+          },
+        }],
+      },
+    };
+    state.ctx = { ...state.ctx, phase: LucidShared.EPhase.CHOICE };
+
+    const next = applyMove(state, {
+      type: EMoveType.CHOOSE_OPTION,
+      playerId: 'a',
+      stateId: state.stateId,
+      optionIndex: 0,
+    });
+
+    expect(next.G.players.a.position).toBe(1);
+    expect(next.G.players.b.position).toBe(state.G.track.finishId);
+  });
+});
+
+describe('клетка «Закон»', () => {
+  const lawTrack = (): LucidShared.TTrack => ({
+    startId: 0,
+    finishId: 3,
+    cells: [
+      { id: 0, type: LucidShared.ECellType.START, next: [1] },
+      { id: 1, type: LucidShared.ECellType.LAW, next: [2] },
+      { id: 2, type: LucidShared.ECellType.EMPTY, next: [3] },
+      { id: 3, type: LucidShared.ECellType.FINISH, next: [] },
+    ],
+  });
+
+  it('остановка на «Законе» тянет два закона, выбор кладёт закон и передаёт ход', () => {
+    const G = makeG({ track: lawTrack() });
+    const state: LucidShared.TState = {
+      G: {
+        ...G,
+        players: { ...G.players, a: { ...G.players.a, position: 1 } },
+        cards: { ...G.cards, lawDeck: [LucidShared.ELaw.RED_BAD, LucidShared.ELaw.SIX_SKIP] },
+      },
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.ROLL },
+      stateId: 0,
+    };
+    const landed = land(state);
+
+    expect(landed.ctx.phase).toBe(LucidShared.EPhase.LAW);
+    expect(landed.G.cards.lawDraw).toEqual([LucidShared.ELaw.RED_BAD, LucidShared.ELaw.SIX_SKIP]);
+
+    const chosen = applyMove(landed, {
+      type: EMoveType.CHOOSE_LAW, playerId: 'a', stateId: landed.stateId, index: 0,
+    });
+
+    expect(chosen.G.cards.laws[0]).toBe(LucidShared.ELaw.RED_BAD);
+    expect(chosen.ctx.currentPlayer).toBe('b');
+    expect(chosen.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+  });
+});
+
+describe('клетка «Лавка»', () => {
+  const shopTrack = (): LucidShared.TTrack => ({
+    startId: 0,
+    finishId: 3,
+    cells: [
+      { id: 0, type: LucidShared.ECellType.START, next: [1] },
+      { id: 1, type: LucidShared.ECellType.SHOP, next: [2] },
+      { id: 2, type: LucidShared.ECellType.EMPTY, next: [3] },
+      { id: 3, type: LucidShared.ECellType.FINISH, next: [] },
+    ],
+  });
+
+  const shopState = (resource: number): LucidShared.TState => {
+    const G = makeG({
+      track: shopTrack(),
+      players: [
+        { id: 'a', nickname: 'Аня', position: 1, resource },
+        { id: 'b', nickname: 'Боря', position: 0, resource: 10 },
+      ],
+    });
+
+    return {
+      G: {
+        ...G,
+        cards: {
+          ...G.cards,
+          shopDeck: Object.values(LucidShared.EShopCard).slice(0, 4).map((card, uid) => ({ uid, card })),
+          hands: { a: [], b: [] },
+        },
+      },
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.ROLL },
+      stateId: 0,
+    };
+  };
+
+  it('с Ресурсом от 3 Лавка открывается, покупка передаёт ход', () => {
+    const landed = land(shopState(10));
+
+    expect(landed.ctx.phase).toBe(LucidShared.EPhase.SHOP);
+    expect(landed.G.cards.shopOffer).toHaveLength(3);
+
+    const bought = applyMove(landed, {
+      type: EMoveType.BUY_CARD, playerId: 'a', stateId: landed.stateId, index: 0,
+    });
+
+    expect(bought.G.cards.hands.a).toHaveLength(1);
+    expect(bought.G.players.a.resource).toBe(7);
+    expect(bought.ctx.currentPlayer).toBe('b');
+  });
+
+  it('нецелый индекс отклоняется', () => {
+    const landed = land(shopState(10));
+    const rejected = applyMove(landed, {
+      type: EMoveType.BUY_CARD, playerId: 'a', stateId: landed.stateId, index: 0.5,
+    });
+
+    expect(rejected).toBe(landed);
+  });
+
+  it('с Ресурсом меньше 3 Лавка не открывается, ход идёт дальше', () => {
+    const landed = land(shopState(2));
+
+    expect(landed.ctx.phase).toBe(LucidShared.EPhase.ROLL);
+    expect(landed.ctx.currentPlayer).toBe('b');
+    expect(landed.G.log).toContain('Аня: в Лавке не по карману');
+  });
+});
+
+describe('вытянутые события', () => {
+  const drawnEvent: LucidShared.TEvent = {
+    cellId: 2,
+    title: 'Вытянутое',
+    text: 'Текст',
+    options: [{
+      text: 'Взять',
+      success: { atoms: [{ kind: LucidShared.EAtomKind.RESOURCE, target: LucidShared.ETarget.SELF, value: 2 }] },
+    }],
+  };
+
+  it('вытянутое событие разыгрывается вместо клетки игрока и пишет историю своей клетки', () => {
+    const base = makeG({ events: { 2: drawnEvent } });
+    const state: LucidShared.TState = {
+      G: withTurn(base, { step: LucidShared.ETurnStep.LANDED, eventCellId: 2 }),
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.CHOICE },
+      stateId: 0,
+    };
+    const next = applyMove(state, { type: EMoveType.CHOOSE_OPTION, playerId: 'a', stateId: 0, optionIndex: 0 });
+
+    expect(next.G.cellHistory[2]).toHaveLength(1);
+    expect(next.G.turn.eventCellId).toBeUndefined();
+    expect(next.ctx.currentPlayer).toBe('b');
+  });
+
+  it('выбор закона не пишет историю клеток', () => {
+    const state: LucidShared.TState = {
+      G: withTurn(makeG(), { step: LucidShared.ETurnStep.LANDED, lawEvent: { ...drawnEvent, cellId: -1 } }),
+      ctx: { currentPlayer: 'a', turn: 1, numPlayers: 2, phase: LucidShared.EPhase.CHOICE },
+      stateId: 0,
+    };
+    const next = applyMove(state, { type: EMoveType.CHOOSE_OPTION, playerId: 'a', stateId: 0, optionIndex: 0 });
+
+    expect(next.G.cellHistory).toEqual({});
+    expect(next.G.turn.lawEvent).toBeUndefined();
   });
 });

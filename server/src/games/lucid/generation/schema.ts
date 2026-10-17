@@ -5,7 +5,7 @@ import { LucidShared } from '@trgames/shared';
 // и валидация, и описание словаря в промпте
 export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: number }> = {
   [LucidShared.EAtomKind.MOVE]: { min: -4, max: 4 },
-  [LucidShared.EAtomKind.RESOURCE]: { min: -3, max: 3 },
+  [LucidShared.EAtomKind.RESOURCE]: { min: -5, max: 5 },
   [LucidShared.EAtomKind.SKIP_TURN]: { min: 1, max: 2 },
   // Значение не используется: обмен всегда идёт между ходящим и лидером
   [LucidShared.EAtomKind.SWAP_WITH_FIRST]: { min: 0, max: 0 },
@@ -15,13 +15,21 @@ export const ATOM_RANGES: Record<LucidShared.EAtomKind, { min: number; max: numb
 // отправлять всю партию на запасную
 export const EVENT_TEXT_MAX = 200;
 export const OPTION_TEXT_MAX = 80;
+export const EFFECT_TEXT_MAX = 60;
+
+export const CARD_NAME_MAX = 30;
+export const CARD_FLAVOR_MAX = 70;
+// Потолок схемы выше цели из промпта: Haiku пишет 71–73 знака, и без запаса
+// четверть карт молча теряла строку
+const CARD_FLAVOR_LIMIT = 100;
 
 export const THRESHOLD_RANGE = { min: 2, max: 6 };
-export const COST_RANGE = { min: 1, max: 3 };
+export const COST_RANGE = { min: 2, max: 5 };
 
 // Края мира: участки пути со своими названиями и цветами
 export const REGION_RANGE = { min: 3, max: 5 } as const;
 export const REGION_NAME_MAX = 24;
+export const RESOURCE_NAME_MAX = 20;
 // Шесть шестнадцатеричных цифр: короткую запись не принимаем, чтобы на клиенте
 // был ровно один формат
 const HEX_COLOR = /^#[\da-f]{6}$/i;
@@ -35,6 +43,10 @@ const atomSchema = z
   .refine(
     atom => atom.value >= ATOM_RANGES[atom.kind].min && atom.value <= ATOM_RANGES[atom.kind].max,
     'значение атома вне диапазона, допустимого для его вида',
+  )
+  .refine(
+    atom => !(atom.kind === LucidShared.EAtomKind.SWAP_WITH_FIRST && atom.target === LucidShared.ETarget.CHOSEN),
+    'обмен с лидером не бывает с целью CHOSEN',
   );
 
 const conditionSchema = z.strictObject({
@@ -44,6 +56,7 @@ const conditionSchema = z.strictObject({
 });
 
 const effectSchema = z.strictObject({
+  text: z.string().min(1).max(EFFECT_TEXT_MAX).optional(),
   atoms: z.array(atomSchema).min(1).max(3),
   condition: conditionSchema.optional(),
   otherwise: z.array(atomSchema).min(1).max(3).optional(),
@@ -64,10 +77,16 @@ export const eventSchema = z.strictObject({
   options: z.array(optionSchema).max(3),
 });
 
+export const cardNameSchema = z.strictObject({
+  id: z.string(),
+  name: z.string().min(1).max(CARD_NAME_MAX),
+  flavor: z.string().min(1).max(CARD_FLAVOR_LIMIT),
+});
+
 export const worldSchema = z.strictObject({
   theme: z.strictObject({
     name: z.string().min(1).max(80),
-    resourceName: z.string().min(1).max(40),
+    resourceName: z.string().regex(/^[^\s]+$/).max(RESOURCE_NAME_MAX),
     palette: z.array(z.string().regex(HEX_COLOR)).min(3).max(6),
     // Необязательное: модель может его не прислать, отсутствие обрабатывает клиент
     mood: z.enum(LucidShared.EThemeMood).optional(),
@@ -81,16 +100,16 @@ export const worldSchema = z.strictObject({
       }))
       .min(REGION_RANGE.min)
       .max(REGION_RANGE.max),
+    // Неизвестные значки отбрасывает sanitizeTheme: из-за них повтор не нужен
+    icons: z.array(z.string()).optional().catch(undefined),
   }),
-  // Необязательное и не привязанное к списку игроков схемой: сверка ников
-  // с реальными игроками и их нехватка — забота setupParty, а не валидации.
-  // Так неполный или кривой ответ про роли не заставляет перегенерировать весь мир
-  roles: z.array(z.strictObject({
-    nickname: z.string().min(1).max(60),
-    role: z.string().min(1).max(50),
-  })).optional(),
+  // Плохая карта становится undefined и отбрасывается, мир при этом не падает.
+  // Типизированный элемент нужен JSON-схеме: пустой узел {} Anthropic отвергает
+  cards: z.array(cardNameSchema.optional().catch(undefined)).optional().catch(undefined),
 });
 
 export const eventBatchSchema = z.strictObject({
-  events: z.array(eventSchema).min(1),
+  // Плохое событие становится undefined и отбрасывается: хорошие из того же
+  // ответа остаются, а клетку без события добирает пайплайн
+  events: z.array(eventSchema.optional().catch(undefined)).min(1),
 });

@@ -1,5 +1,6 @@
 import { LucidShared } from '@trgames/shared';
 
+import { upgradeG } from '@/games/lucid/core/upgrade';
 import { buildTrack, eventCellIds } from '@/games/lucid/core/track';
 import { setupParty } from '@/games/lucid/core/setup';
 import { applyMove as applyMoveToState } from '@/games/lucid/core/reducer';
@@ -21,6 +22,7 @@ export const THEME_HINTS = [
 
 interface TPartyConstructorParams {
   uuid: string;
+  code: string;
   ownerId: LucidShared.TPlayerId;
 }
 
@@ -57,6 +59,7 @@ interface TStartParams {
 
 export interface TPartySnapshot {
   uuid: string;
+  code?: string;
   ownerId: LucidShared.TPlayerId;
   phase: LucidShared.EPartyPhase;
   members: TMember[];
@@ -69,6 +72,7 @@ export interface TPartySnapshot {
 
 export class Party {
   public readonly uuid: string;
+  public readonly code: string;
   public readonly ownerId: LucidShared.TPlayerId;
 
   private phase: LucidShared.EPartyPhase = LucidShared.EPartyPhase.LOBBY;
@@ -83,8 +87,9 @@ export class Party {
   // Куда уходить после победы, если с этой партии начали следующую
   private nextPartyId?: string;
 
-  constructor({ uuid, ownerId }: TPartyConstructorParams) {
+  constructor({ uuid, code, ownerId }: TPartyConstructorParams) {
     this.uuid = uuid;
+    this.code = code;
     this.ownerId = ownerId;
   }
 
@@ -101,6 +106,10 @@ export class Party {
 
     if (!trimmed) {
       throw new Error('empty-nickname');
+    }
+
+    if (trimmed.length > LucidShared.NICKNAME_MAX_LENGTH && this.members.get(playerId)?.nickname !== trimmed) {
+      throw new Error('nickname-too-long');
     }
 
     // Ник опознаёт игрока для людей, а не для системы: повторы запрещены,
@@ -296,6 +305,7 @@ export class Party {
   // сериализуемым именно ради этого
   public snapshot = (): TPartySnapshot => ({
     uuid: this.uuid,
+    code: this.code,
     ownerId: this.ownerId,
     phase: this.phase,
     members: [...this.members.values()].map(member => ({ ...member })),
@@ -307,16 +317,17 @@ export class Party {
   });
 
   public static fromSnapshot = (snapshot: TPartySnapshot): Party => {
-    const party = new Party({ uuid: snapshot.uuid, ownerId: snapshot.ownerId });
+    const party = new Party({
+      uuid: snapshot.uuid,
+      code: snapshot.code ?? '',
+      ownerId: snapshot.ownerId,
+    });
 
     party.phase = snapshot.phase;
     party.theme = snapshot.theme;
-    // Партии из базы старше истории клетки не имеют cellHistory вовсе —
-    // подставляем пусто, чтобы формату и редьюсеру не пришлось знать про
-    // старые снимки
     party.state = snapshot.state && {
       ...snapshot.state,
-      G: { ...snapshot.state.G, cellHistory: snapshot.state.G.cellHistory ?? {} },
+      G: upgradeG(snapshot.state.G, snapshot.state.ctx.phase),
     };
     party.usedFallback = snapshot.usedFallback;
     party.sentRibbonLines = snapshot.sentRibbonLines;
@@ -332,6 +343,7 @@ export class Party {
 
   public view = (playerId: LucidShared.TPlayerId): LucidShared.TPartyView => ({
     partyId: this.uuid,
+    code: this.code,
     phase: this.phase,
     members: [...this.members.values()].map(member => ({ ...member })),
     ownerId: this.ownerId,

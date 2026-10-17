@@ -23,6 +23,31 @@ const atom = (
   value: number,
 ): LucidShared.TAtom => ({ kind, target, value });
 
+describe('applyAtom: портал', () => {
+  it('сдвиг на число клеток на портал переносит на парную клетку', () => {
+    const base = makeG({
+      track: {
+        startId: 0,
+        finishId: 5,
+        cells: [
+          { id: 0, type: LucidShared.ECellType.START, next: [1] },
+          { id: 1, type: LucidShared.ECellType.EMPTY, next: [2] },
+          { id: 2, type: LucidShared.ECellType.PORTAL, next: [3], portal: { pair: 0, to: 4 } },
+          { id: 3, type: LucidShared.ECellType.EMPTY, next: [4] },
+          { id: 4, type: LucidShared.ECellType.PORTAL, next: [5], portal: { pair: 0, to: 2 } },
+          { id: 5, type: LucidShared.ECellType.FINISH, next: [] },
+        ],
+      },
+      players: [{ id: 'a', nickname: 'Аня', position: 0, resource: 3 }],
+    });
+    const G = applyAtom(base, 'a', atom(LucidShared.EAtomKind.MOVE, LucidShared.ETarget.SELF, 2));
+
+    expect(G.players.a.position).toBe(4);
+    expect(G.visited).toContain(4);
+    expect(G.log).toContain('Аня проходит портал');
+  });
+});
+
 describe('applyAtom', () => {
   it('движение идёт по связям трека', () => {
     const G = applyAtom(threePlayers(), 'c', atom(

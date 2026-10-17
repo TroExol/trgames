@@ -1,4 +1,4 @@
-import type { LucidShared } from '@trgames/shared';
+import { LucidShared } from '@trgames/shared';
 
 // @trgames/shared отдаёт этот тип только через неймспейс LucidShared,
 // плоского реэкспорта не существует — извлекаем сами
@@ -20,6 +20,7 @@ const toOptionView = (
     threshold: option.threshold,
     cost: option.cost,
     revealed: { success: revealedSuccess, failure: revealedFailure },
+    hint: LucidShared.buildOptionHint(option),
     success: revealedSuccess ? option.success : undefined,
     // Раскрытая, но отсутствующая failure остаётся undefined — «раскрыта,
     // пусто» клиент читает по revealed.failure, а не по наличию поля
@@ -35,6 +36,21 @@ const toEventView = (
   title: event.title,
   text: event.text,
   options: event.options.map((option, index) => toOptionView(option, cellHistory[event.cellId] ?? [], index)),
+});
+
+const toOpenEventView = (event: LucidShared.TEvent): LucidShared.TEventView => ({
+  cellId: event.cellId,
+  title: event.title,
+  text: event.text,
+  options: event.options.map(option => ({
+    text: option.text,
+    threshold: option.threshold,
+    cost: option.cost,
+    revealed: { success: true, failure: Boolean(option.failure) },
+    hint: LucidShared.buildOptionHint(option),
+    success: option.success,
+    failure: option.failure,
+  })),
 });
 
 export const formatForPlayer = (
@@ -54,18 +70,26 @@ export const formatForPlayer = (
   // Журнал партии тоже не отдаётся целиком — лента собирается из его прироста
   // на стороне комнаты (см. Party.takeRibbonDelta). events уходят в форме TEventView:
   // исход варианта виден только по раскрытым веткам (5.5)
-  const G: { events: Record<number, LucidShared.TEventView> } & Omit<LucidShared.TG, 'log' | 'random' | 'events'> = {
+  const G: LucidShared.TStateForPlayer['G'] = {
     players: state.G.players,
     order: state.G.order,
     track: state.G.track,
     events: opened,
     theme: state.G.theme,
+    cardNames: state.G.cardNames,
     visited: state.G.visited,
     winner: state.G.winner,
     branchChoices: state.G.branchChoices,
     pendingSteps: state.G.pendingSteps,
     lastRoll: state.G.lastRoll,
     cellHistory: state.G.cellHistory,
+    cards: {
+      laws: state.G.cards.laws,
+      lawDraw: state.G.cards.lawDraw,
+      shopOffer: state.G.cards.shopOffer,
+      hands: state.G.cards.hands,
+    },
+    turn: { ...state.G.turn, lawEvent: state.G.turn.lawEvent && toOpenEventView(state.G.turn.lawEvent) },
   };
 
   return {
