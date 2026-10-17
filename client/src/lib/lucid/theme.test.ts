@@ -58,6 +58,9 @@ describe('фон с мотивом темы', () => {
     expect(image).toContain('url("data:image/svg+xml');
     expect(image).not.toContain('repeating-linear-gradient');
     expect(image).toContain('radial-gradient');
+    expect(image).not.toContain(' / ');
+    expect(image).not.toContain('px repeat');
+    expect(themeStyle(roles, 'Пираты Карибского моря', icons).backgroundSize).toBe('240px 240px, auto');
   });
 
   it('одинаков для одного названия мира', () => {
