@@ -10,7 +10,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     env:
-      SITE_URL: https://335227.snk.wtf
+      SITE_URL: https://335227.snk.wtf:8443
       VPS_HOST: 335227.snk.wtf
       VPS_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACfcUR3uraDu23YL9/j7nqvl7FL4gqLMnEWzV5pRYuq
 

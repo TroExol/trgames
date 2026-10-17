@@ -1,6 +1,6 @@
 # Деплой на vps-de
 
-Игра открывается по адресу https://335227.snk.wtf.
+Игра открывается по адресу https://335227.snk.wtf:8443.
 
 ## Как выкатить
 
@@ -36,16 +36,18 @@ Workflow собирает клиент и сервер, пакует их в tar
 1. Скопируй `deploy/deploy.sh` в `/root/trgames/deploy.sh` и сделай его исполняемым.
 2. Добавь в `/root/.ssh/authorized_keys` открытый ключ деплоя с ограничением:
    `restrict,command="/root/trgames/deploy.sh" ssh-ed25519 AAAA… github-actions-trgames`
-3. Добавь в блок `335227.snk.wtf:443` файла `/etc/caddy/Caddyfile` два `handle`. Другие `handle` блока не меняй.
+3. Добавь в конец файла `/etc/caddy/Caddyfile` отдельный блок. Другие блоки не меняй.
    ```
-   handle /socket.io/* {
-   	reverse_proxy 127.0.0.1:4001
-   }
-   handle {
-   	encode zstd gzip
-   	root * /srv/trgames
-   	try_files {path} /index.html
-   	file_server
+   335227.snk.wtf:8443 {
+   	handle /socket.io/* {
+   		reverse_proxy 127.0.0.1:4001
+   	}
+   	handle {
+   		encode zstd gzip
+   		root * /srv/trgames
+   		try_files {path} /index.html
+   		file_server
+   	}
    }
    ```
 4. Проверь конфиг командой `caddy validate --config /etc/caddy/Caddyfile` и перезагрузи Caddy командой `systemctl reload caddy`.

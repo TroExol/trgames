@@ -112,6 +112,6 @@ prompts/         — Промпты для генерации контента (
 
 ## Деплой
 
-- Прод: https://335227.snk.wtf на vps-de. Выкатка — кнопкой GitHub → Actions → Deploy, только из master.
+- Прод: https://335227.snk.wtf:8443 на vps-de. Выкатка — кнопкой GitHub → Actions → Deploy, только из master.
 - Устройство и разовая настройка VPS — `deploy/README.md`.
 - Ключ OpenRouter прода — секрет GitHub `OPENROUTER_API_KEY`. На VPS его руками не правь: деплой перезапишет `.env`.
